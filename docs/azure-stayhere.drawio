@@ -1,0 +1,181 @@
+<mxfile host="65bd71144e">
+    <diagram name="StayHere Architecture - Azure" id="azure-property-mgmt">
+        <mxGraphModel dx="2984" dy="1864" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Azure Serverless Property Management System" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="400" y="20" width="800" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="cloudflare-container" value="Cloudflare Edge Layer" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#ff9800;fontSize=16;fontStyle=1;startSize=40;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="80" width="1440" height="260" as="geometry"/>
+                </mxCell>
+                <mxCell id="cf-cost" value="Monthly Cost: $0&#xa;(Free Plan)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4caf50;strokeColor=#2e7d32;fontColor=#ffffff;fontSize=12;fontStyle=1" parent="cloudflare-container" vertex="1">
+                    <mxGeometry x="1180" y="60" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="" style="group" vertex="1" connectable="0" parent="cloudflare-container">
+                    <mxGeometry x="240" y="90" width="200" height="132.3" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#FF6A00;strokeColor=none;shape=mxgraph.alibaba_cloud.cdn_content_distribution_network;" vertex="1" parent="7">
+                    <mxGeometry x="50.39" width="99.23" height="82.3" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="&lt;div&gt;&lt;div style=&quot;color: rgb(63, 63, 63); scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); text-wrap-mode: nowrap;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: rgb(63, 63, 63); font-weight: 700; text-wrap-mode: wrap;&quot;&gt;CDN&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;color: rgb(63, 63, 63); scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); text-wrap-mode: nowrap;&quot;&gt;&lt;span style=&quot;scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700; text-wrap-mode: wrap; color: rgb(0, 0, 0);&quot;&gt;Static Assets&lt;/span&gt;&lt;br style=&quot;scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700; text-wrap-mode: wrap; color: rgb(63, 63, 63);&quot;&gt;&lt;span style=&quot;scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700; text-wrap-mode: wrap; color: rgb(0, 0, 0);&quot;&gt;Image Optimization&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="7">
+                    <mxGeometry y="102.3" width="200" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="" style="group" vertex="1" connectable="0" parent="cloudflare-container">
+                    <mxGeometry x="660" y="110" width="172" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/networking/Web_Application_Firewall_Policies_WAF.svg;" vertex="1" parent="11">
+                    <mxGeometry x="32" y="-30" width="108" height="108" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="&lt;span style=&quot;scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700; background-color: rgb(251, 251, 251); color: rgb(0, 0, 0);&quot;&gt;WAF&lt;/span&gt;&lt;br style=&quot;scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700; background-color: rgb(251, 251, 251); color: rgb(63, 63, 63);&quot;&gt;&lt;span style=&quot;scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700; background-color: rgb(251, 251, 251); color: rgb(0, 0, 0);&quot;&gt;DDoS Protection&lt;/span&gt;&lt;br style=&quot;scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700; background-color: rgb(251, 251, 251); color: rgb(63, 63, 63);&quot;&gt;&lt;span style=&quot;scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700; background-color: rgb(251, 251, 251); color: rgb(0, 0, 0);&quot;&gt;SSL/TLS&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="11">
+                    <mxGeometry y="90" width="172" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="" style="group" vertex="1" connectable="0" parent="cloudflare-container">
+                    <mxGeometry x="940" y="80" width="270" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/DNS.svg;" vertex="1" parent="14">
+                    <mxGeometry x="95" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-weight: 700;&quot;&gt;DNS&lt;/span&gt;&lt;br style=&quot;color: rgb(63, 63, 63); scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700;&quot;&gt;&lt;span style=&quot;color: rgb(0, 0, 0); font-weight: 700;&quot;&gt;Global Routing&lt;/span&gt;&lt;br style=&quot;color: rgb(63, 63, 63); scrollbar-color: rgb(226, 226, 226) rgb(251, 251, 251); font-weight: 700;&quot;&gt;&lt;span style=&quot;color: rgb(0, 0, 0); font-weight: 700;&quot;&gt;Traffic Manager&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="14">
+                    <mxGeometry y="100" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-cf-apim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#ff9800;" parent="1" source="cloudflare-container" target="apim-container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="apim-container" value="Azure API Management (Consumption Tier)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#9c27b0;fontSize=16;fontStyle=1;startSize=40;" parent="1" vertex="1">
+                    <mxGeometry x="230" y="430" width="1040" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="apim-features" value="&lt;b&gt;Features:&lt;/b&gt;&#xa;• Rate Limiting &amp; Throttling&#xa;• JWT Authentication&#xa;• Response Caching&#xa;• Request/Response Transformation&#xa;• API Analytics &amp; Monitoring&#xa;• Developer Portal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#9c27b0;fontSize=11;align=left;spacingLeft=10;" parent="apim-container" vertex="1">
+                    <mxGeometry x="220" y="60" width="380" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="apim-endpoints" value="&lt;b&gt;API Endpoints:&lt;/b&gt;&#xa;/api/properties/*&#xa;/api/billing/*&#xa;/api/contracts/*&#xa;/api/maintenance/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#9c27b0;fontSize=11;align=left;spacingLeft=10;" parent="apim-container" vertex="1">
+                    <mxGeometry x="630" y="60" width="320" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="Azure API Management&lt;br&gt;Services" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/API_Management.svg;" vertex="1" parent="apim-container">
+                    <mxGeometry x="100" y="89" width="50" height="42" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-apim-functions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#9c27b0;" parent="1" source="apim-container" target="functions-container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="functions-container" value="Azure Function Apps (Consumption Plan - .NET 8 Isolated)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#2196f3;fontSize=16;fontStyle=1;startSize=40;" parent="1" vertex="1">
+                    <mxGeometry x="31" y="720" width="1440" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="" style="group" vertex="1" connectable="0" parent="functions-container">
+                    <mxGeometry x="40" y="60" width="300" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="func-property" value="&lt;b&gt;Property Service&lt;/b&gt;&#xa;&#xa;• CreateProperty&#xa;• GetProperties&#xa;• UpdateProperty&#xa;• DeleteProperty&#xa;• SearchProperties&#xa;• UploadImages" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#2196f3;fontSize=11;align=left;spacingLeft=10;spacingTop=5;" parent="25" vertex="1">
+                    <mxGeometry width="300" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/compute/Function_Apps.svg;" vertex="1" parent="25">
+                    <mxGeometry x="180" y="40" width="68" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="28" value="" style="group" vertex="1" connectable="0" parent="functions-container">
+                    <mxGeometry x="380" y="60" width="300" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="func-billing" value="&lt;b&gt;Billing Service&lt;/b&gt;&#xa;&#xa;• CreatePayment&#xa;• GetPaymentHistory&#xa;• ProcessRecurringBilling&#xa;• GenerateInvoice&#xa;• SendPaymentReminder&#xa;• RefundPayment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#2196f3;fontSize=11;align=left;spacingLeft=10;spacingTop=5;" parent="28" vertex="1">
+                    <mxGeometry width="300" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/compute/Function_Apps.svg;" vertex="1" parent="28">
+                    <mxGeometry x="190" y="50" width="68" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" value="" style="group" vertex="1" connectable="0" parent="functions-container">
+                    <mxGeometry x="1060" y="60" width="340" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="func-maintenance" value="&lt;b&gt;Maintenance Service&lt;/b&gt;&#xa;&#xa;• CreateMaintenanceRequest&#xa;• GetMaintenanceRequests&#xa;• UpdateRequestStatus&#xa;• AssignTechnician&#xa;• SendStatusNotification&#xa;• CompleteRequest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#2196f3;fontSize=11;align=left;spacingLeft=10;spacingTop=5;" parent="29" vertex="1">
+                    <mxGeometry width="340" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/compute/Function_Apps.svg;" vertex="1" parent="29">
+                    <mxGeometry x="220" y="50" width="68" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#0288d1;dashed=1;" edge="1" parent="functions-container" source="func-property" target="18">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="340" y="140" as="sourcePoint"/>
+                        <mxPoint x="1230" y="560" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="30" value="" style="group" vertex="1" connectable="0" parent="functions-container">
+                    <mxGeometry x="720" y="60" width="300" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="func-contract" value="&lt;b&gt;Contract Service&lt;/b&gt;&#xa;&#xa;• CreateLease&#xa;• GetLeases&#xa;• UpdateLease&#xa;• TerminateLease&#xa;• CheckLeaseExpiration&#xa;• GenerateContract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#2196f3;fontSize=11;align=left;spacingLeft=10;spacingTop=5;" parent="30" vertex="1">
+                    <mxGeometry width="300" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/compute/Function_Apps.svg;" vertex="1" parent="30">
+                    <mxGeometry x="190" y="50" width="68" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-container" value="Data &amp; Services Layer" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#4caf50;fontSize=16;fontStyle=1;startSize=40;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="1040" width="1440" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-postgres" value="&lt;b&gt;PostgreSQL Flexible Server&lt;/b&gt;&#xa;&#xa;SKU: Burstable B1ms&#xa;(1 vCore, 2GB RAM)&#xa;&#xa;Tables:&#xa;• users&#xa;• properties&#xa;• leases&#xa;• payments&#xa;• maintenance_requests&#xa;• notifications&#xa;• conversations&#xa;• messages&#xa;&#xa;Cost: ~$13/month" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#4caf50;fontSize=11;align=left;spacingLeft=10;spacingTop=5;" parent="data-container" vertex="1">
+                    <mxGeometry x="40" y="60" width="300" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-redis" value="&lt;b&gt;Azure Cache for Redis&lt;/b&gt;&#xa;&#xa;SKU: Basic C0 (250MB)&#xa;&#xa;Cache Strategy:&#xa;• Property Listings&#xa;• User Sessions&#xa;• Search Results&#xa;• Frequently Accessed Data&#xa;&#xa;TTL: 5-15 minutes&#xa;Eviction: LRU&#xa;&#xa;Cost: ~$16/month" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffccbc;strokeColor=#ff5722;fontSize=11;align=left;spacingLeft=10;spacingTop=5;" parent="data-container" vertex="1">
+                    <mxGeometry x="380" y="60" width="300" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-signalr" value="&lt;b&gt;Azure SignalR Service&lt;/b&gt;&#xa;&#xa;SKU: Free Tier&#xa;Mode: Serverless&#xa;&#xa;Features:&#xa;• Real-time Notifications&#xa;• Chat Messaging&#xa;• Status Updates&#xa;• Live Updates&#xa;&#xa;Limits: 20 concurrent&#xa;20K messages/day&#xa;&#xa;Cost: $0/month" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#9c27b0;fontSize=11;align=left;spacingLeft=10;spacingTop=5;" parent="data-container" vertex="1">
+                    <mxGeometry x="720" y="60" width="300" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-blob" value="&lt;b&gt;Azure Blob Storage&lt;/b&gt;&#xa;&#xa;SKU: Standard LRS&#xa;&#xa;Lifecycle Management:&#xa;• Hot: Property Images (0-30d)&#xa;• Cool: Older Docs (30-90d)&#xa;• Archive: Historical (&gt;90d)&#xa;&#xa;Features:&#xa;• Image Optimization&#xa;• CDN Integration&#xa;• Versioning Enabled&#xa;&#xa;Cost: ~$5/month" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b3e5fc;strokeColor=#0288d1;fontSize=11;align=left;spacingLeft=10;spacingTop=5;" parent="data-container" vertex="1">
+                    <mxGeometry x="1060" y="60" width="340" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/databases/Azure_Database_PostgreSQL_Server.svg;" vertex="1" parent="data-container">
+                    <mxGeometry x="260" y="70" width="48" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/Cache_Redis_Product.svg;" vertex="1" parent="data-container">
+                    <mxGeometry x="570" y="80" width="90" height="75.6" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/web/SignalR.svg;" vertex="1" parent="data-container">
+                    <mxGeometry x="920" y="70" width="68" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/BlobBlock.svg;" vertex="1" parent="data-container">
+                    <mxGeometry x="1310" y="80" width="50" height="42" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-func-postgres" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4caf50;dashed=1;" parent="1" source="func-property" target="data-postgres" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-func-redis" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#ff5722;dashed=1;" parent="1" source="func-property" target="data-redis" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-func-signalr" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9c27b0;dashed=1;" parent="1" source="func-maintenance" target="data-signalr" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-func-blob" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#0288d1;dashed=1;" parent="1" source="18" target="data-blob" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cost-summary" value="&lt;b&gt;💰 Total Monthly Cost&lt;/b&gt;&#xa;&#xa;Low Traffic (&lt;1K users):&#xa;$34 - $69/month&#xa;&#xa;Medium Traffic (1K users):&#xa;$210 - $240/month&#xa;&#xa;High Traffic (10K+ users):&#xa;$1,600/month&#xa;&#xa;Free Tier Benefits:&#xa;• 1M Function Executions&#xa;• 1M APIM Calls&#xa;• SignalR Free Tier&#xa;• Cloudflare Free Plan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4caf50;strokeColor=#2e7d32;fontColor=#ffffff;fontSize=12;align=left;spacingLeft=15;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="1530" y="460" width="240" height="260" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-title" value="Legend" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="1540" y="920" width="240" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-http" value="HTTP/REST API" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9c27b0;fontSize=10;strokeWidth=3;" parent="1" vertex="1">
+                    <mxGeometry x="1540" y="955" width="100" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-data" value="Data Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4caf50;fontSize=10;strokeWidth=2;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="1660" y="955" width="100" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="notes" value="&lt;b&gt;Key Features:&lt;/b&gt;&#xa;✓ Auto-scaling (0 to ∞)&#xa;✓ Pay-per-execution&#xa;✓ 99.95% SLA&#xa;✓ Global distribution&#xa;✓ Built-in monitoring&#xa;✓ Serverless architecture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f9a825;fontSize=11;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="1530" y="750" width="240" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="clients-container" value="Client Applications" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fce4ec;strokeColor=#e91e63;fontSize=14;fontStyle=1;startSize=35;" parent="1" vertex="1">
+                    <mxGeometry x="37" y="1470" width="1520" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="client-web" value="Web App&#xa;(React/Vue/Angular)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#e91e63;fontSize=11;fontStyle=1" parent="clients-container" vertex="1">
+                    <mxGeometry x="40" y="50" width="280" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="client-mobile" value="Mobile App&#xa;(React Native/Flutter)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#e91e63;fontSize=11;fontStyle=1" parent="clients-container" vertex="1">
+                    <mxGeometry x="360" y="50" width="280" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="client-admin" value="Admin Portal&#xa;(Blazor/React)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#e91e63;fontSize=11;fontStyle=1" parent="clients-container" vertex="1">
+                    <mxGeometry x="680" y="50" width="280" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="client-api" value="Third-Party Integrations&#xa;(REST API)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#e91e63;fontSize=11;fontStyle=1" parent="clients-container" vertex="1">
+                    <mxGeometry x="1000" y="50" width="280" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-clients-cf" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#e91e63;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="1" source="clients-container" target="cloudflare-container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

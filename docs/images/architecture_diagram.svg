@@ -1,0 +1,149 @@
+<svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#0f172a"/>
+  
+  <!-- Title -->
+  <text x="600" y="40" font-size="28" fill="#fff" text-anchor="middle" font-weight="bold">
+    Azure Serverless Property Management System
+  </text>
+  <text x="600" y="70" font-size="14" fill="#94a3b8" text-anchor="middle">
+    Microservices Architecture - Low Cost, High Performance
+  </text>
+  
+  <!-- Cloudflare Layer -->
+  <rect x="50" y="100" width="1100" height="100" rx="10" fill="#fb923c" opacity="0.2" stroke="#fb923c" stroke-width="2"/>
+  <text x="80" y="130" font-size="18" fill="#fb923c" font-weight="bold">☁️ Cloudflare Edge</text>
+  
+  <rect x="80" y="145" width="240" height="40" rx="5" fill="#7c2d12" stroke="#fb923c"/>
+  <text x="200" y="170" font-size="12" fill="#fed7aa" text-anchor="middle">CDN + Static Assets</text>
+  
+  <rect x="340" y="145" width="240" height="40" rx="5" fill="#7c2d12" stroke="#fb923c"/>
+  <text x="460" y="170" font-size="12" fill="#fed7aa" text-anchor="middle">WAF + DDoS Protection</text>
+  
+  <rect x="600" y="145" width="240" height="40" rx="5" fill="#7c2d12" stroke="#fb923c"/>
+  <text x="720" y="170" font-size="12" fill="#fed7aa" text-anchor="middle">Global DNS Routing</text>
+  
+  <!-- Arrow down -->
+  <path d="M 600 200 L 600 240" stroke="#fb923c" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- API Management Layer -->
+  <rect x="300" y="240" width="600" height="90" rx="10" fill="#a855f7" opacity="0.2" stroke="#a855f7" stroke-width="2"/>
+  <text x="330" y="270" font-size="18" fill="#a855f7" font-weight="bold">🔐 Azure API Management (Consumption)</text>
+  <text x="330" y="295" font-size="11" fill="#e9d5ff">
+    Rate Limiting • Authentication • Caching • Analytics
+  </text>
+  <text x="330" y="315" font-size="11" fill="#e9d5ff">
+    Cost: $0-5/month (1M calls free)
+  </text>
+  
+  <!-- Arrow down to functions -->
+  <path d="M 600 330 L 600 370" stroke="#a855f7" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Function Apps Layer -->
+  <rect x="50" y="370" width="1100" height="180" rx="10" fill="#3b82f6" opacity="0.15" stroke="#3b82f6" stroke-width="2"/>
+  <text x="80" y="400" font-size="18" fill="#3b82f6" font-weight="bold">⚡ Azure Function Apps (Consumption Plan)</text>
+  
+  <!-- Property Service -->
+  <rect x="80" y="420" width="240" height="110" rx="8" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+  <text x="200" y="445" font-size="14" fill="#93c5fd" text-anchor="middle" font-weight="bold">Property Service</text>
+  <text x="105" y="470" font-size="10" fill="#dbeafe">• Create/Read/Update</text>
+  <text x="105" y="488" font-size="10" fill="#dbeafe">• Search Properties</text>
+  <text x="105" y="506" font-size="10" fill="#dbeafe">• Image Management</text>
+  
+  <!-- Billing Service -->
+  <rect x="340" y="420" width="240" height="110" rx="8" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+  <text x="460" y="445" font-size="14" fill="#93c5fd" text-anchor="middle" font-weight="bold">Billing Service</text>
+  <text x="365" y="470" font-size="10" fill="#dbeafe">• Payment Processing</text>
+  <text x="365" y="488" font-size="10" fill="#dbeafe">• Recurring Billing</text>
+  <text x="365" y="506" font-size="10" fill="#dbeafe">• Invoice Generation</text>
+  
+  <!-- Contract Service -->
+  <rect x="600" y="420" width="240" height="110" rx="8" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+  <text x="720" y="445" font-size="14" fill="#93c5fd" text-anchor="middle" font-weight="bold">Contract Service</text>
+  <text x="625" y="470" font-size="10" fill="#dbeafe">• Lease Management</text>
+  <text x="625" y="488" font-size="10" fill="#dbeafe">• Contract Documents</text>
+  <text x="625" y="506" font-size="10" fill="#dbeafe">• Renewal Tracking</text>
+  
+  <!-- Maintenance Service -->
+  <rect x="860" y="420" width="240" height="110" rx="8" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+  <text x="980" y="445" font-size="14" fill="#93c5fd" text-anchor="middle" font-weight="bold">Maintenance Service</text>
+  <text x="885" y="470" font-size="10" fill="#dbeafe">• Request Management</text>
+  <text x="885" y="488" font-size="10" fill="#dbeafe">• Technician Assignment</text>
+  <text x="885" y="506" font-size="10" fill="#dbeafe">• Status Notifications</text>
+  
+  <!-- Arrows to data layer -->
+  <path d="M 200 530 L 200 580 L 280 580" stroke="#3b82f6" stroke-width="2"/>
+  <path d="M 460 530 L 460 600 L 280 600" stroke="#3b82f6" stroke-width="2"/>
+  <path d="M 720 530 L 720 620 L 280 620" stroke="#3b82f6" stroke-width="2"/>
+  <path d="M 980 530 L 980 640 L 280 640" stroke="#3b82f6" stroke-width="2"/>
+  
+  <!-- Data Layer -->
+  <rect x="50" y="570" width="1100" height="280" rx="10" fill="#10b981" opacity="0.15" stroke="#10b981" stroke-width="2"/>
+  <text x="80" y="600" font-size="18" fill="#10b981" font-weight="bold">💾 Data &amp; Services Layer</text>
+  
+  <!-- PostgreSQL -->
+  <rect x="80" y="620" width="240" height="200" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="2"/>
+  <text x="200" y="650" font-size="14" fill="#6ee7b7" text-anchor="middle" font-weight="bold">🐘 PostgreSQL</text>
+  <text x="200" y="672" font-size="11" fill="#d1fae5" text-anchor="middle">Flexible Server</text>
+  <line x1="100" y1="685" x2="300" y2="685" stroke="#10b981" stroke-width="1"/>
+  <text x="105" y="705" font-size="10" fill="#d1fae5">SKU: Burstable B1ms</text>
+  <text x="105" y="722" font-size="10" fill="#d1fae5">• Users &amp; Roles</text>
+  <text x="105" y="739" font-size="10" fill="#d1fae5">• Properties</text>
+  <text x="105" y="756" font-size="10" fill="#d1fae5">• Leases &amp; Payments</text>
+  <text x="105" y="773" font-size="10" fill="#d1fae5">• Maintenance Requests</text>
+  <text x="105" y="795" font-size="9" fill="#6ee7b7">Cost: ~$13/month</text>
+  
+  <!-- Redis Cache -->
+  <rect x="340" y="620" width="240" height="200" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
+  <text x="460" y="650" font-size="14" fill="#fca5a5" text-anchor="middle" font-weight="bold">⚡ Redis Cache</text>
+  <text x="460" y="672" font-size="11" fill="#fee2e2" text-anchor="middle">Managed Redis</text>
+  <line x1="360" y1="685" x2="560" y2="685" stroke="#ef4444" stroke-width="1"/>
+  <text x="365" y="705" font-size="10" fill="#fee2e2">SKU: Basic C0 (250MB)</text>
+  <text x="365" y="722" font-size="10" fill="#fee2e2">• Property Listings</text>
+  <text x="365" y="739" font-size="10" fill="#fee2e2">• User Sessions</text>
+  <text x="365" y="756" font-size="10" fill="#fee2e2">• Search Results</text>
+  <text x="365" y="773" font-size="10" fill="#fee2e2">• TTL: 5-15 minutes</text>
+  <text x="365" y="795" font-size="9" fill="#fca5a5">Cost: ~$16/month</text>
+  
+  <!-- SignalR -->
+  <rect x="600" y="620" width="240" height="200" rx="8" fill="#581c87" stroke="#a855f7" stroke-width="2"/>
+  <text x="720" y="650" font-size="14" fill="#d8b4fe" text-anchor="middle" font-weight="bold">📡 SignalR Service</text>
+  <text x="720" y="672" font-size="11" fill="#f3e8ff" text-anchor="middle">Serverless Mode</text>
+  <line x1="620" y1="685" x2="820" y2="685" stroke="#a855f7" stroke-width="1"/>
+  <text x="625" y="705" font-size="10" fill="#f3e8ff">SKU: Free Tier</text>
+  <text x="625" y="722" font-size="10" fill="#f3e8ff">• Real-time Notifications</text>
+  <text x="625" y="739" font-size="10" fill="#f3e8ff">• Chat Messaging</text>
+  <text x="625" y="756" font-size="10" fill="#f3e8ff">• Status Updates</text>
+  <text x="625" y="773" font-size="10" fill="#f3e8ff">• 20 concurrent users</text>
+  <text x="625" y="795" font-size="9" fill="#d8b4fe">Cost: $0/month (Free)</text>
+  
+  <!-- Blob Storage -->
+  <rect x="860" y="620" width="240" height="200" rx="8" fill="#0c4a6e" stroke="#38bdf8" stroke-width="2"/>
+  <text x="980" y="650" font-size="14" fill="#7dd3fc" text-anchor="middle" font-weight="bold">📦 Blob Storage</text>
+  <text x="980" y="672" font-size="11" fill="#e0f2fe" text-anchor="middle">Lifecycle Management</text>
+  <line x1="880" y1="685" x2="1080" y2="685" stroke="#38bdf8" stroke-width="1"/>
+  <text x="885" y="705" font-size="10" fill="#e0f2fe">SKU: Standard LRS</text>
+  <text x="885" y="722" font-size="10" fill="#e0f2fe">• Hot: Property Images</text>
+  <text x="885" y="739" font-size="10" fill="#e0f2fe">• Cool: Older Documents</text>
+  <text x="885" y="756" font-size="10" fill="#e0f2fe">• Archive: Historical Data</text>
+  <text x="885" y="773" font-size="10" fill="#e0f2fe">• Lifecycle Policies</text>
+  <text x="885" y="795" font-size="9" fill="#7dd3fc">Cost: ~$5/month</text>
+  
+  <!-- Cost Summary Box -->
+  <rect x="950" y="100" width="200" height="85" rx="8" fill="#166534" stroke="#22c55e" stroke-width="2"/>
+  <text x="1050" y="125" font-size="14" fill="#86efac" text-anchor="middle" font-weight="bold">💰 Monthly Cost</text>
+  <line x1="970" y1="135" x2="1130" y2="135" stroke="#22c55e" stroke-width="1"/>
+  <text x="975" y="155" font-size="12" fill="#dcfce7">Low Traffic:</text>
+  <text x="1120" y="155" font-size="12" fill="#86efac" text-anchor="end" font-weight="bold">$34-69</text>
+  <text x="975" y="175" font-size="10" fill="#dcfce7">1M free executions</text>
+  
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#a855f7"/>
+    </marker>
+  </defs>
+  
+  <!-- Legend -->
+  <text x="50" y="880" font-size="10" fill="#94a3b8">💡 Consumption-based pricing • 99.95% SLA • Auto-scaling • Pay-per-execution</text>
+</svg>

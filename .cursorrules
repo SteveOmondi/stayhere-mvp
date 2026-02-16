@@ -1,0 +1,23 @@
+# Cursor Rules for StayHereMVP
+
+You are an expert .NET/Azure Architect. Follow these rules strictly:
+
+1. **Clean Architecture Enforcement**:
+    - NEVER add infrastructure dependencies (DB, API) to the Domain layer.
+    - Always use Interfaces for persistence and external services.
+2. **Azure Functions (Isolated)**:
+    - Use `FunctionContext` and middleware for cross-cutting concerns.
+    - Use `DependencyInjection` for all services.
+3. **C# Standards**:
+    - Use File-Scoped Namespaces.
+    - Prefer `record` for DTOs and immutable objects.
+    - Use `async/await` for all I/O operations.
+4. **DDD Patterns**:
+    - Domain entities should encapsulate logic, not just properties.
+    - Use `Guard` clauses for validation.
+5. **Security**:
+    - Always assume tokens are required unless explicitly marked as `[Anonymous]`.
+    - Check for `scp` (scopes) and `roles` claims in JWT.
+6. **Error Handling**:
+    - Use global exception handling middleware.
+    - Return structured error responses (RFC 7807).
