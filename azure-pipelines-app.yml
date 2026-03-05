@@ -1,0 +1,31 @@
+trigger:
+  branches:
+    include: [main]
+  paths:
+    include: [src/*]
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    version: '8.x'
+
+- script: dotnet build src/StayHere.sln --configuration Release
+  displayName: 'Build Solution'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'src/FunctionApps/**/*.csproj'
+    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)'
+    zipAfterPublish: true
+
+- task: AzureFunctionApp@2
+  inputs:
+    azureSubscription: 'Azure-StayHere-Conn'
+    appType: 'functionAppLinux'
+    appName: 'func-dev-auth' # Dynamicize if possible
+    package: '$(Build.ArtifactStagingDirectory)/**/*.zip'

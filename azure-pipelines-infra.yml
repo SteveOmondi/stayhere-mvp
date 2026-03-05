@@ -1,0 +1,29 @@
+trigger:
+  branches:
+    include: [main]
+  paths:
+    include: [infrastructure/terraform/*]
+
+variables:
+- group: StayHere-Variables
+
+stages:
+- stage: TerraformPlan
+  jobs:
+  - job: Plan
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+    - task: TerraformTaskV4@4
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: 'Azure-StayHere-Conn'
+        backendAzureRmResourceGroupName: 'rg-terraform-mgmt'
+        backendAzureRmStorageAccountName: 'ststayheretfstate'
+        backendAzureRmContainerName: 'tfstate'
+        backendAzureRmKey: 'terraform.tfstate'
+    - task: TerraformTaskV4@4
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
