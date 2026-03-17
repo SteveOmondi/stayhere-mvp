@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using StayHere.Application.Common.Interfaces;
-using StayHere.Application.Properties.Services;
+using StayHere.Application.PropertyOwners.Services;
 using StayHere.Domain.Repositories;
 using StayHere.Infrastructure.Persistence;
 
@@ -24,10 +24,14 @@ var host = new HostBuilder()
         services.AddDbContext<StayHereDbContext>(options =>
             options.UseNpgsql(connectionString));
 
+        services.AddScoped<IPropertyOwnerRepository, EfPropertyOwnerRepository>();
+        services.AddScoped<IWalletRepository, EfWalletRepository>();
+        services.AddScoped<IAgentRepository, EfAgentRepository>();
+        services.AddScoped<ICaretakerRepository, EfCaretakerRepository>();
         services.AddScoped<IPropertyRepository, EfPropertyRepository>();
         services.AddScoped<IListingRepository, EfListingRepository>();
-        services.AddScoped<IPropertyService, PropertyService>();
-        services.AddScoped<IListingService, ListingService>();
+
+        services.AddScoped<IPropertyOwnerService, PropertyOwnerService>();
 
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();

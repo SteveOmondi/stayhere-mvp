@@ -1,44 +1,23 @@
 namespace StayHere.Domain.Entities;
 
+/// <summary>
+/// Represents a property (building/complex) e.g. "Fairdeal Apartments" with multiple units.
+/// </summary>
 public class Property
 {
     public Guid Id { get; set; }
+    public string PropertyCode { get; set; } = string.Empty;
+    /// <summary>Building or complex name e.g. "Fairdeal Apartments"</summary>
+    public string BuildingName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    /// <summary>Total number of units/listings in this property</summary>
+    public int TotalUnits { get; set; }
+    /// <summary>Number of floors in the building</summary>
+    public int TotalFloors { get; set; }
+
+    public PropertyLocation Location { get; set; } = null!;
     public Guid OwnerId { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public Address Address { get; set; } = null!;
-    public PropertyStatus Status { get; set; }
-    public PropertyType Type { get; set; }
-    public decimal MonthlyRent { get; set; }
-    public string Currency { get; set; } = "KES";
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-}
-
-public record Address(
-    string Street,
-    string City,
-    string State,
-    string PostalCode,
-    string Country,
-    double? Latitude = null,
-    double? Longitude = null
-);
-
-public enum PropertyStatus
-{
-    Draft,
-    PendingVerification,
-    Published,
-    Archived,
-    Deleted
-}
-
-public enum PropertyType
-{
-    Apartment,
-    House,
-    Studio,
-    Commercial,
-    Land
 }

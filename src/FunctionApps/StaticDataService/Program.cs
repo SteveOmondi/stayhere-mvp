@@ -2,8 +2,8 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using StayHere.Application.Categories.Services;
 using StayHere.Application.Common.Interfaces;
-using StayHere.Application.Properties.Services;
 using StayHere.Domain.Repositories;
 using StayHere.Infrastructure.Persistence;
 
@@ -24,10 +24,9 @@ var host = new HostBuilder()
         services.AddDbContext<StayHereDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        services.AddScoped<IPropertyRepository, EfPropertyRepository>();
-        services.AddScoped<IListingRepository, EfListingRepository>();
-        services.AddScoped<IPropertyService, PropertyService>();
-        services.AddScoped<IListingService, ListingService>();
+        services.AddScoped<ICategoryRepository, EfCategoryRepository>();
+
+        services.AddScoped<ICategoryService, CategoryService>();
 
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();

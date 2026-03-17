@@ -8,119 +8,153 @@ namespace StayHere.Application.Properties.Services;
 public class PropertyService : IPropertyService
 {
     private readonly IPropertyRepository _propertyRepository;
-    private readonly IPropertyAttributeRepository _attributeRepository;
-    private readonly ICacheService _cacheService;
 
-    public PropertyService(
-        IPropertyRepository propertyRepository,
-        IPropertyAttributeRepository attributeRepository,
-        ICacheService cacheService)
+    public PropertyService(IPropertyRepository propertyRepository)
     {
         _propertyRepository = propertyRepository;
-        _attributeRepository = attributeRepository;
-        _cacheService = cacheService;
     }
 
     public async Task<PropertyDto> CreatePropertyAsync(Guid ownerId, CreatePropertyRequest request)
     {
+        var propertyCode = await _propertyRepository.GeneratePropertyCodeAsync();
+
         var property = new Property
         {
             Id = Guid.NewGuid(),
-            OwnerId = ownerId,
-            Title = request.Title,
+            PropertyCode = propertyCode,
+            BuildingName = request.BuildingName,
             Description = request.Description,
-            Address = new Address(
-                request.Address.Street,
-                request.Address.City,
-                request.Address.State,
-                request.Address.PostalCode,
-                request.Address.Country
+            TotalUnits = request.TotalUnits,
+            TotalFloors = request.TotalFloors,
+            Location = new PropertyLocation(
+                request.Location.Country,
+                request.Location.County,
+                request.Location.City,
+                request.Location.Suburb,
+                request.Location.Street,
+                request.Location.Latitude,
+                request.Location.Longitude
             ),
-            Status = PropertyStatus.PendingVerification,
-            Type = MapPropertyType(request.Type),
-            MonthlyRent = request.MonthlyRent,
+            OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
         await _propertyRepository.CreateAsync(property);
-
-        var attributes = new PropertyAttribute
-        {
-            PropertyId = property.Id.ToString(),
-            Attributes = request.Attributes ?? new(),
-            Amenities = request.Amenities ?? new()
-        };
-
-        await _attributeRepository.UpsertAsync(attributes);
-
-        return MapToDto(property, attributes);
+        return MapToDto(property);
     }
 
-    public async Task<PropertyDto?> GetPropertyAsync(Guid id)
+    public async Task<PropertyDto?> GetPropertyByIdAsync(Guid id)
+    {
+        var property = await _propertyRepository.GetByIdAsync(id);
+        return property == null ? null : MapToDto(property);
+    }
+
+    public async Task<PropertyDto?> GetPropertyByCodeAsync(string propertyCode)
+    {
+        var property = await _propertyRepository.GetByPropertyCodeAsync(propertyCode);
+        return property == null ? null : MapToDto(property);
+    }
+
+    public async Task<PaginatedResult<PropertyListDto>> GetAllPropertiesAsync(int page = 1, int pageSize = 20)
+    {
+        var properties = await _propertyRepository.GetAllAsync(page, pageSize);
+        var totalCount = await _propertyRepository.GetTotalCountAsync();
+        return CreatePaginatedResult(properties, totalCount, page, pageSize);
+    }
+
+    public async Task<PaginatedResult<PropertyListDto>> GetPropertiesByOwnerAsync(Guid ownerId, int page = 1, int pageSize = 20)
+    {
+        var properties = await _propertyRepository.GetByOwnerIdAsync(ownerId);
+        var list = properties.ToList();
+        var paged = list.Skip((page - 1) * pageSize).Take(pageSize);
+        return CreatePaginatedResult(paged, list.Count, page, pageSize);
+    }
+
+    public async Task<PropertyDto?> UpdatePropertyAsync(Guid id, Guid requesterId, UpdatePropertyRequest request)
     {
         var property = await _propertyRepository.GetByIdAsync(id);
         if (property == null) return null;
 
-        var attributes = await _attributeRepository.GetByPropertyIdAsync(id);
-        return MapToDto(property, attributes);
+        if (property.OwnerId != requesterId)
+            throw new UnauthorizedAccessException("You don't have permission to update this property");
+
+        if (request.BuildingName != null) property.BuildingName = request.BuildingName;
+        if (request.Description != null) property.Description = request.Description;
+        if (request.TotalUnits.HasValue) property.TotalUnits = request.TotalUnits.Value;
+        if (request.TotalFloors.HasValue) property.TotalFloors = request.TotalFloors.Value;
+        if (request.Location != null)
+        {
+            property.Location = new PropertyLocation(
+                request.Location.Country,
+                request.Location.County,
+                request.Location.City,
+                request.Location.Suburb,
+                request.Location.Street,
+                request.Location.Latitude,
+                request.Location.Longitude
+            );
+        }
+        property.UpdatedAt = DateTime.UtcNow;
+
+        await _propertyRepository.UpdateAsync(property);
+        return MapToDto(property);
     }
 
-    public async Task<IEnumerable<PropertyDto>> GetOwnerPortfolioAsync(Guid ownerId)
+    public async Task<bool> DeletePropertyAsync(Guid id, Guid requesterId)
     {
-        var cacheKey = $"portfolio_{ownerId}";
-        var cachedPortfolio = await _cacheService.GetAsync<IEnumerable<PropertyDto>>(cacheKey);
-        
-        if (cachedPortfolio != null)
-        {
-            return cachedPortfolio;
-        }
+        var property = await _propertyRepository.GetByIdAsync(id);
+        if (property == null) return false;
 
-        var properties = await _propertyRepository.GetByOwnerIdAsync(ownerId);
-        var dtos = new List<PropertyDto>();
+        if (property.OwnerId != requesterId)
+            throw new UnauthorizedAccessException("Only the owner can delete a property");
 
-        foreach (var property in properties)
-        {
-            var attributes = await _attributeRepository.GetByPropertyIdAsync(property.Id);
-            dtos.Add(MapToDto(property, attributes));
-        }
-
-        await _cacheService.SetAsync(cacheKey, dtos, TimeSpan.FromMinutes(30));
-        
-        return dtos;
+        await _propertyRepository.DeleteAsync(id);
+        return true;
     }
 
-    private PropertyDto MapToDto(Property property, PropertyAttribute? attributes)
+    private static PropertyDto MapToDto(Property property)
     {
         return new PropertyDto(
             property.Id,
-            property.OwnerId,
-            property.Title,
+            property.PropertyCode,
+            property.BuildingName,
             property.Description,
-            new AddressDto(
-                property.Address.Street,
-                property.Address.City,
-                property.Address.State,
-                property.Address.PostalCode,
-                property.Address.Country
+            property.TotalUnits,
+            property.TotalFloors,
+            new LocationDto(
+                property.Location.Country,
+                property.Location.County,
+                property.Location.City,
+                property.Location.Suburb,
+                property.Location.Street,
+                property.Location.Latitude,
+                property.Location.Longitude
             ),
-            property.Status.ToString(),
-            property.Type.ToString(),
-            property.MonthlyRent,
-            property.Currency,
-            attributes?.Attributes ?? new(),
-            attributes?.Amenities ?? new(),
-            attributes?.Images.Select(i => i.Url).ToList() ?? new()
+            property.OwnerId,
+            property.CreatedAt,
+            property.UpdatedAt
         );
     }
 
-    private PropertyType MapPropertyType(PropertyTypeDto type) => type switch
+    private static PropertyListDto MapToListDto(Property property)
     {
-        PropertyTypeDto.Apartment => PropertyType.Apartment,
-        PropertyTypeDto.House => PropertyType.House,
-        PropertyTypeDto.Studio => PropertyType.Studio,
-        PropertyTypeDto.Commercial => PropertyType.Commercial,
-        PropertyTypeDto.Land => PropertyType.Land,
-        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
-    };
+        return new PropertyListDto(
+            property.Id,
+            property.PropertyCode,
+            property.BuildingName,
+            property.TotalUnits,
+            property.TotalFloors,
+            property.Location.City,
+            property.Location.County
+        );
+    }
+
+    private static PaginatedResult<PropertyListDto> CreatePaginatedResult(
+        IEnumerable<Property> properties, int totalCount, int page, int pageSize)
+    {
+        var items = properties.Select(MapToListDto);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        return new PaginatedResult<PropertyListDto>(items, totalCount, page, pageSize, totalPages);
+    }
 }
