@@ -27,3 +27,30 @@ stages:
         provider: 'azurerm'
         command: 'plan'
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
+
+- stage: TerraformApply
+  dependsOn: TerraformPlan
+  condition: succeeded('TerraformPlan')
+  jobs:
+  - deployment: Apply
+    pool: { vmImage: 'ubuntu-latest' }
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          - task: TerraformTaskV4@4
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: 'Azure-StayHere-Conn'
+              backendAzureRmResourceGroupName: 'rg-terraform-mgmt'
+              backendAzureRmStorageAccountName: 'ststayheretfstate'
+              backendAzureRmContainerName: 'tfstate'
+              backendAzureRmKey: 'terraform.tfstate'
+          - task: TerraformTaskV4@4
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              environmentServiceNameAzureRM: 'Azure-StayHere-Conn'

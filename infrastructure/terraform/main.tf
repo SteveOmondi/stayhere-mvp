@@ -49,3 +49,17 @@ module "compute" {
   location    = azurerm_resource_group.main.location
   environment = var.environment
 }
+
+# APIM Module
+module "apim" {
+  source      = "./modules/apim"
+  rg_name     = azurerm_resource_group.main.name
+  location    = azurerm_resource_group.main.location
+  environment = var.environment
+
+  auth_function_host          = module.compute.auth_function_host
+  property_function_host      = module.compute.property_function_host
+  customer_function_host      = module.compute.customer_function_host
+  propertyowner_function_host = module.compute.propertyowner_function_host
+  staticdata_function_host    = module.compute.staticdata_function_host
+}

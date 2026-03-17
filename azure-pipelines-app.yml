@@ -12,20 +12,97 @@ steps:
   inputs:
     version: '8.x'
 
-- script: dotnet build src/StayHere.sln --configuration Release
+- script: dotnet build StayHere.sln --configuration Release
   displayName: 'Build Solution'
 
 - task: DotNetCoreCLI@2
+  displayName: 'Run Unit Tests'
+  inputs:
+    command: 'test'
+    projects: 'tests/**/*.csproj'
+    arguments: '--configuration Release'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish AuthService'
   inputs:
     command: 'publish'
     publishWebProjects: false
-    projects: 'src/FunctionApps/**/*.csproj'
-    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)'
+    projects: 'src/FunctionApps/AuthService/StayHere.AuthService.csproj'
+    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/AuthService'
+    zipAfterPublish: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish PropertyService'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'src/FunctionApps/PropertyService/StayHere.PropertyService.csproj'
+    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/PropertyService'
+    zipAfterPublish: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish CustomerService'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'src/FunctionApps/CustomerService/StayHere.CustomerService.csproj'
+    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/CustomerService'
+    zipAfterPublish: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish PropertyOwnerService'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'src/FunctionApps/PropertyOwnerService/StayHere.PropertyOwnerService.csproj'
+    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/PropertyOwnerService'
+    zipAfterPublish: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish StaticDataService'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'src/FunctionApps/StaticDataService/StayHere.StaticDataService.csproj'
+    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/StaticDataService'
     zipAfterPublish: true
 
 - task: AzureFunctionApp@2
+  displayName: 'Deploy AuthService'
   inputs:
     azureSubscription: 'Azure-StayHere-Conn'
     appType: 'functionAppLinux'
-    appName: 'func-dev-auth' # Dynamicize if possible
-    package: '$(Build.ArtifactStagingDirectory)/**/*.zip'
+    appName: 'func-dev-auth'
+    package: '$(Build.ArtifactStagingDirectory)/AuthService/**/*.zip'
+
+- task: AzureFunctionApp@2
+  displayName: 'Deploy PropertyService'
+  inputs:
+    azureSubscription: 'Azure-StayHere-Conn'
+    appType: 'functionAppLinux'
+    appName: 'func-dev-property'
+    package: '$(Build.ArtifactStagingDirectory)/PropertyService/**/*.zip'
+
+- task: AzureFunctionApp@2
+  displayName: 'Deploy CustomerService'
+  inputs:
+    azureSubscription: 'Azure-StayHere-Conn'
+    appType: 'functionAppLinux'
+    appName: 'func-dev-customer'
+    package: '$(Build.ArtifactStagingDirectory)/CustomerService/**/*.zip'
+
+- task: AzureFunctionApp@2
+  displayName: 'Deploy PropertyOwnerService'
+  inputs:
+    azureSubscription: 'Azure-StayHere-Conn'
+    appType: 'functionAppLinux'
+    appName: 'func-dev-propertyowner'
+    package: '$(Build.ArtifactStagingDirectory)/PropertyOwnerService/**/*.zip'
+
+- task: AzureFunctionApp@2
+  displayName: 'Deploy StaticDataService'
+  inputs:
+    azureSubscription: 'Azure-StayHere-Conn'
+    appType: 'functionAppLinux'
+    appName: 'func-dev-staticdata'
+    package: '$(Build.ArtifactStagingDirectory)/StaticDataService/**/*.zip'
