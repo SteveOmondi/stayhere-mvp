@@ -12,6 +12,7 @@ stages:
   jobs:
   - job: Plan
     pool: { vmImage: 'ubuntu-latest' }
+    timeoutInMinutes: 60
     steps:
     - task: TerraformInstaller@1
       displayName: 'Install Latest Terraform'
@@ -39,6 +40,9 @@ stages:
         workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
         commandOptions: '-out tfplan'
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
+      env:
+        MONGODB_ATLAS_PUBLIC_KEY: $(mongodb_atlas_public_key)
+        MONGODB_ATLAS_PRIVATE_KEY: $(mongodb_atlas_private_key)
 
 - stage: TerraformApply
   dependsOn: TerraformPlan
@@ -47,6 +51,7 @@ stages:
   - deployment: Apply
     pool: { vmImage: 'ubuntu-latest' }
     environment: 'production'
+    timeoutInMinutes: 120
     strategy:
       runOnce:
         deploy:
@@ -78,3 +83,6 @@ stages:
               workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
               commandOptions: 'tfplan'
               environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
+            env:
+              MONGODB_ATLAS_PUBLIC_KEY: $(mongodb_atlas_public_key)
+              MONGODB_ATLAS_PRIVATE_KEY: $(mongodb_atlas_private_key)
