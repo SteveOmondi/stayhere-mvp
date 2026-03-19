@@ -13,7 +13,7 @@ stages:
   - job: Plan
     pool: { vmImage: 'ubuntu-latest' }
     steps:
-    - task: TerraformTaskV4@4
+    - task: TerraformTask@5
       inputs:
         provider: 'azurerm'
         command: 'init'
@@ -22,7 +22,7 @@ stages:
         backendAzureRmStorageAccountName: 'ststayheretfstate'
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'terraform.tfstate'
-    - task: TerraformTaskV4@4
+    - task: TerraformTask@5
       inputs:
         provider: 'azurerm'
         command: 'plan'
@@ -40,7 +40,7 @@ stages:
         deploy:
           steps:
           - checkout: self
-          - task: TerraformTaskV4@4
+          - task: TerraformTask@5
             inputs:
               provider: 'azurerm'
               command: 'init'
@@ -49,7 +49,7 @@ stages:
               backendAzureRmStorageAccountName: 'ststayheretfstate'
               backendAzureRmContainerName: 'tfstate'
               backendAzureRmKey: 'terraform.tfstate'
-          - task: TerraformTaskV4@4
+          - task: TerraformTask@5
             inputs:
               provider: 'azurerm'
               command: 'apply'
