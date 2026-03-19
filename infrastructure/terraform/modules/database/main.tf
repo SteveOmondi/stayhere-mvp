@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    mongodbatlas = {
+      source  = "mongodb/mongodbatlas"
+      version = "~> 1.10"
+    }
+  }
+}
+
 # PostgreSQL Flexible Server
 resource "azurerm_postgresql_flexible_server" "main" {
   name                   = "psql-${var.environment}-stayhere"
