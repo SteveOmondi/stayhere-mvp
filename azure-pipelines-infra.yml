@@ -13,7 +13,13 @@ stages:
   - job: Plan
     pool: { vmImage: 'ubuntu-latest' }
     steps:
+    - task: TerraformInstaller@1
+      displayName: 'Install Latest Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
     - task: TerraformTask@5
+      displayName: 'Terraform Init'
       inputs:
         provider: 'azurerm'
         command: 'init'
@@ -22,15 +28,19 @@ stages:
         backendAzureRmStorageAccountName: 'ststayheretfstate'
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'terraform.tfstate'
+
     - task: TerraformTask@5
+      name: terraformPlan
+      displayName: 'Terraform Plan'
       inputs:
         provider: 'azurerm'
         command: 'plan'
+        commandOptions: '-out tfplan'
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
 
 - stage: TerraformApply
   dependsOn: TerraformPlan
-  condition: succeeded('TerraformPlan')
+  condition: and(succeeded('TerraformPlan'), eq(dependencies.TerraformPlan.outputs['Plan.terraformPlan.changesPresent'], 'true'))
   jobs:
   - deployment: Apply
     pool: { vmImage: 'ubuntu-latest' }
@@ -40,7 +50,14 @@ stages:
         deploy:
           steps:
           - checkout: self
+
+          - task: TerraformInstaller@1
+            displayName: 'Install Latest Terraform'
+            inputs:
+              terraformVersion: 'latest'
+
           - task: TerraformTask@5
+            displayName: 'Terraform Init'
             inputs:
               provider: 'azurerm'
               command: 'init'
@@ -49,8 +66,11 @@ stages:
               backendAzureRmStorageAccountName: 'ststayheretfstate'
               backendAzureRmContainerName: 'tfstate'
               backendAzureRmKey: 'terraform.tfstate'
+
           - task: TerraformTask@5
+            displayName: 'Terraform Apply'
             inputs:
               provider: 'azurerm'
               command: 'apply'
+              commandOptions: 'tfplan'
               environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
