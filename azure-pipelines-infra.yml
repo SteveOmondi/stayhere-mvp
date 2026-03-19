@@ -23,6 +23,7 @@ stages:
       inputs:
         provider: 'azurerm'
         command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
         backendServiceArm: 'Azure-StayHere-Conn'
         backendAzureRmResourceGroupName: 'rg-terraform-mgmt'
         backendAzureRmStorageAccountName: 'ststayheretfstate'
@@ -35,6 +36,7 @@ stages:
       inputs:
         provider: 'azurerm'
         command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
         commandOptions: '-out tfplan'
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
 
@@ -61,6 +63,7 @@ stages:
             inputs:
               provider: 'azurerm'
               command: 'init'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
               backendServiceArm: 'Azure-StayHere-Conn'
               backendAzureRmResourceGroupName: 'rg-terraform-mgmt'
               backendAzureRmStorageAccountName: 'ststayheretfstate'
@@ -72,5 +75,6 @@ stages:
             inputs:
               provider: 'azurerm'
               command: 'apply'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
               commandOptions: 'tfplan'
               environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
