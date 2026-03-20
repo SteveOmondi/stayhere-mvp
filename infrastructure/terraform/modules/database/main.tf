@@ -42,7 +42,7 @@ resource "mongodbatlas_cluster" "main" {
   provider_name               = "TENANT"
   backing_provider_name       = "AZURE"
   provider_instance_size_name = "M0"
-  provider_region_name        = "WESTERN_EUROPE" # Atlas region name for West Europe
+  provider_region_name        = "EUROPE_NORTH" # Atlas region name for North Europe
 }
 
 resource "mongodbatlas_database_user" "main" {
