@@ -33,27 +33,16 @@ resource "mongodbatlas_project" "main" {
   org_id = var.org_id
 }
 
-# MongoDB Atlas Cluster
+# MongoDB Atlas Cluster (Shared M0 Tier)
 resource "mongodbatlas_cluster" "main" {
   project_id   = mongodbatlas_project.main.id
   name         = "atlas-${var.environment}-stayhere"
   cluster_type = "REPLICASET"
-  
-  replication_specs {
-    num_shards = 1
-    regions_config {
-      region_name     = "WESTERN_EUROPE" # Atlas region
-      electable_nodes = 3
-      priority        = 7
-      read_only_nodes = 0
-    }
-  }
 
-  cloud_backup      = true
-  auto_scaling_compute_enabled = false
-  provider_name     = "TENANT"
-  backing_provider_name = "AZURE"
-  provider_instance_size_name = "M0" # Free tier for development
+  provider_name               = "TENANT"
+  backing_provider_name       = "AZURE"
+  provider_instance_size_name = "M0"
+  provider_region_name        = "WESTERN_EUROPE" # Atlas region name for West Europe
 }
 
 resource "mongodbatlas_database_user" "main" {
