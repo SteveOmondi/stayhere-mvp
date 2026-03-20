@@ -14,7 +14,7 @@ resource "azurerm_api_management_policy" "global" {
   xml_content = <<XML
 <policies>
     <inbound>
-        <cors allow-credentials="true">
+        <cors>
             <allowed-origins>
                 <origin>*</origin>
             </allowed-origins>
@@ -36,7 +36,6 @@ resource "azurerm_api_management_policy" "global" {
             <openid-config url="https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration" />
             <required-claims>
                 <claim name="aud">
-                    <!-- Update with actual audience/client ID later -->
                     <value>YOUR_CLIENT_ID_HERE</value>
                 </claim>
             </required-claims>

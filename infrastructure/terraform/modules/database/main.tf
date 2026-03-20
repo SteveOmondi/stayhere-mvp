@@ -50,7 +50,7 @@ resource "mongodbatlas_cluster" "main" {
   }
 
   cloud_backup      = true
-  auto_scaling_compute_enabled = true
+  auto_scaling_compute_enabled = false
   provider_name     = "TENANT"
   backing_provider_name = "AZURE"
   provider_instance_size_name = "M0" # Free tier for development
@@ -58,7 +58,7 @@ resource "mongodbatlas_cluster" "main" {
 
 resource "mongodbatlas_database_user" "main" {
   username           = "dbuser"
-  password           = "password123" # Use sensitive variables in production
+  password           = "StayHere_Secure_2026!" # Complexity requirement fix
   project_id         = mongodbatlas_project.main.id
   auth_database_name = "admin"
 

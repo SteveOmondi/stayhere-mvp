@@ -13,7 +13,7 @@ variable "environment" {
 variable "location" {
   type        = string
   description = "Azure region for resources"
-  default     = "East US"
+  default     = "East US 2"
 }
 
 variable "mongodb_atlas_public_key" {
