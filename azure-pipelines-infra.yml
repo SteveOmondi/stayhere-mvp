@@ -38,14 +38,12 @@ stages:
         provider: 'azurerm'
         command: 'plan'
         workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
-        commandOptions: '-out tfplan'
+        commandOptions: >-
+          -out tfplan
+          -var="mongodb_atlas_public_key=$(MONGODB_ATLAS_PUBLIC_KEY)"
+          -var="mongodb_atlas_private_key=$(MONGODB_ATLAS_PRIVATE_KEY)"
+          -var="mongodb_atlas_org_id=$(MONGODB_ATLAS_ORG_ID)"
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
-      env:
-        MONGODB_ATLAS_PUBLIC_KEY: $(MONGODB_ATLAS_PUBLIC_KEY)
-        MONGODB_ATLAS_PRIVATE_KEY: $(MONGODB_ATLAS_PRIVATE_KEY)
-        TF_VAR_mongodb_atlas_public_key: $(MONGODB_ATLAS_PUBLIC_KEY)
-        TF_VAR_mongodb_atlas_private_key: $(MONGODB_ATLAS_PRIVATE_KEY)
-        TF_VAR_mongodb_atlas_org_id: $(MONGODB_ATLAS_ORG_ID)
 
 - stage: TerraformApply
   dependsOn: TerraformPlan
@@ -86,9 +84,3 @@ stages:
               workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
               commandOptions: 'tfplan'
               environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
-            env:
-              MONGODB_ATLAS_PUBLIC_KEY: $(MONGODB_ATLAS_PUBLIC_KEY)
-              MONGODB_ATLAS_PRIVATE_KEY: $(MONGODB_ATLAS_PRIVATE_KEY)
-              TF_VAR_mongodb_atlas_public_key: $(MONGODB_ATLAS_PUBLIC_KEY)
-              TF_VAR_mongodb_atlas_private_key: $(MONGODB_ATLAS_PRIVATE_KEY)
-              TF_VAR_mongodb_atlas_org_id: $(MONGODB_ATLAS_ORG_ID)
