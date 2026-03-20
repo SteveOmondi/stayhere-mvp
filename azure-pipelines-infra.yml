@@ -45,6 +45,13 @@ stages:
           -var="mongodb_atlas_org_id=$(MONGODB_ATLAS_ORG_ID)"
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
 
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Terraform Plan'
+      inputs:
+        targetPath: '$(System.DefaultWorkingDirectory)/infrastructure/terraform/tfplan'
+        artifact: 'terraform-plan'
+        publishLocation: 'pipeline'
+
 - stage: TerraformApply
   dependsOn: TerraformPlan
   condition: and(succeeded('TerraformPlan'), eq(dependencies.TerraformPlan.outputs['Plan.terraformPlan.changesPresent'], 'true'))
@@ -75,6 +82,13 @@ stages:
               backendAzureRmStorageAccountName: 'ststayheretfstate'
               backendAzureRmContainerName: 'tfstate'
               backendAzureRmKey: 'terraform.tfstate'
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Terraform Plan'
+            inputs:
+              buildType: 'current'
+              artifactName: 'terraform-plan'
+              targetPath: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
 
           - task: TerraformTask@5
             displayName: 'Terraform Apply'
