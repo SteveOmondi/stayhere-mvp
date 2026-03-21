@@ -107,7 +107,7 @@ resource "azurerm_linux_function_app" "staticdata" {
 }
 
 resource "azurerm_storage_account" "main" {
-  name                     = "st${var.environment}stayhere"
+  name                     = "st${var.environment}${var.suffix}"
   resource_group_name      = var.rg_name
   location                 = var.location
   account_tier             = "Standard"
@@ -123,6 +123,10 @@ variable "location" {
 }
 
 variable "environment" {
+  type = string
+}
+
+variable "suffix" {
   type = string
 }
 

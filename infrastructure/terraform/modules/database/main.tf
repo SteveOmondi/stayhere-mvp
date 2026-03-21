@@ -9,7 +9,7 @@ terraform {
 
 # PostgreSQL Flexible Server
 resource "azurerm_postgresql_flexible_server" "main" {
-  name                   = "psql-${var.environment}-stayhere"
+  name                   = "psql-${var.environment}-stay-${var.suffix}"
   resource_group_name    = var.rg_name
   location               = var.location
   version                = "15"
