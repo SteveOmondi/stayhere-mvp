@@ -1,5 +1,5 @@
 resource "azurerm_api_management" "main" {
-  name                = "apim-${var.environment}-stayhere"
+  name                = "apim-${var.environment}-${var.suffix}"
   location            = var.location
   resource_group_name = var.rg_name
   publisher_name      = var.publisher_name

@@ -1,5 +1,5 @@
 resource "azurerm_key_vault" "main" {
-  name                        = "kv-${var.environment}-stayhere"
+  name                        = "kv-${var.environment}-${var.suffix}"
   location                    = var.location
   resource_group_name         = var.rg_name
   enabled_for_disk_encryption = true
@@ -8,6 +8,10 @@ resource "azurerm_key_vault" "main" {
   purge_protection_enabled    = false
 
   sku_name = "standard"
+}
+
+variable "suffix" {
+  type = string
 }
 
 data "azurerm_client_config" "current" {}

@@ -10,6 +10,10 @@ variable "environment" {
   type = string
 }
 
+variable "suffix" {
+  type = string
+}
+
 variable "publisher_name" {
   type    = string
   default = "StayHere MVP"

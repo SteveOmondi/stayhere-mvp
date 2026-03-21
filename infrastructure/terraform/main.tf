@@ -9,6 +9,10 @@ resource "azurerm_resource_group" "main" {
   }
 }
 
+resource "random_id" "suffix" {
+  byte_length = 4
+}
+
 # Hub Network Module
 module "network" {
   source      = "./modules/network"
@@ -40,6 +44,7 @@ module "security" {
   rg_name     = azurerm_resource_group.main.name
   location    = azurerm_resource_group.main.location
   environment = var.environment
+  suffix      = random_id.suffix.hex
 }
 
 # Compute Module
@@ -56,6 +61,7 @@ module "apim" {
   rg_name     = azurerm_resource_group.main.name
   location    = azurerm_resource_group.main.location
   environment = var.environment
+  suffix      = random_id.suffix.hex
 
   auth_function_host          = module.compute.auth_function_host
   property_function_host      = module.compute.property_function_host
