@@ -36,6 +36,7 @@ module "cache" {
   rg_name     = azurerm_resource_group.main.name
   location    = azurerm_resource_group.main.location
   environment = var.environment
+  suffix      = random_id.suffix.hex
 }
 
 # Security Module

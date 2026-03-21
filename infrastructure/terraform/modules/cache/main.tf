@@ -1,5 +1,5 @@
 resource "azurerm_redis_cache" "main" {
-  name                = "redis-${var.environment}-stayhere"
+  name                = "redis-${var.environment}-${var.suffix}"
   location            = var.location
   resource_group_name = var.rg_name
   capacity            = 0
