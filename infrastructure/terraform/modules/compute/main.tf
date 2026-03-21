@@ -7,7 +7,7 @@ resource "azurerm_service_plan" "main" {
 }
 
 resource "azurerm_linux_function_app" "auth" {
-  name                = "func-${var.environment}-auth"
+  name                = "func-${var.environment}-auth-${var.suffix}"
   resource_group_name = var.rg_name
   location            = var.location
 
@@ -27,7 +27,7 @@ resource "azurerm_linux_function_app" "auth" {
 }
 
 resource "azurerm_linux_function_app" "property" {
-  name                = "func-${var.environment}-property"
+  name                = "func-${var.environment}-property-${var.suffix}"
   resource_group_name = var.rg_name
   location            = var.location
 
@@ -47,7 +47,7 @@ resource "azurerm_linux_function_app" "property" {
 }
 
 resource "azurerm_linux_function_app" "customer" {
-  name                = "func-${var.environment}-customer"
+  name                = "func-${var.environment}-customer-${var.suffix}"
   resource_group_name = var.rg_name
   location            = var.location
 
@@ -67,7 +67,7 @@ resource "azurerm_linux_function_app" "customer" {
 }
 
 resource "azurerm_linux_function_app" "propertyowner" {
-  name                = "func-${var.environment}-propertyowner"
+  name                = "func-${var.environment}-propertyowner-${var.suffix}"
   resource_group_name = var.rg_name
   location            = var.location
 
@@ -87,7 +87,7 @@ resource "azurerm_linux_function_app" "propertyowner" {
 }
 
 resource "azurerm_linux_function_app" "staticdata" {
-  name                = "func-${var.environment}-staticdata"
+  name                = "func-${var.environment}-staticdata-${var.suffix}"
   resource_group_name = var.rg_name
   location            = var.location
 
