@@ -1,5 +1,9 @@
+resource "random_id" "suffix" {
+  byte_length = 4
+}
+
 resource "azurerm_resource_group" "main" {
-  name     = "rg-${var.project_name}-${var.environment}"
+  name     = "rg-${var.project_name}-${var.environment}-${random_id.suffix.hex}"
   location = var.location
 
   tags = {
@@ -7,10 +11,6 @@ resource "azurerm_resource_group" "main" {
     Project     = var.project_name
     ManagedBy   = "Terraform"
   }
-}
-
-resource "random_id" "suffix" {
-  byte_length = 4
 }
 
 # Hub Network Module
@@ -27,6 +27,7 @@ module "database" {
   rg_name     = azurerm_resource_group.main.name
   location    = azurerm_resource_group.main.location
   environment = var.environment
+  suffix      = random_id.suffix.hex
   org_id      = var.mongodb_atlas_org_id
 }
 

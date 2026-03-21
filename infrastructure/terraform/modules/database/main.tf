@@ -29,8 +29,12 @@ resource "azurerm_postgresql_flexible_server_database" "main" {
 
 # MongoDB Atlas Project
 resource "mongodbatlas_project" "main" {
-  name   = "stayhere-${var.environment}"
+  name   = "stayhere-${var.environment}-${var.suffix}"
   org_id = var.org_id
+}
+
+variable "suffix" {
+  type = string
 }
 
 # MongoDB Atlas Cluster (Shared M0 Tier)
@@ -42,7 +46,7 @@ resource "mongodbatlas_cluster" "main" {
   provider_name               = "TENANT"
   backing_provider_name       = "AZURE"
   provider_instance_size_name = "M0"
-  provider_region_name        = "SOUTH_AF_NORTH" # Atlas region name for South Africa North
+  provider_region_name        = "EUROPE_WEST" # Atlas region name for West Europe (Closest M0-supported region)
 }
 
 resource "mongodbatlas_database_user" "main" {

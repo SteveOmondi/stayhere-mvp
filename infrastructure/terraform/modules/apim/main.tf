@@ -32,14 +32,6 @@ resource "azurerm_api_management_policy" "global" {
                 <header>*</header>
             </expose-headers>
         </cors>
-        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized">
-            <openid-config url="https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration" />
-            <required-claims>
-                <claim name="aud">
-                    <value>YOUR_CLIENT_ID_HERE</value>
-                </claim>
-            </required-claims>
-        </validate-jwt>
         <base />
     </inbound>
     <backend>
