@@ -3,7 +3,7 @@ resource "azurerm_service_plan" "main" {
   resource_group_name = var.rg_name
   location            = var.location
   os_type             = "Linux"
-  sku_name            = "B1" # Dedicated tier to bypass Consumption quota limits
+  sku_name            = "Y1" # Reverted to Consumption tier for Pay-As-You-Go
 }
 
 resource "azurerm_linux_function_app" "auth" {
