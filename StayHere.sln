@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -32,6 +32,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CustomerService", "CustomerService", "{0F9E1C3A-1234-4ABC-8DEF-001122334455}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StayHere.CustomerService", "src\FunctionApps\CustomerService\StayHere.CustomerService.csproj", "{1A2B3C4D-5678-4E9F-ABCD-998877665544}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AuthService", "AuthService", "{F69BDCD1-5D0A-453F-A74A-A6AA6479B17C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StayHere.AuthService", "src\FunctionApps\AuthService\StayHere.AuthService.csproj", "{C79BDCD1-5D0A-453F-A74A-A6AA6479B17D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject

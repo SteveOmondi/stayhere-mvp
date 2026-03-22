@@ -24,6 +24,10 @@ resource "azurerm_linux_function_app" "auth" {
   identity {
     type = "SystemAssigned"
   }
+
+  tags = {
+    Service = "AuthService"
+  }
 }
 
 resource "azurerm_linux_function_app" "property" {
@@ -64,6 +68,10 @@ resource "azurerm_linux_function_app" "customer" {
   identity {
     type = "SystemAssigned"
   }
+
+  tags = {
+    Service = "CustomerService"
+  }
 }
 
 resource "azurerm_linux_function_app" "propertyowner" {
@@ -84,6 +92,10 @@ resource "azurerm_linux_function_app" "propertyowner" {
   identity {
     type = "SystemAssigned"
   }
+
+  tags = {
+    Service = "PropertyOwnerService"
+  }
 }
 
 resource "azurerm_linux_function_app" "staticdata" {
@@ -103,6 +115,10 @@ resource "azurerm_linux_function_app" "staticdata" {
 
   identity {
     type = "SystemAssigned"
+  }
+
+  tags = {
+    Service = "StaticDataService"
   }
 }
 

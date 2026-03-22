@@ -4,105 +4,239 @@ trigger:
   paths:
     include: [src/*]
 
-pool:
-  vmImage: 'ubuntu-latest'
+variables:
+  vmImageName: 'ubuntu-latest'
+  azureSubscription: 'Azure-StayHere-Conn'
+  buildConfiguration: 'Release'
+  dotnetVersion: '9.x'
 
-steps:
-- task: UseDotNet@2
-  inputs:
-    version: '9.x'
+stages:
+- stage: Build
+  displayName: 'Build and Package'
+  jobs:
+  - job: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        version: $(dotnetVersion)
 
-- script: dotnet build StayHere.sln --configuration Release
-  displayName: 'Build Solution'
+    - script: dotnet build StayHere.sln --configuration $(buildConfiguration)
+      displayName: 'Build Solution'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Run Unit Tests'
-  inputs:
-    command: 'test'
-    projects: 'tests/**/*.csproj'
-    arguments: '--configuration Release'
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish AuthService'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'src/FunctionApps/AuthService/StayHere.AuthService.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/AuthService'
+        zipAfterPublish: true
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish AuthService'
-  inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: 'src/FunctionApps/AuthService/StayHere.AuthService.csproj'
-    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/AuthService'
-    zipAfterPublish: true
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish PropertyService'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'src/FunctionApps/PropertyService/StayHere.PropertyService.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/PropertyService'
+        zipAfterPublish: true
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish PropertyService'
-  inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: 'src/FunctionApps/PropertyService/StayHere.PropertyService.csproj'
-    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/PropertyService'
-    zipAfterPublish: true
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish CustomerService'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'src/FunctionApps/CustomerService/StayHere.CustomerService.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/CustomerService'
+        zipAfterPublish: true
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish CustomerService'
-  inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: 'src/FunctionApps/CustomerService/StayHere.CustomerService.csproj'
-    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/CustomerService'
-    zipAfterPublish: true
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish PropertyOwnerService'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'src/FunctionApps/PropertyOwnerService/StayHere.PropertyOwnerService.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/PropertyOwnerService'
+        zipAfterPublish: true
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish PropertyOwnerService'
-  inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: 'src/FunctionApps/PropertyOwnerService/StayHere.PropertyOwnerService.csproj'
-    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/PropertyOwnerService'
-    zipAfterPublish: true
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish StaticDataService'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'src/FunctionApps/StaticDataService/StayHere.StaticDataService.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/StaticDataService'
+        zipAfterPublish: true
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish StaticDataService'
-  inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: 'src/FunctionApps/StaticDataService/StayHere.StaticDataService.csproj'
-    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/StaticDataService'
-    zipAfterPublish: true
+    - publish: $(Build.ArtifactStagingDirectory)/AuthService
+      artifact: AuthService_Pkg
+    - publish: $(Build.ArtifactStagingDirectory)/PropertyService
+      artifact: PropertyService_Pkg
+    - publish: $(Build.ArtifactStagingDirectory)/CustomerService
+      artifact: CustomerService_Pkg
+    - publish: $(Build.ArtifactStagingDirectory)/PropertyOwnerService
+      artifact: PropertyOwnerService_Pkg
+    - publish: $(Build.ArtifactStagingDirectory)/StaticDataService
+      artifact: StaticDataService_Pkg
 
-- task: AzureFunctionApp@2
-  displayName: 'Deploy AuthService'
-  inputs:
-    azureSubscription: 'Azure-StayHere-Conn'
-    appType: 'functionAppLinux'
-    appName: 'func-dev-auth'
-    package: '$(Build.ArtifactStagingDirectory)/AuthService/**/*.zip'
+- stage: Deploy_AuthService
+  displayName: 'Deploy Auth'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    environment: 'dev'
+    pool:
+      vmImage: $(vmImageName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: AuthService_Pkg
+          - task: AzureCLI@2
+            displayName: 'Discover Function App Name'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                APP_NAME=$(az functionapp list --query "[?tags.Service=='AuthService'].name" -o tsv)
+                echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
+          - task: AzureFunctionApp@2
+            displayName: 'Deploy to Azure'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'functionAppLinux'
+              appName: $(DynamicAppName)
+              package: '$(Pipeline.Workspace)/AuthService_Pkg/**/*.zip'
 
-- task: AzureFunctionApp@2
-  displayName: 'Deploy PropertyService'
-  inputs:
-    azureSubscription: 'Azure-StayHere-Conn'
-    appType: 'functionAppLinux'
-    appName: 'func-dev-property'
-    package: '$(Build.ArtifactStagingDirectory)/PropertyService/**/*.zip'
+- stage: Deploy_PropertyService
+  displayName: 'Deploy Property'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    environment: 'dev'
+    pool:
+      vmImage: $(vmImageName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: PropertyService_Pkg
+          - task: AzureCLI@2
+            displayName: 'Discover Function App Name'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                APP_NAME=$(az functionapp list --query "[?tags.Service=='PropertyService'].name" -o tsv)
+                echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
+          - task: AzureFunctionApp@2
+            displayName: 'Deploy to Azure'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'functionAppLinux'
+              appName: $(DynamicAppName)
+              package: '$(Pipeline.Workspace)/PropertyService_Pkg/**/*.zip'
 
-- task: AzureFunctionApp@2
-  displayName: 'Deploy CustomerService'
-  inputs:
-    azureSubscription: 'Azure-StayHere-Conn'
-    appType: 'functionAppLinux'
-    appName: 'func-dev-customer'
-    package: '$(Build.ArtifactStagingDirectory)/CustomerService/**/*.zip'
+- stage: Deploy_CustomerService
+  displayName: 'Deploy Customer'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    environment: 'dev'
+    pool:
+      vmImage: $(vmImageName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: CustomerService_Pkg
+          - task: AzureCLI@2
+            displayName: 'Discover Function App Name'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                APP_NAME=$(az functionapp list --query "[?tags.Service=='CustomerService'].name" -o tsv)
+                echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
+          - task: AzureFunctionApp@2
+            displayName: 'Deploy to Azure'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'functionAppLinux'
+              appName: $(DynamicAppName)
+              package: '$(Pipeline.Workspace)/CustomerService_Pkg/**/*.zip'
 
-- task: AzureFunctionApp@2
-  displayName: 'Deploy PropertyOwnerService'
-  inputs:
-    azureSubscription: 'Azure-StayHere-Conn'
-    appType: 'functionAppLinux'
-    appName: 'func-dev-propertyowner'
-    package: '$(Build.ArtifactStagingDirectory)/PropertyOwnerService/**/*.zip'
+- stage: Deploy_PropertyOwnerService
+  displayName: 'Deploy PropertyOwner'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    environment: 'dev'
+    pool:
+      vmImage: $(vmImageName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: PropertyOwnerService_Pkg
+          - task: AzureCLI@2
+            displayName: 'Discover Function App Name'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                APP_NAME=$(az functionapp list --query "[?tags.Service=='PropertyOwnerService'].name" -o tsv)
+                echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
+          - task: AzureFunctionApp@2
+            displayName: 'Deploy to Azure'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'functionAppLinux'
+              appName: $(DynamicAppName)
+              package: '$(Pipeline.Workspace)/PropertyOwnerService_Pkg/**/*.zip'
 
-- task: AzureFunctionApp@2
-  displayName: 'Deploy StaticDataService'
-  inputs:
-    azureSubscription: 'Azure-StayHere-Conn'
-    appType: 'functionAppLinux'
-    appName: 'func-dev-staticdata'
-    package: '$(Build.ArtifactStagingDirectory)/StaticDataService/**/*.zip'
+- stage: Deploy_StaticDataService
+  displayName: 'Deploy StaticData'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    environment: 'dev'
+    pool:
+      vmImage: $(vmImageName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: StaticDataService_Pkg
+          - task: AzureCLI@2
+            displayName: 'Discover Function App Name'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                APP_NAME=$(az functionapp list --query "[?tags.Service=='StaticDataService'].name" -o tsv)
+                echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
+          - task: AzureFunctionApp@2
+            displayName: 'Deploy to Azure'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'functionAppLinux'
+              appName: $(DynamicAppName)
+              package: '$(Pipeline.Workspace)/StaticDataService_Pkg/**/*.zip'
