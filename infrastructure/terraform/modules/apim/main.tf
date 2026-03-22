@@ -18,6 +18,7 @@ resource "azurerm_api_management_api" "auth" {
   path                = "auth"
   protocols           = ["https"]
   service_url         = "https://${var.auth_function_host}/api"
+  subscription_required = false
 }
 
 resource "azurerm_api_management_api" "property" {
@@ -29,6 +30,7 @@ resource "azurerm_api_management_api" "property" {
   path                = "property"
   protocols           = ["https"]
   service_url         = "https://${var.property_function_host}/api"
+  subscription_required = false
 }
 
 resource "azurerm_api_management_api" "customer" {
@@ -40,6 +42,7 @@ resource "azurerm_api_management_api" "customer" {
   path                = "customer"
   protocols           = ["https"]
   service_url         = "https://${var.customer_function_host}/api"
+  subscription_required = false
 }
 
 resource "azurerm_api_management_api" "propertyowner" {
@@ -51,6 +54,7 @@ resource "azurerm_api_management_api" "propertyowner" {
   path                = "propertyowner"
   protocols           = ["https"]
   service_url         = "https://${var.propertyowner_function_host}/api"
+  subscription_required = false
 }
 
 resource "azurerm_api_management_api" "staticdata" {
@@ -62,6 +66,7 @@ resource "azurerm_api_management_api" "staticdata" {
   path                = "staticdata"
   protocols           = ["https"]
   service_url         = "https://${var.staticdata_function_host}/api"
+  subscription_required = false
 }
 # --- AUTH OPERATIONS ---
 resource "azurerm_api_management_api_operation" "auth_login" {
