@@ -63,3 +63,67 @@ resource "azurerm_api_management_api" "staticdata" {
   protocols           = ["https"]
   service_url         = "https://${var.staticdata_function_host}/api"
 }
+# --- AUTH OPERATIONS ---
+resource "azurerm_api_management_api_operation" "auth_login" {
+  operation_id        = "login"
+  api_name            = azurerm_api_management_api.auth.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Login"
+  method              = "POST"
+  url_template        = "/Login"
+}
+
+resource "azurerm_api_management_api_operation" "auth_verify" {
+  operation_id        = "verify-otp"
+  api_name            = azurerm_api_management_api.auth.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Verify OTP"
+  method              = "POST"
+  url_template        = "/VerifyOtp"
+}
+
+# --- PROPERTY OPERATIONS ---
+resource "azurerm_api_management_api_operation" "property_list" {
+  operation_id        = "get-properties"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Properties"
+  method              = "GET"
+  url_template        = "/properties"
+}
+
+# --- STATIC DATA OPERATIONS ---
+resource "azurerm_api_management_api_operation" "static_categories" {
+  operation_id        = "get-categories"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Categories"
+  method              = "GET"
+  url_template        = "/categories"
+}
+
+# --- CUSTOMER OPERATIONS ---
+resource "azurerm_api_management_api_operation" "customer_profile" {
+  operation_id        = "get-profile"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Profile"
+  method              = "GET"
+  url_template        = "/customers/profile"
+}
+
+# --- PROPERTY OWNER OPERATIONS ---
+resource "azurerm_api_management_api_operation" "owner_properties" {
+  operation_id        = "get-owner-properties"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Owner Properties"
+  method              = "GET"
+  url_template        = "/owners/properties"
+}
