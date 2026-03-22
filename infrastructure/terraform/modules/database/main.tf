@@ -18,6 +18,10 @@ resource "azurerm_postgresql_flexible_server" "main" {
 
   storage_mb = 32768
   sku_name   = "B_Standard_B1ms"
+
+  lifecycle {
+    ignore_changes = [zone]
+  }
 }
 
 resource "azurerm_postgresql_flexible_server_database" "main" {
