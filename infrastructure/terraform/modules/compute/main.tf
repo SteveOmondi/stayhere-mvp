@@ -17,7 +17,7 @@ resource "azurerm_linux_function_app" "auth" {
 
   site_config {
     application_stack {
-      dotnet_version = "9.0"
+      dotnet_version = "8.0"
     }
   }
 
@@ -53,7 +53,7 @@ resource "azurerm_linux_function_app" "property" {
 
   site_config {
     application_stack {
-      dotnet_version = "9.0"
+      dotnet_version = "8.0"
     }
   }
 
@@ -85,7 +85,7 @@ resource "azurerm_linux_function_app" "customer" {
 
   site_config {
     application_stack {
-      dotnet_version = "9.0"
+      dotnet_version = "8.0"
     }
   }
 
@@ -121,7 +121,7 @@ resource "azurerm_linux_function_app" "propertyowner" {
 
   site_config {
     application_stack {
-      dotnet_version = "9.0"
+      dotnet_version = "8.0"
     }
   }
 
@@ -157,7 +157,7 @@ resource "azurerm_linux_function_app" "staticdata" {
 
   site_config {
     application_stack {
-      dotnet_version = "9.0"
+      dotnet_version = "8.0"
     }
   }
 
