@@ -8,7 +8,6 @@ resource "azurerm_api_management" "main" {
   sku_name = "Consumption_0"
 }
 
-}
 
 resource "azurerm_api_management_api" "auth" {
   name                = "auth-api"
