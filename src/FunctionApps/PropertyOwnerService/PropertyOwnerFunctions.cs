@@ -153,7 +153,7 @@ public class PropertyOwnerFunctions
 
     [Function("GetOwnerProperties")]
     public async Task<HttpResponseData> GetOwnerProperties(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/{ownerId:guid}/properties")] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/owners/{ownerId:guid}/properties")] HttpRequestData req,
         Guid ownerId)
     {
         try

@@ -21,7 +21,7 @@ public class AuthFunctions
 
     [Function("Login")]
     public async Task<HttpResponseData> Login(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/auth/login")] HttpRequestData req)
     {
         _logger.LogInformation("Processing Login request.");
 
@@ -63,7 +63,7 @@ public class AuthFunctions
 
     [Function("VerifyOtp")]
     public async Task<HttpResponseData> VerifyOtp(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/auth/verifyotp")] HttpRequestData req)
     {
         _logger.LogInformation("Processing VerifyOtp request.");
 

@@ -23,7 +23,7 @@ public class CustomerFunctions
 
     [Function("CreateCustomer")]
     public async Task<HttpResponseData> CreateCustomer(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "customers")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/customers")] HttpRequestData req)
     {
         try
         {
@@ -70,7 +70,7 @@ public class CustomerFunctions
 
     [Function("GetCustomersByRegion")]
     public async Task<HttpResponseData> GetCustomersByRegion(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "customers/region")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/customers/profile")] HttpRequestData req)
     {
         var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
         Guid? countryId = Guid.TryParse(query["countryId"], out var c) ? c : null;
