@@ -12,5 +12,10 @@
       "Host.Results": "Error",
       "Function": "Information"
     }
+  },
+  "extensions": {
+    "http": {
+      "routePrefix": "api"
+    }
   }
 }

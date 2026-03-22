@@ -8,7 +8,6 @@ resource "azurerm_api_management" "main" {
   sku_name = "Consumption_0"
 }
 
-
 resource "azurerm_api_management_api" "auth" {
   name                = "auth-api"
   resource_group_name = var.rg_name
@@ -17,7 +16,7 @@ resource "azurerm_api_management_api" "auth" {
   display_name        = "Auth API"
   path                = "auth"
   protocols           = ["https"]
-  service_url         = "https://${var.auth_function_host}"
+  service_url         = "https://${var.auth_function_host}/api"
   subscription_required = false
 }
 
@@ -29,7 +28,7 @@ resource "azurerm_api_management_api" "property" {
   display_name        = "Property API"
   path                = "property"
   protocols           = ["https"]
-  service_url         = "https://${var.property_function_host}"
+  service_url         = "https://${var.property_function_host}/api"
   subscription_required = false
 }
 
@@ -41,7 +40,7 @@ resource "azurerm_api_management_api" "customer" {
   display_name        = "Customer API"
   path                = "customer"
   protocols           = ["https"]
-  service_url         = "https://${var.customer_function_host}"
+  service_url         = "https://${var.customer_function_host}/api"
   subscription_required = false
 }
 
@@ -53,7 +52,7 @@ resource "azurerm_api_management_api" "propertyowner" {
   display_name        = "Property Owner API"
   path                = "propertyowner"
   protocols           = ["https"]
-  service_url         = "https://${var.propertyowner_function_host}"
+  service_url         = "https://${var.propertyowner_function_host}/api"
   subscription_required = false
 }
 
@@ -65,9 +64,10 @@ resource "azurerm_api_management_api" "staticdata" {
   display_name        = "Static Data API"
   path                = "staticdata"
   protocols           = ["https"]
-  service_url         = "https://${var.staticdata_function_host}"
+  service_url         = "https://${var.staticdata_function_host}/api"
   subscription_required = false
 }
+
 # --- AUTH OPERATIONS ---
 resource "azurerm_api_management_api_operation" "auth_login" {
   operation_id        = "login"
@@ -76,7 +76,7 @@ resource "azurerm_api_management_api_operation" "auth_login" {
   resource_group_name = var.rg_name
   display_name        = "Login"
   method              = "POST"
-  url_template        = "/api/Login"
+  url_template        = "/Login"
 }
 
 resource "azurerm_api_management_api_operation" "auth_verify" {
@@ -86,7 +86,7 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
   method              = "POST"
-  url_template        = "/api/VerifyOtp"
+  url_template        = "/VerifyOtp"
 }
 
 # --- PROPERTY OPERATIONS ---
@@ -97,7 +97,7 @@ resource "azurerm_api_management_api_operation" "property_list" {
   resource_group_name = var.rg_name
   display_name        = "Get Properties"
   method              = "GET"
-  url_template        = "/api/properties"
+  url_template        = "/properties"
 }
 
 # --- STATIC DATA OPERATIONS ---
@@ -108,18 +108,18 @@ resource "azurerm_api_management_api_operation" "static_categories" {
   resource_group_name = var.rg_name
   display_name        = "Get Categories"
   method              = "GET"
-  url_template        = "/api/categories"
+  url_template        = "/categories"
 }
 
 # --- CUSTOMER OPERATIONS ---
-resource "azurerm_api_management_api_operation" "customer_profile" {
-  operation_id        = "get-profile"
+resource "azurerm_api_management_api_operation" "customer_list" {
+  operation_id        = "get-customers"
   api_name            = azurerm_api_management_api.customer.name
   api_management_name = azurerm_api_management.main.name
   resource_group_name = var.rg_name
-  display_name        = "Get Profile"
+  display_name        = "Get Customers"
   method              = "GET"
-  url_template        = "/api/customers/profile"
+  url_template        = "/customers"
 }
 
 # --- PROPERTY OWNER OPERATIONS ---
@@ -130,7 +130,7 @@ resource "azurerm_api_management_api_operation" "owner_properties" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner Properties"
   method              = "GET"
-  url_template        = "/api/owners/{ownerId}/properties"
+  url_template        = "/owners/{ownerId}/properties"
 
   template_parameter {
     name     = "ownerId"
@@ -139,7 +139,7 @@ resource "azurerm_api_management_api_operation" "owner_properties" {
   }
 }
 
-# --- POLICIES TO FIX FORWARDING ---
+# --- GLOBAL FORWARDING POLICIES (Host Header Override) ---
 resource "azurerm_api_management_api_policy" "auth" {
   api_name            = azurerm_api_management_api.auth.name
   api_management_name = azurerm_api_management.main.name
@@ -148,9 +148,7 @@ resource "azurerm_api_management_api_policy" "auth" {
 <policies>
     <inbound>
         <base />
-        <set-header name="Host" exists-action="override">
-            <value>${var.auth_function_host}</value>
-        </set-header>
+        <set-header name="Host" exists-action="override"><value>${var.auth_function_host}</value></set-header>
     </inbound>
 </policies>
 XML
@@ -164,9 +162,35 @@ resource "azurerm_api_management_api_policy" "property" {
 <policies>
     <inbound>
         <base />
-        <set-header name="Host" exists-action="override">
-            <value>${var.property_function_host}</value>
-        </set-header>
+        <set-header name="Host" exists-action="override"><value>${var.property_function_host}</value></set-header>
+    </inbound>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_policy" "customer" {
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <base />
+        <set-header name="Host" exists-action="override"><value>${var.customer_function_host}</value></set-header>
+    </inbound>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_policy" "propertyowner" {
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <base />
+        <set-header name="Host" exists-action="override"><value>${var.propertyowner_function_host}</value></set-header>
     </inbound>
 </policies>
 XML
@@ -180,9 +204,7 @@ resource "azurerm_api_management_api_policy" "staticdata" {
 <policies>
     <inbound>
         <base />
-        <set-header name="Host" exists-action="override">
-            <value>${var.staticdata_function_host}</value>
-        </set-header>
+        <set-header name="Host" exists-action="override"><value>${var.staticdata_function_host}</value></set-header>
     </inbound>
 </policies>
 XML
