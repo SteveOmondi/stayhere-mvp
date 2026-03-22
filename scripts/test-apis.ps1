@@ -2,24 +2,26 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$BaseUrl,
     
-    [string]$SubscriptionKey = ""
+    [string]$SubscriptionKey = "",
+
+    [switch]$TestBackends = $false
 )
 
 $ErrorActionPreference = "Stop"
 
 function Test-Endpoint {
-    param($Name, $Method, $Path, $Body = $null)
+    param($Name, $Method, $Url, $Body = $null)
     
-    $url = "$BaseUrl$Path"
     $headers = @{ "Content-Type" = "application/json" }
-    if ($SubscriptionKey) { $headers["Ocp-Apim-Subscription-Key"] = $SubscriptionKey }
+    if ($Url -like "*azure-api.net*" -and $SubscriptionKey) { $headers["Ocp-Apim-Subscription-Key"] = $SubscriptionKey }
     
-    Write-Host "Testing [$Name] ($Method $url)... " -NoNewline
+    Write-Host "Testing [$Name] ($Method $Url)... " -NoNewline
     try {
         $params = @{
-            Uri = $url
+            Uri = $Url
             Method = $Method
             Headers = $headers
+            TimeoutSec = 10
         }
         if ($Body) { $params.Body = ($Body | ConvertTo-Json) }
         
@@ -40,30 +42,24 @@ function Test-Endpoint {
 Write-Host "`n--- StayHere MVP API Verification ---" -ForegroundColor Cyan
 Write-Host "Base URL: $BaseUrl`n"
 
-# 1. Static Data Service
-Test-Endpoint -Name "StaticData: Categories" -Method "GET" -Path "/staticdata/categories"
+$suffix = $BaseUrl.Split('-')[-1].Split('.')[0]
 
-# 2. Property Service
-Test-Endpoint -Name "Property: List All" -Method "GET" -Path "/property/properties"
+# --- Endpoints Mapping ---
+$Tests = @(
+    @{ Name = "StaticData: Categories"; Method = "GET";  ApimPath = "/staticdata/categories"; BackendPath = "/api/categories"; Svc = "staticdata" }
+    @{ Name = "Property: List All";     Method = "GET";  ApimPath = "/property/properties";   BackendPath = "/api/properties"; Svc = "property" }
+    @{ Name = "Auth: Login";            Method = "POST"; ApimPath = "/auth/Login";            BackendPath = "/api/Login";      Svc = "auth"; Body = @{ email = "test@example.com" } }
+)
 
-# 3. Auth Service (Login Initiation)
-$loginBody = @{
-    email = "test@example.com"
+foreach ($test in $Tests) {
+    # Test through APIM
+    Test-Endpoint -Name $test.Name -Method $test.Method -Url "$BaseUrl$($test.ApimPath)" -Body $test.Body
+    
+    # Optional: Test Backend Directly
+    if ($TestBackends) {
+        $backendUrl = "https://func-dev-$($test.Svc)-$suffix.azurewebsites.net$($test.BackendPath)"
+        Test-Endpoint -Name "DIRECT: $($test.Name)" -Method $test.Method -Url $backendUrl -Body $test.Body
+    }
 }
-Test-Endpoint -Name "Auth: Login (Email)" -Method "POST" -Path "/auth/Login" -Body $loginBody
-
-# 4. Auth Service (Verify OTP)
-$verifyBody = @{
-    identity = "test@example.com"
-    otp = "123456"
-}
-Test-Endpoint -Name "Auth: Verify OTP" -Method "POST" -Path "/auth/VerifyOtp" -Body $verifyBody
-
-# 5. Customer Service (Profile)
-# Note: This will likely return 401/404 if no user is found, but tests the connectivity.
-Test-Endpoint -Name "Customer: Profile" -Method "GET" -Path "/customer/customers/profile"
-
-# 6. Property Owner Service (Owner Properties)
-Test-Endpoint -Name "Owner: Properties" -Method "GET" -Path "/propertyowner/owners/properties"
 
 Write-Host "`n--- Verification Complete ---" -ForegroundColor Cyan
