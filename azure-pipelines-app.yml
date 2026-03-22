@@ -31,7 +31,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/AuthService/StayHere.AuthService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/AuthService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/AuthService --no-build'
         zipAfterPublish: true
 
     - task: DotNetCoreCLI@2
@@ -40,7 +40,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/PropertyService/StayHere.PropertyService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/PropertyService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/PropertyService --no-build'
         zipAfterPublish: true
 
     - task: DotNetCoreCLI@2
@@ -49,7 +49,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/CustomerService/StayHere.CustomerService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/CustomerService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/CustomerService --no-build'
         zipAfterPublish: true
 
     - task: DotNetCoreCLI@2
@@ -58,7 +58,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/PropertyOwnerService/StayHere.PropertyOwnerService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/PropertyOwnerService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/PropertyOwnerService --no-build'
         zipAfterPublish: true
 
     - task: DotNetCoreCLI@2
@@ -67,7 +67,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/StaticDataService/StayHere.StaticDataService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/StaticDataService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/StaticDataService --no-build'
         zipAfterPublish: true
 
     - publish: $(Build.ArtifactStagingDirectory)/AuthService

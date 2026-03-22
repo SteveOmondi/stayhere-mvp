@@ -8,7 +8,7 @@ using StayHere.Infrastructure.Notifications;
 using StayHere.Infrastructure.Persistence;
 
 var host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
+    .ConfigureFunctionsWebApplication()
     .ConfigureServices(services =>
     {
         // Application Services
