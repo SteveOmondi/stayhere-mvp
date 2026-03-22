@@ -24,6 +24,13 @@ resource "azurerm_postgresql_flexible_server" "main" {
   }
 }
 
+resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_services" {
+  name             = "AllowAllAzureServices"
+  server_id        = azurerm_postgresql_flexible_server.main.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
+}
+
 resource "azurerm_postgresql_flexible_server_database" "main" {
   name      = "stayhere"
   server_id = azurerm_postgresql_flexible_server.main.id
@@ -63,6 +70,12 @@ resource "mongodbatlas_database_user" "main" {
     role_name     = "readWriteAnyDatabase"
     database_name = "admin"
   }
+}
+
+resource "mongodbatlas_project_ip_access_list" "all" {
+  project_id = mongodbatlas_project.main.id
+  cidr_block = "0.0.0.0/0"
+  comment    = "Allow All for MVP Verification"
 }
 
 output "psql_host" {
