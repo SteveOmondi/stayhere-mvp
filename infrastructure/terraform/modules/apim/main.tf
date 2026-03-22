@@ -8,43 +8,6 @@ resource "azurerm_api_management" "main" {
   sku_name = "Consumption_0"
 }
 
-resource "azurerm_api_management_policy" "global" {
-  api_management_id = azurerm_api_management.main.id
-
-  xml_content = <<XML
-<policies>
-    <inbound>
-        <cors>
-            <allowed-origins>
-                <origin>*</origin>
-            </allowed-origins>
-            <allowed-methods>
-                <method>GET</method>
-                <method>POST</method>
-                <method>PUT</method>
-                <method>DELETE</method>
-                <method>OPTIONS</method>
-            </allowed-methods>
-            <allowed-headers>
-                <header>*</header>
-            </allowed-headers>
-            <expose-headers>
-                <header>*</header>
-            </expose-headers>
-        </cors>
-        <base />
-    </inbound>
-    <backend>
-        <base />
-    </backend>
-    <outbound>
-        <base />
-    </outbound>
-    <on-error>
-        <base />
-    </on-error>
-</policies>
-XML
 }
 
 resource "azurerm_api_management_api" "auth" {
