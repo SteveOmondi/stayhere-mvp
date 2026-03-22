@@ -64,3 +64,25 @@ resource "mongodbatlas_database_user" "main" {
     database_name = "admin"
   }
 }
+
+output "psql_host" {
+  value = azurerm_postgresql_flexible_server.main.fqdn
+}
+
+output "psql_admin_login" {
+  value = azurerm_postgresql_flexible_server.main.administrator_login
+}
+
+output "psql_admin_password" {
+  value     = azurerm_postgresql_flexible_server.main.administrator_password
+  sensitive = true
+}
+
+output "psql_database_name" {
+  value = azurerm_postgresql_flexible_server_database.main.name
+}
+
+output "mongodb_connection_string" {
+  value     = mongodbatlas_cluster.main.connection_strings[0].standard_srv
+  sensitive = true
+}

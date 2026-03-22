@@ -40,6 +40,66 @@ public class StayHereDbContext : DbContext
         ConfigureDocument(modelBuilder);
         ConfigureOtpVerification(modelBuilder);
         ConfigureCategory(modelBuilder);
+
+        SeedData(modelBuilder);
+    }
+
+    private static void SeedData(ModelBuilder modelBuilder)
+    {
+        var apartmentId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var houseId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+
+        modelBuilder.Entity<Category>().HasData(
+            new Category 
+            { 
+                Id = apartmentId, 
+                Name = "Apartment", 
+                Description = "Modern apartments in the city", 
+                Country = "Kenya", 
+                City = "Nairobi",
+                IsActive = true,
+                CreatedAt = DateTime.Parse("2026-01-01")
+            },
+            new Category 
+            { 
+                Id = houseId, 
+                Name = "House", 
+                Description = "Spacious family houses", 
+                Country = "Kenya", 
+                City = "Nairobi",
+                IsActive = true,
+                CreatedAt = DateTime.Parse("2026-01-01")
+            }
+        );
+
+        var propertyId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        modelBuilder.Entity<Property>().HasData(
+            new 
+            {
+                Id = propertyId,
+                PropertyCode = "PROP-001",
+                BuildingName = "StayHere Heights",
+                Description = "Luxury living in the heart of the city",
+                TotalUnits = 50,
+                TotalFloors = 10,
+                CreatedAt = DateTime.Parse("2026-01-01")
+            }
+        );
+
+        // Seeding owned types (Location) for Property
+        modelBuilder.Entity<Property>().OwnsOne(p => p.Location).HasData(
+            new
+            {
+                PropertyId = propertyId,
+                Country = "Kenya",
+                County = "Nairobi",
+                City = "Nairobi",
+                Suburb = "Westlands",
+                Street = "Waiyaki Way",
+                Latitude = -1.2633,
+                Longitude = 36.8045
+            }
+        );
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)

@@ -17,8 +17,20 @@ resource "azurerm_linux_function_app" "auth" {
 
   site_config {
     application_stack {
-      dotnet_version = "8.0" # or 9.0 when available in terraform
+      dotnet_version = "9.0"
     }
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "DB_HOST"                        = var.psql_host
+    "DB_PORT"                        = "5432"
+    "DB_NAME"                        = var.psql_database_name
+    "DB_USER"                        = var.psql_admin_login
+    "DB_PASSWORD"                    = var.psql_admin_password
+    "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
+    "REDIS_CONNECTION_STRING"        = var.redis_connection_string
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
   }
 
   identity {
@@ -41,8 +53,20 @@ resource "azurerm_linux_function_app" "property" {
 
   site_config {
     application_stack {
-      dotnet_version = "8.0"
+      dotnet_version = "9.0"
     }
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "DB_HOST"                        = var.psql_host
+    "DB_PORT"                        = "5432"
+    "DB_NAME"                        = var.psql_database_name
+    "DB_USER"                        = var.psql_admin_login
+    "DB_PASSWORD"                    = var.psql_admin_password
+    "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
+    "REDIS_CONNECTION_STRING"        = var.redis_connection_string
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
   }
 
   identity {
@@ -61,8 +85,20 @@ resource "azurerm_linux_function_app" "customer" {
 
   site_config {
     application_stack {
-      dotnet_version = "8.0"
+      dotnet_version = "9.0"
     }
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "DB_HOST"                        = var.psql_host
+    "DB_PORT"                        = "5432"
+    "DB_NAME"                        = var.psql_database_name
+    "DB_USER"                        = var.psql_admin_login
+    "DB_PASSWORD"                    = var.psql_admin_password
+    "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
+    "REDIS_CONNECTION_STRING"        = var.redis_connection_string
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
   }
 
   identity {
@@ -85,8 +121,20 @@ resource "azurerm_linux_function_app" "propertyowner" {
 
   site_config {
     application_stack {
-      dotnet_version = "8.0"
+      dotnet_version = "9.0"
     }
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "DB_HOST"                        = var.psql_host
+    "DB_PORT"                        = "5432"
+    "DB_NAME"                        = var.psql_database_name
+    "DB_USER"                        = var.psql_admin_login
+    "DB_PASSWORD"                    = var.psql_admin_password
+    "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
+    "REDIS_CONNECTION_STRING"        = var.redis_connection_string
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
   }
 
   identity {
@@ -109,8 +157,20 @@ resource "azurerm_linux_function_app" "staticdata" {
 
   site_config {
     application_stack {
-      dotnet_version = "8.0"
+      dotnet_version = "9.0"
     }
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "DB_HOST"                        = var.psql_host
+    "DB_PORT"                        = "5432"
+    "DB_NAME"                        = var.psql_database_name
+    "DB_USER"                        = var.psql_admin_login
+    "DB_PASSWORD"                    = var.psql_admin_password
+    "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
+    "REDIS_CONNECTION_STRING"        = var.redis_connection_string
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
   }
 
   identity {
@@ -144,6 +204,33 @@ variable "environment" {
 
 variable "suffix" {
   type = string
+}
+
+variable "psql_host" {
+  type = string
+}
+
+variable "psql_admin_login" {
+  type = string
+}
+
+variable "psql_admin_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "psql_database_name" {
+  type = string
+}
+
+variable "mongodb_connection_string" {
+  type      = string
+  sensitive = true
+}
+
+variable "redis_connection_string" {
+  type      = string
+  sensitive = true
 }
 
 output "auth_function_name" {

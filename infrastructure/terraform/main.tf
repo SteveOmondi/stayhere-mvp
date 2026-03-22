@@ -56,6 +56,13 @@ module "compute" {
   location    = azurerm_resource_group.main.location
   environment = var.environment
   suffix      = random_id.suffix.hex
+
+  psql_host                 = module.database.psql_host
+  psql_admin_login          = module.database.psql_admin_login
+  psql_admin_password       = module.database.psql_admin_password
+  psql_database_name        = module.database.psql_database_name
+  mongodb_connection_string = module.database.mongodb_connection_string
+  redis_connection_string   = module.cache.redis_connection_string
 }
 
 # APIM Module
