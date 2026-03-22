@@ -23,6 +23,7 @@ resource "azurerm_linux_function_app" "auth" {
 
   app_settings = {
     "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "AzureWebJobsStorage"            = azurerm_storage_account.main.primary_connection_string
     "DB_HOST"                        = var.psql_host
     "DB_PORT"                        = "5432"
     "DB_NAME"                        = var.psql_database_name
@@ -31,6 +32,7 @@ resource "azurerm_linux_function_app" "auth" {
     "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "FUNCTIONS_EXTENSION_VERSION"    = "~4"
   }
 
   identity {
@@ -59,6 +61,7 @@ resource "azurerm_linux_function_app" "property" {
 
   app_settings = {
     "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "AzureWebJobsStorage"            = azurerm_storage_account.main.primary_connection_string
     "DB_HOST"                        = var.psql_host
     "DB_PORT"                        = "5432"
     "DB_NAME"                        = var.psql_database_name
@@ -67,6 +70,7 @@ resource "azurerm_linux_function_app" "property" {
     "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "FUNCTIONS_EXTENSION_VERSION"    = "~4"
   }
 
   identity {
@@ -91,6 +95,7 @@ resource "azurerm_linux_function_app" "customer" {
 
   app_settings = {
     "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "AzureWebJobsStorage"            = azurerm_storage_account.main.primary_connection_string
     "DB_HOST"                        = var.psql_host
     "DB_PORT"                        = "5432"
     "DB_NAME"                        = var.psql_database_name
@@ -99,6 +104,7 @@ resource "azurerm_linux_function_app" "customer" {
     "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "FUNCTIONS_EXTENSION_VERSION"    = "~4"
   }
 
   identity {
@@ -127,6 +133,7 @@ resource "azurerm_linux_function_app" "propertyowner" {
 
   app_settings = {
     "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "AzureWebJobsStorage"            = azurerm_storage_account.main.primary_connection_string
     "DB_HOST"                        = var.psql_host
     "DB_PORT"                        = "5432"
     "DB_NAME"                        = var.psql_database_name
@@ -135,6 +142,7 @@ resource "azurerm_linux_function_app" "propertyowner" {
     "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "FUNCTIONS_EXTENSION_VERSION"    = "~4"
   }
 
   identity {
@@ -163,6 +171,7 @@ resource "azurerm_linux_function_app" "staticdata" {
 
   app_settings = {
     "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "AzureWebJobsStorage"            = azurerm_storage_account.main.primary_connection_string
     "DB_HOST"                        = var.psql_host
     "DB_PORT"                        = "5432"
     "DB_NAME"                        = var.psql_database_name
@@ -171,6 +180,7 @@ resource "azurerm_linux_function_app" "staticdata" {
     "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "FUNCTIONS_EXTENSION_VERSION"    = "~4"
   }
 
   identity {
