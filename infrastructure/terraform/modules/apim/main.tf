@@ -131,6 +131,12 @@ resource "azurerm_api_management_api_operation" "owner_properties" {
   display_name        = "Get Owner Properties"
   method              = "GET"
   url_template        = "/api/owners/{ownerId}/properties"
+
+  template_parameter {
+    name     = "ownerId"
+    type     = "string"
+    required = true
+  }
 }
 
 # --- POLICIES TO FIX FORWARDING ---
