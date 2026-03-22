@@ -105,7 +105,26 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          APP_NAME=$(az functionapp list --query "[?tags.Service=='AuthService'].name" -o tsv)
+          echo "Current Subscription Context:"
+          az account show --query "{subscription:name, id:id, tenant:tenantId}" -o table
+          
+          echo "Audit: Listing all Function Apps in this subscription..."
+          az functionapp list --query "[].{Name:name, Tags:tags}" -o table
+          
+          echo "Searching for Function App with Service=AuthService tag..."
+          APP_NAME=$(az functionapp list --query "[?tags.Service=='AuthService'].name" -o tsv | head -n 1)
+          
+          if [ -z "$APP_NAME" ]; then
+            echo "Tag not found. Searching by name pattern 'func-dev-auth'..."
+            APP_NAME=$(az functionapp list --query "[?contains(name, 'func-dev-auth')].name" -o tsv | head -n 1)
+          fi
+          
+          if [ -z "$APP_NAME" ]; then
+            echo "##vso[task.logissue type=error]Could not find Function App for AuthService. List above shows Available resources."
+            exit 1
+          fi
+          
+          echo "Successfully Found: $APP_NAME"
           echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
     - task: AzureFunctionApp@2
       displayName: 'Deploy to Azure'
@@ -133,7 +152,12 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          APP_NAME=$(az functionapp list --query "[?tags.Service=='PropertyService'].name" -o tsv)
+          APP_NAME=$(az functionapp list --query "[?tags.Service=='PropertyService'].name" -o tsv | head -n 1)
+          if [ -z "$APP_NAME" ]; then
+            APP_NAME=$(az functionapp list --query "[?contains(name, 'func-dev-property')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$APP_NAME" ]; then echo "PropertyService not found"; exit 1; fi
+          echo "Found: $APP_NAME"
           echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
     - task: AzureFunctionApp@2
       displayName: 'Deploy to Azure'
@@ -161,7 +185,12 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          APP_NAME=$(az functionapp list --query "[?tags.Service=='CustomerService'].name" -o tsv)
+          APP_NAME=$(az functionapp list --query "[?tags.Service=='CustomerService'].name" -o tsv | head -n 1)
+          if [ -z "$APP_NAME" ]; then
+            APP_NAME=$(az functionapp list --query "[?contains(name, 'func-dev-customer')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$APP_NAME" ]; then echo "CustomerService not found"; exit 1; fi
+          echo "Found: $APP_NAME"
           echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
     - task: AzureFunctionApp@2
       displayName: 'Deploy to Azure'
@@ -189,7 +218,12 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          APP_NAME=$(az functionapp list --query "[?tags.Service=='PropertyOwnerService'].name" -o tsv)
+          APP_NAME=$(az functionapp list --query "[?tags.Service=='PropertyOwnerService'].name" -o tsv | head -n 1)
+          if [ -z "$APP_NAME" ]; then
+            APP_NAME=$(az functionapp list --query "[?contains(name, 'func-dev-propertyowner')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$APP_NAME" ]; then echo "PropertyOwnerService not found"; exit 1; fi
+          echo "Found: $APP_NAME"
           echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
     - task: AzureFunctionApp@2
       displayName: 'Deploy to Azure'
@@ -217,7 +251,12 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          APP_NAME=$(az functionapp list --query "[?tags.Service=='StaticDataService'].name" -o tsv)
+          APP_NAME=$(az functionapp list --query "[?tags.Service=='StaticDataService'].name" -o tsv | head -n 1)
+          if [ -z "$APP_NAME" ]; then
+            APP_NAME=$(az functionapp list --query "[?contains(name, 'func-dev-staticdata')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$APP_NAME" ]; then echo "StaticDataService not found"; exit 1; fi
+          echo "Found: $APP_NAME"
           echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
     - task: AzureFunctionApp@2
       displayName: 'Deploy to Azure'
