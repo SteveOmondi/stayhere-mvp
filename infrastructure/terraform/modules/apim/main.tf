@@ -97,7 +97,7 @@ resource "azurerm_api_management_api_operation" "property_list" {
   resource_group_name = var.rg_name
   display_name        = "Get Properties"
   method              = "GET"
-  url_template        = "/api/properties"
+  url_template        = "/listings"
 }
 
 # --- STATIC DATA OPERATIONS ---
