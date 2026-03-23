@@ -46,24 +46,27 @@ $suffix = $BaseUrl.Split('-')[-1].Split('.')[0]
 $dummyId = "00000000-0000-0000-0000-000000000001"
 
 # --- Endpoints Mapping ---
-# Note: These paths match the APIM paths defined in modules/apim/main.tf
+# Note: These paths match the APIM paths AND the explicit backend routes
 $Tests = @(
     @{ Name = "StaticData: Categories"; Method = "GET";  Path = "/staticdata/categories";  BackendApi = "/api/categories"; Svc = "staticdata" }
     @{ Name = "Property: List All";     Method = "GET";  Path = "/property/properties";    BackendApi = "/api/properties"; Svc = "property" }
-    @{ Name = "Auth: Login";            Method = "POST"; Path = "/auth/Login";             BackendApi = "/api/Login";      Svc = "auth"; Body = @{ email = "test@example.com" } }
+    @{ Name = "Auth: Login";            Method = "POST"; Path = "/auth/login";             BackendApi = "/api/auth/login"; Svc = "auth"; Body = @{ email = "test@example.com" } }
     @{ Name = "Customer: List";         Method = "GET";  Path = "/customer/customers";     BackendApi = "/api/customers";  Svc = "customer" }
     @{ Name = "Owner: Properties";      Method = "GET";  Path = "/propertyowner/owners/$dummyId/properties"; BackendApi = "/api/owners/$dummyId/properties"; Svc = "propertyowner" }
 )
 
 foreach ($test in $Tests) {
-    # Test through APIM
-    Test-Endpoint -Name $test.Name -Method $test.Method -Url "$BaseUrl$($test.Path)" -Body $test.Body
+    Write-Host "--- $($test.Name) ---" -ForegroundColor Cyan
     
     # Optional: Test Backend Directly
     if ($TestBackends) {
         $backendUrl = "https://func-dev-$($test.Svc)-$suffix.azurewebsites.net$($test.BackendApi)"
-        Test-Endpoint -Name "DIRECT: $($test.Name)" -Method $test.Method -Url $backendUrl -Body $test.Body
+        Test-Endpoint -Name "DIRECT" -Method $test.Method -Url $backendUrl -Body $test.Body
     }
+
+    # Test through APIM
+    Test-Endpoint -Name "GATEWAY" -Method $test.Method -Url "$BaseUrl$($test.Path)" -Body $test.Body
+    Write-Host ""
 }
 
 Write-Host "`n--- Verification Complete ---" -ForegroundColor Cyan
