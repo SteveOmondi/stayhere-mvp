@@ -9,7 +9,7 @@ resource "azurerm_api_management_api_operation" "create_property" {
   resource_group_name = var.rg_name
   display_name        = "Create Property"
   method              = "POST"
-  url_template        = "/properties"
+  url_template        = "/api/properties"
 }
 
 # ──────────────────────────────────────────────
@@ -23,7 +23,7 @@ resource "azurerm_api_management_api_operation" "get_property_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Property by ID"
   method              = "GET"
-  url_template        = "/properties/{id}"
+  url_template        = "/api/properties/{id}"
 
   template_parameter {
     name        = "id"
@@ -40,7 +40,7 @@ resource "azurerm_api_management_api_operation" "get_property_by_code" {
   resource_group_name = var.rg_name
   display_name        = "Get Property by Code"
   method              = "GET"
-  url_template        = "/properties/code/{code}"
+  url_template        = "/api/properties/code/{code}"
 
   template_parameter {
     name        = "code"
@@ -57,7 +57,7 @@ resource "azurerm_api_management_api_operation" "get_all_properties" {
   resource_group_name = var.rg_name
   display_name        = "Get All Properties"
   method              = "GET"
-  url_template        = "/api/properties"
+  url_template        = "/api/api/properties"
 }
 
 resource "azurerm_api_management_api_operation" "get_properties_by_owner" {
@@ -67,7 +67,7 @@ resource "azurerm_api_management_api_operation" "get_properties_by_owner" {
   resource_group_name = var.rg_name
   display_name        = "Get Properties by Owner"
   method              = "GET"
-  url_template        = "/properties/owner/{ownerId}"
+  url_template        = "/api/properties/owner/{ownerId}"
 
   template_parameter {
     name        = "ownerId"
@@ -88,7 +88,7 @@ resource "azurerm_api_management_api_operation" "update_property" {
   resource_group_name = var.rg_name
   display_name        = "Update Property"
   method              = "PUT"
-  url_template        = "/properties/{id}"
+  url_template        = "/api/properties/{id}"
 
   template_parameter {
     name        = "id"
@@ -109,7 +109,7 @@ resource "azurerm_api_management_api_operation" "delete_property" {
   resource_group_name = var.rg_name
   display_name        = "Delete Property"
   method              = "DELETE"
-  url_template        = "/properties/{id}"
+  url_template        = "/api/properties/{id}"
 
   template_parameter {
     name        = "id"
