@@ -1,5 +1,10 @@
 resource "random_id" "suffix" {
   byte_length = 4
+  keepers = {
+    # Keep the same suffix unless the environment name changes
+    project = var.project_name
+    env     = var.environment
+  }
 }
 
 resource "azurerm_resource_group" "main" {
