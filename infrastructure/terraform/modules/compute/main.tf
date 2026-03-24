@@ -230,6 +230,11 @@ variable "suffix" {
   type = string
 }
 
+variable "skip_auth" {
+  type    = bool
+  default = false
+}
+
 variable "psql_host" {
   type = string
 }
