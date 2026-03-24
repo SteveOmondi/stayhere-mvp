@@ -154,6 +154,7 @@ resource "azurerm_api_management_api_policy" "property" {
     <inbound>
         <base />
         <set-backend-service backend-id="property-backend" />
+        <rewrite-uri template="@(context.Request.Url.Path.Replace("/api/", "/"))" />
     </inbound>
     <backend><base /></backend>
     <outbound><base /></outbound>
