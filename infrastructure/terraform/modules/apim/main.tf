@@ -155,7 +155,11 @@ resource "azurerm_api_management_api_policy" "property" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.property_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
-    </inbound>
+    <set-backend-service backend-id="property-backend" />
+  </inbound>
+  <backend><base /></backend>
+  <outbound><base /></outbound>
+  <on-error><base /></on-error>
 </policies>
 XML
 }
