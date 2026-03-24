@@ -89,16 +89,6 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   url_template        = "/api/auth/verifyotp"
 }
 
-# --- PROPERTY OPERATIONS ---
-resource "azurerm_api_management_api_operation" "property_list" {
-  operation_id        = "get-properties"
-  api_name            = azurerm_api_management_api.property.name
-  api_management_name = azurerm_api_management.main.name
-  resource_group_name = var.rg_name
-  display_name        = "Get Properties"
-  method              = "GET"
-  url_template        = "/listings"
-}
 
 # --- STATIC DATA OPERATIONS ---
 resource "azurerm_api_management_api_operation" "static_categories" {

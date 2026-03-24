@@ -32,3 +32,9 @@ variable "mongodb_atlas_org_id" {
   type        = string
   description = "MongoDB Atlas Organization ID"
 }
+
+variable "skip_auth" {
+  type        = bool
+  description = "Skip authentication for testing"
+  default     = false
+}

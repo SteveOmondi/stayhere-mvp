@@ -89,7 +89,7 @@ public class PropertyFunctions
 
     [Function("GetAllProperties")]
     public async Task<HttpResponseData> GetAllProperties(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/properties")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "properties")] HttpRequestData req)
     {
         try
         {

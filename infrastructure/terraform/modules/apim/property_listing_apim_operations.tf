@@ -195,6 +195,16 @@ resource "azurerm_api_management_api_operation" "get_available_listings" {
   url_template        = "/api/listings/available"
 }
 
+resource "azurerm_api_management_api_operation" "get_all_listings" {
+  operation_id        = "get-all-listings"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get All Listings"
+  method              = "GET"
+  url_template        = "/api/listings"
+}
+
 # ──────────────────────────────────────────────
 # SEARCH
 # ──────────────────────────────────────────────
@@ -326,7 +336,7 @@ resource "azurerm_api_management_api_operation" "remove_listing_agent" {
   resource_group_name = var.rg_name
   display_name        = "Remove Listing Agent"
   method              = "DELETE"
-  url_template        = "/listings/{id}/agent"
+  url_template        = "/api/listings/{id}/agent"
 
   template_parameter {
     name        = "id"

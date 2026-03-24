@@ -43,6 +43,7 @@ stages:
           -var="mongodb_atlas_public_key=$(MONGODB_ATLAS_PUBLIC_KEY)"
           -var="mongodb_atlas_private_key=$(MONGODB_ATLAS_PRIVATE_KEY)"
           -var="mongodb_atlas_org_id=$(MONGODB_ATLAS_ORG_ID)"
+          -var="skip_auth=$(SKIP_AUTH)"
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
 
     - task: PublishPipelineArtifact@1

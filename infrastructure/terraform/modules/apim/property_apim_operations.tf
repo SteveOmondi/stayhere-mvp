@@ -57,7 +57,7 @@ resource "azurerm_api_management_api_operation" "get_all_properties" {
   resource_group_name = var.rg_name
   display_name        = "Get All Properties"
   method              = "GET"
-  url_template        = "/api/api/properties"
+  url_template        = "/api/properties"
 }
 
 resource "azurerm_api_management_api_operation" "get_properties_by_owner" {

@@ -34,6 +34,7 @@ resource "azurerm_linux_function_app" "auth" {
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
+    "SKIP_AUTH"                      = var.skip_auth
   }
 
   identity {
@@ -61,6 +62,10 @@ resource "azurerm_linux_function_app" "property" {
     }
   }
 
+  tags = {
+    Service = "PropertyService"
+  }
+
   app_settings = {
     "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
     "AzureWebJobsStorage"            = azurerm_storage_account.main.primary_connection_string
@@ -73,6 +78,7 @@ resource "azurerm_linux_function_app" "property" {
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
+    "SKIP_AUTH"                      = var.skip_auth
   }
 
   identity {
@@ -108,6 +114,7 @@ resource "azurerm_linux_function_app" "customer" {
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
+    "SKIP_AUTH"                      = var.skip_auth
   }
 
   identity {
@@ -147,6 +154,7 @@ resource "azurerm_linux_function_app" "propertyowner" {
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
+    "SKIP_AUTH"                      = var.skip_auth
   }
 
   identity {
@@ -186,6 +194,7 @@ resource "azurerm_linux_function_app" "staticdata" {
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
+    "SKIP_AUTH"                      = var.skip_auth  
   }
 
   identity {
