@@ -28,7 +28,7 @@ public class CategoryFunctions
 
     [Function("GetCategories")]
     public async Task<HttpResponseData> GetCategories(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/categories")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "categories")] HttpRequestData req)
     {
         _logger.LogInformation("Getting all categories");
 

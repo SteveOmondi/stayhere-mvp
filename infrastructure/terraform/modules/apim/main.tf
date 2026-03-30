@@ -16,7 +16,7 @@ resource "azurerm_api_management_api" "auth" {
   display_name        = "Auth API"
   path                = "auth"
   protocols           = ["https"]
-  service_url         = "https://${var.auth_function_host}"
+  service_url         = "https://${var.auth_function_host}/api"
   subscription_required = false
 }
 
@@ -28,7 +28,7 @@ resource "azurerm_api_management_api" "property" {
   display_name        = "Property API"
   path                = "property"
   protocols           = ["https"]
-  service_url         = "https://${var.property_function_host}"
+  service_url         = "https://${var.property_function_host}/api"
   subscription_required = false
 }
 
@@ -40,7 +40,7 @@ resource "azurerm_api_management_api" "customer" {
   display_name        = "Customer API"
   path                = "customer"
   protocols           = ["https"]
-  service_url         = "https://${var.customer_function_host}"
+  service_url         = "https://${var.customer_function_host}/api"
   subscription_required = false
 }
 
@@ -52,7 +52,7 @@ resource "azurerm_api_management_api" "propertyowner" {
   display_name        = "Property Owner API"
   path                = "propertyowner"
   protocols           = ["https"]
-  service_url         = "https://${var.propertyowner_function_host}"
+  service_url         = "https://${var.propertyowner_function_host}/api"
   subscription_required = false
 }
 
@@ -64,7 +64,7 @@ resource "azurerm_api_management_api" "staticdata" {
   display_name        = "Static Data API"
   path                = "staticdata"
   protocols           = ["https"]
-  service_url         = "https://${var.staticdata_function_host}"
+  service_url         = "https://${var.staticdata_function_host}/api"
   subscription_required = false
 }
 
@@ -76,7 +76,7 @@ resource "azurerm_api_management_api_operation" "auth_login" {
   resource_group_name = var.rg_name
   display_name        = "Login"
   method              = "POST"
-  url_template        = "/api/auth/login"
+  url_template        = "/auth/login"
 }
 
 resource "azurerm_api_management_api_operation" "auth_verify" {
@@ -86,7 +86,7 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
   method              = "POST"
-  url_template        = "/api/auth/verifyotp"
+  url_template        = "/auth/verifyotp"
 }
 
 
@@ -98,7 +98,7 @@ resource "azurerm_api_management_api_operation" "static_categories" {
   resource_group_name = var.rg_name
   display_name        = "Get Categories"
   method              = "GET"
-  url_template        = "/api/categories"
+  url_template        = "/categories"
 }
 
 # --- CUSTOMER OPERATIONS ---
@@ -109,7 +109,7 @@ resource "azurerm_api_management_api_operation" "customer_list" {
   resource_group_name = var.rg_name
   display_name        = "Get Customers"
   method              = "GET"
-  url_template        = "/api/customers"
+  url_template        = "/customers"
 }
 
 # --- PROPERTY OWNER OPERATIONS ---
@@ -120,7 +120,7 @@ resource "azurerm_api_management_api_operation" "owner_properties" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner Properties"
   method              = "GET"
-  url_template        = "/api/owners/{ownerId}/properties"
+  url_template        = "/owners/{ownerId}/properties"
 
   template_parameter {
     name     = "ownerId"
@@ -153,12 +153,9 @@ resource "azurerm_api_management_api_policy" "property" {
 <policies>
     <inbound>
         <base />
-        <set-backend-service backend-id="property-backend" />
-        <rewrite-uri template="@(context.Request.Url.Path.Replace("/api/", "/"))" />
+        <set-header name="Host" exists-action="override"><value>${var.property_function_host}</value></set-header>
+        <set-header name="X-Original-URL" exists-action="delete" />
     </inbound>
-    <backend><base /></backend>
-    <outbound><base /></outbound>
-    <on-error><base /></on-error>
 </policies>
 XML
 }
