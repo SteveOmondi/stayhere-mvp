@@ -117,18 +117,60 @@ stages:
     - script: dotnet tool install --global dotnet-ef
       displayName: 'Install dotnet-ef'
 
-    - script: |
-        dotnet ef database update \
-          --project src/Infrastructure \
-          --startup-project src/Infrastructure \
-          --verbose
-      displayName: 'Run EF Migrations'
-      env:
-        DB_HOST: $(DB_HOST)
-        DB_PORT: $(DB_PORT)
-        DB_NAME: $(DB_NAME)
-        DB_USER: $(DB_USER)
-        DB_PASSWORD: $(DB_PASSWORD)
+    - task: AzureCLI@2
+      displayName: 'Discover DB Config and Run Migrations'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Discovering Resource Group..."
+          RG_NAME=$(az group list --query "[?tags.Project=='stayhere' && tags.Environment=='dev'].name" -o tsv | head -n 1)
+          
+          if [ -z "$RG_NAME" ]; then
+            echo "Resource Group not found. Trying fallback search..."
+            RG_NAME=$(az group list --query "[?contains(name, 'rg-stayhere-dev')].name" -o tsv | head -n 1)
+          fi
+          
+          if [ -z "$RG_NAME" ]; then
+            echo "##vso[task.logissue type=error]Could not find Resource Group for stayhere-dev."
+            exit 1
+          fi
+          echo "Using Resource Group: $RG_NAME"
+          
+          echo "Discovering Database Configuration from Function App settings..."
+          FUNC_NAME=$(az functionapp list --resource-group $RG_NAME --query "[?tags.Service=='CustomerService'].name" -o tsv | head -n 1)
+          
+          if [ -z "$FUNC_NAME" ]; then
+            FUNC_NAME=$(az functionapp list --resource-group $RG_NAME --query "[?contains(name, 'func-dev-customer')].name" -o tsv | head -n 1)
+          fi
+          
+          if [ -z "$FUNC_NAME" ]; then
+            echo "##vso[task.logissue type=error]Could not find Customer Service Function App to extract DB config."
+            exit 1
+          fi
+          echo "Found Reference App: $FUNC_NAME"
+          
+          # Extract DB settings from app settings
+          SETTINGS=$(az functionapp config appsettings list --name $FUNC_NAME --resource-group $RG_NAME)
+          
+          export DB_HOST=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_HOST") | .value')
+          export DB_PORT=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_PORT") | .value')
+          export DB_NAME=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_NAME") | .value')
+          export DB_USER=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_USER") | .value')
+          export DB_PASSWORD=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_PASSWORD") | .value')
+          
+          if [ -z "$DB_HOST" ] || [ "$DB_HOST" == "null" ]; then
+             echo "##vso[task.logissue type=error]Failed to extract DB_HOST from app settings."
+             exit 1
+          fi
+          
+          echo "Successfully discovered configuration. Running migrations to $DB_HOST..."
+          
+          dotnet ef database update \
+            --project src/Infrastructure \
+            --startup-project src/Infrastructure \
+            --verbose
 
 - stage: Deploy_AuthService
   displayName: 'Deploy Auth'
