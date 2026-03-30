@@ -33,4 +33,11 @@ var host = new HostBuilder()
     })
     .Build();
 
-host.Run();
+// Apply migrations on startup
+using (var scope = host.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<StayHereDbContext>();
+    await context.Database.MigrateAsync();
+}
+
+await host.RunAsync();

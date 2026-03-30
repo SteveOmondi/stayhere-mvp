@@ -20,9 +20,15 @@ var host = new HostBuilder()
         services.AddScoped<INotificationService, NotificationService>();
         
         // Repositories (InMemory for now)
-        services.AddSingleton<IUserRepository, InMemoryUserRepository>();
-        services.AddSingleton<IOtpRepository, InMemoryOtpRepository>();
+        services.AddApplicationInsightsTelemetryWorkerService();
+        services.ConfigureFunctionsApplicationInsights();
     })
     .Build();
 
-host.Run();
+using (var scope = host.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<StayHereDbContext>();
+    await context.Database.MigrateAsync();
+}
+
+await host.RunAsync();
