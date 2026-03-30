@@ -29,3 +29,5 @@ variable "property_function_host" { type = string }
 variable "customer_function_host" { type = string }
 variable "propertyowner_function_host" { type = string }
 variable "staticdata_function_host" { type = string }
+variable "entra_client_id" { type = string }
+variable "entra_tenant_id" { type = string }

@@ -49,9 +49,12 @@ $dummyId = "00000000-0000-0000-0000-000000000001"
 # Note: These paths match the APIM paths AND the explicit backend routes
 $Tests = @(
     @{ Name = "StaticData: Categories"; Method = "GET";  Path = "/staticdata/categories";  BackendApi = "/api/categories"; Svc = "staticdata" }
+    @{ Name = "StaticData: All";        Method = "GET";  Path = "/staticdata/categories/all"; BackendApi = "/api/categories/all"; Svc = "staticdata" }
     @{ Name = "Property: List All";     Method = "GET";  Path = "/property/properties";    BackendApi = "/api/properties"; Svc = "property" }
+    @{ Name = "Property: Get By Code";  Method = "GET";  Path = "/property/properties/code/PROP-001"; BackendApi = "/api/properties/code/PROP-001"; Svc = "property" }
     @{ Name = "Auth: Login";            Method = "POST"; Path = "/auth/login";             BackendApi = "/api/auth/login"; Svc = "auth"; Body = @{ email = "test@example.com" } }
     @{ Name = "Customer: List";         Method = "GET";  Path = "/customers/list";         BackendApi = "/api/customers";  Svc = "customer" }
+    @{ Name = "Owner: List All";        Method = "GET";  Path = "/propertyowner/owners";   BackendApi = "/api/owners"; Svc = "propertyowner" }
     @{ Name = "Owner: Properties";      Method = "GET";  Path = "/propertyowner/owners/$dummyId/properties"; BackendApi = "/api/owners/$dummyId/properties"; Svc = "propertyowner" }
 )
 

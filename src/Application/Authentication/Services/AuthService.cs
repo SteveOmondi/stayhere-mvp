@@ -23,7 +23,7 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> LoginWithEntraAsync(string entraToken)
     {
-        var (succeeded, entraObjectId) = await _identityService.AuthenticateWithEntraAsync(entraToken);
+        var (succeeded, entraObjectId, email, name) = await _identityService.AuthenticateWithEntraAsync(entraToken);
         
         if (!succeeded || string.IsNullOrEmpty(entraObjectId))
         {
@@ -33,11 +33,20 @@ public class AuthService : IAuthService
         var user = await _userRepository.GetByEntraObjectIdAsync(entraObjectId);
         if (user == null)
         {
-            // Registration logic would go here or in a separate service
-            throw new Exception("User not found. Registration required.");
+            // Auto-registration for Social Sign-on
+            user = new User
+            {
+                Id = Guid.NewGuid(),
+                EntraObjectId = entraObjectId,
+                Email = email ?? "guest@stayhere.com",
+                FullName = name,
+                Roles = new List<UserRole> { UserRole.Tenant },
+                CreatedAt = DateTime.UtcNow
+            };
+            await _userRepository.CreateAsync(user);
         }
 
-        var token = await _identityService.GenerateJwtAsync(user.Id, user.Email, user.Role.ToString());
+        var token = await _identityService.GenerateJwtAsync(user.Id, user.Email, user.Roles.Select(r => r.ToString()).ToList());
         
         return new AuthResponse(token, MapToDto(user));
     }
@@ -65,13 +74,20 @@ public class AuthService : IAuthService
             throw new Exception("User not found.");
         }
 
-        var token = await _identityService.GenerateJwtAsync(user.Id, user.Email, user.Role.ToString());
+        var token = await _identityService.GenerateJwtAsync(user.Id, user.Email, user.Roles.Select(r => r.ToString()).ToList());
         
         return new AuthResponse(token, MapToDto(user));
     }
 
     private UserDto MapToDto(User user) => 
-        new UserDto(user.Id, user.Email, user.FullName, user.Role.ToString());
+        new UserDto(
+            user.Id, 
+            user.Email, 
+            user.FullName, 
+            user.Roles.Select(r => r.ToString()).ToList(),
+            user.Type.ToString(),
+            user.OrganizationId,
+            user.Organization?.Name);
 
     private OtpType MapOtpType(OtpTypeDto type) => type switch
     {

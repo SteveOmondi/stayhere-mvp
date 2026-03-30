@@ -262,6 +262,16 @@ variable "redis_connection_string" {
   sensitive = true
 }
 
+variable "entra_client_id" {
+  type    = string
+  default = ""
+}
+
+variable "entra_tenant_id" {
+  type    = string
+  default = ""
+}
+
 output "auth_function_name" {
   value = azurerm_linux_function_app.auth.name
 }

@@ -38,3 +38,15 @@ variable "skip_auth" {
   description = "Skip authentication for testing"
   default     = false
 }
+
+variable "entra_client_id" {
+  type        = string
+  description = "Entra ID Client ID for Social Login"
+  default     = ""
+}
+
+variable "entra_tenant_id" {
+  type        = string
+  description = "Entra ID Tenant ID"
+  default     = ""
+}

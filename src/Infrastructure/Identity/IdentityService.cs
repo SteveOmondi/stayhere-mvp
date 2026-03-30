@@ -4,16 +4,20 @@ namespace StayHere.Infrastructure.Identity;
 
 public class IdentityService : IIdentityService
 {
-    public Task<(bool Succeeded, string? UserId)> AuthenticateWithEntraAsync(string token)
+    public Task<(bool Succeeded, string? UserId, string? Email, string? Name)> AuthenticateWithEntraAsync(string token)
     {
-        // Mocking Entra ID validation
         // In reality, this would use Microsoft.Identity.Web or MSAL to validate the token
-        return Task.FromResult((true, "mock-entra-id-worker"));
+        // and extract claims like oid, sub, preferred_username (email), and name.
+        if (token == "mock-social-token")
+        {
+            return Task.FromResult((true, (string?)"social-userid-001", (string?)"social.user@gmail.com", (string?)"Social User"));
+        }
+        return Task.FromResult((true, (string?)"mock-entra-id-worker", (string?)"dev@stayhere.com", (string?)"Dev Admin"));
     }
 
-    public Task<string> GenerateJwtAsync(Guid userId, string email, string role)
+    public Task<string> GenerateJwtAsync(Guid userId, string email, List<string> roles)
     {
-        // Mocking JWT generation
+        // Mocking JWT generation with roles list
         return Task.FromResult("mock-jwt-token");
     }
 }

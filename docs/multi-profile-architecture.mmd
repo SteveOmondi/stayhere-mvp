@@ -1,0 +1,34 @@
+classDiagram
+    class User {
+        +Guid Id
+        +string Email
+        +List~UserRole~ Roles
+        +UserType Type
+        +Guid? OrganizationId
+        +DateTime CreatedAt
+    }
+    class Organization {
+        +Guid Id
+        +string Name
+        +OrganizationType Type
+    }
+    class PropertyOwner {
+        +Guid Id
+        +Guid? UserId
+        +string FullName
+    }
+    class Customer {
+        +Guid Id
+        +Guid? UserId
+        +string FullName
+    }
+    class Agent {
+        +Guid Id
+        +Guid? UserId
+    }
+
+    User "1" --> "0..1" Organization : belongs to
+    User "1" -- "0..*" PropertyOwner : can be
+    User "1" -- "0..*" Customer : can be
+    User "1" -- "0..*" Agent : can be
+    Organization "1" -- "0..*" User : has staff

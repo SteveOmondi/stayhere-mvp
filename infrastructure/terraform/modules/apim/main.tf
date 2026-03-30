@@ -112,6 +112,26 @@ resource "azurerm_api_management_api_operation" "static_categories" {
   url_template        = "/categories"
 }
 
+resource "azurerm_api_management_api_operation" "static_all_categories" {
+  operation_id        = "get-all-categories"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get All Categories"
+  method              = "GET"
+  url_template        = "/categories/all"
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_list" {
+  operation_id        = "get-owners"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get All Owners"
+  method              = "GET"
+  url_template        = "/owners"
+}
+
 # --- CUSTOMER OPERATIONS ---
 resource "azurerm_api_management_api_operation" "customer_list" {
   operation_id        = "get-customers"
@@ -167,6 +187,8 @@ resource "azurerm_api_management_api_policy" "auth" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.auth_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
+        <!-- Placeholder for Entra ID Validation -->
+        <!-- <validate-jwt header-name="Authorization" failed-validation-httpcode="401" ... /> -->
     </inbound>
 </policies>
 XML
@@ -181,7 +203,7 @@ resource "azurerm_api_management_api_policy" "property" {
     <inbound>
         <base />
         <set-header name="Host" exists-action="override"><value>${var.property_function_host}</value></set-header>
-        <set-header name="X-Original-URL" exists-action="delete" />
+        <rewrite-uri template="/api{relative-url}" />
     </inbound>
 </policies>
 XML
@@ -226,8 +248,24 @@ resource "azurerm_api_management_api_policy" "staticdata" {
     <inbound>
         <base />
         <set-header name="Host" exists-action="override"><value>${var.staticdata_function_host}</value></set-header>
-        <set-header name="X-Original-URL" exists-action="delete" />
+        <rewrite-uri template="/api{relative-url}" />
     </inbound>
 </policies>
 XML
+}
+
+resource "azurerm_api_management_named_value" "entra_client_id" {
+  name                = "entra-client-id"
+  resource_group_name = var.rg_name
+  api_management_name = azurerm_api_management.main.name
+  display_name        = "ENTRA_CLIENT_ID"
+  value               = var.entra_client_id
+}
+
+resource "azurerm_api_management_named_value" "entra_tenant_id" {
+  name                = "entra-tenant-id"
+  resource_group_name = var.rg_name
+  api_management_name = azurerm_api_management.main.name
+  display_name        = "ENTRA_TENANT_ID"
+  value               = var.entra_tenant_id
 }

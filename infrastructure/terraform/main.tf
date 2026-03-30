@@ -68,6 +68,8 @@ module "compute" {
   psql_database_name        = module.database.psql_database_name
   mongodb_connection_string = module.database.mongodb_connection_string
   redis_connection_string   = module.cache.redis_connection_string
+  entra_client_id           = var.entra_client_id
+  entra_tenant_id           = var.entra_tenant_id
 }
 
 # APIM Module
@@ -83,4 +85,6 @@ module "apim" {
   customer_function_host      = module.compute.customer_function_host
   propertyowner_function_host = module.compute.propertyowner_function_host
   staticdata_function_host    = module.compute.staticdata_function_host
+  entra_client_id             = var.entra_client_id
+  entra_tenant_id             = var.entra_tenant_id
 }
