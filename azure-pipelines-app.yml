@@ -91,12 +91,12 @@ stages:
   displayName: 'Migrate Database'
   dependsOn: Build
   condition: succeeded()
+  variables:
+  - group: StayHere-Variables
   jobs:
   - job: Migrate
     pool:
       vmImage: $(vmImageName)
-    variables:
-    - group: StayHere-Variables
     steps:
     - task: UseDotNet@2
       inputs:
@@ -115,17 +115,22 @@ stages:
       displayName: 'Install dotnet-ef'
 
     - script: |
+        # Set environment variables for EF tool, using defaults if expansion failed
+        # If ADO doesn't find the variable, it passes the literal $(VAR).
+        export DB_HOST="$(DB_HOST)"
+        export DB_PORT="$(DB_PORT)"
+        export DB_NAME="$(DB_NAME)"
+        export DB_USER="$(DB_USER)"
+        export DB_PASSWORD="$(DB_PASSWORD)"
+        
+        # Fallback for port if expansion failed or it's empty
+        if [[ "$DB_PORT" == "\$(DB_PORT)" ]] || [[ -z "$DB_PORT" ]]; then export DB_PORT="5432"; fi
+
         dotnet ef database update \
           --project src/Infrastructure \
           --startup-project src/Infrastructure \
           --verbose
       displayName: 'Run EF Migrations'
-      env:
-        DB_HOST: $(DB_HOST)
-        DB_PORT: $(DB_PORT)
-        DB_NAME: $(DB_NAME)
-        DB_USER: $(DB_USER)
-        DB_PASSWORD: $(DB_PASSWORD)
 
 - stage: Deploy_AuthService
   displayName: 'Deploy Auth'
