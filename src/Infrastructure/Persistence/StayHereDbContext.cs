@@ -23,6 +23,7 @@ public class StayHereDbContext : DbContext
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Organization> Organizations => Set<Organization>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +41,7 @@ public class StayHereDbContext : DbContext
         ConfigureDocument(modelBuilder);
         ConfigureOtpVerification(modelBuilder);
         ConfigureCategory(modelBuilder);
+        ConfigureOrganization(modelBuilder);
 
         SeedData(modelBuilder);
     }
@@ -76,11 +78,38 @@ public class StayHereDbContext : DbContext
 
         var ownerId = Guid.Parse("44444444-4444-4444-4444-444444444444");
         var walletId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        var userId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+        var orgId = Guid.Parse("77777777-7777-7777-7777-777777777777");
+
+        modelBuilder.Entity<Organization>().HasData(
+            new Organization
+            {
+                Id = orgId,
+                Name = "StayHere Operations Ltd",
+                Type = OrganizationType.Company,
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
+        modelBuilder.Entity<User>().HasData(
+            new User
+            {
+                Id = userId,
+                Email = "admin@stayhere.com",
+                FullName = "StayHere Global Admin",
+                Roles = new List<UserRole> { UserRole.Admin, UserRole.PropertyOwner },
+                Type = UserType.Individual,
+                OrganizationId = orgId,
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
 
         modelBuilder.Entity<PropertyOwner>().HasData(
             new PropertyOwner
             {
                 Id = ownerId,
+                UserId = userId,
                 FullName = "StayHere Master Owner",
                 Email = "owner@stayhere.com",
                 Phone = "+254700000000",
@@ -136,6 +165,11 @@ public class StayHereDbContext : DbContext
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
     {
+        var roleListComparer = new ValueComparer<List<UserRole>>(
+            (c1, c2) => c1!.SequenceEqual(c2!),
+            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+            c => c.ToList());
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("users");
@@ -145,12 +179,48 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20);
             entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(255);
             entity.Property(e => e.EntraObjectId).HasColumnName("entra_object_id").HasMaxLength(255);
-            entity.Property(e => e.Role).HasColumnName("role").HasConversion<string>();
+            entity.Property(e => e.Roles).HasColumnName("roles")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<UserRole>>(v, (JsonSerializerOptions?)null) ?? new List<UserRole>())
+                .Metadata.SetValueComparer(roleListComparer);
+            entity.Property(e => e.Type).HasColumnName("user_type").HasConversion<string>();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.LastLogin).HasColumnName("last_login");
+            
             entity.HasIndex(e => e.Email).IsUnique();
             entity.HasIndex(e => e.PhoneNumber);
             entity.HasIndex(e => e.EntraObjectId);
+            entity.HasIndex(e => e.OrganizationId);
+
+            entity.HasOne(e => e.Organization)
+                .WithMany(o => o.StaffMembers)
+                .HasForeignKey(e => e.OrganizationId);
+        });
+    }
+
+    private static void ConfigureOrganization(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Organization>(entity =>
+        {
+            entity.ToTable("organizations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.RegistrationNumber).HasColumnName("registration_number").HasMaxLength(100);
+            entity.Property(e => e.TaxId).HasColumnName("tax_id").HasMaxLength(100);
+            entity.Property(e => e.Website).HasColumnName("website").HasMaxLength(255);
+            entity.Property(e => e.Address).HasColumnName("address");
+            entity.Property(e => e.ContactPhone).HasColumnName("contact_phone").HasMaxLength(20);
+            entity.Property(e => e.ContactEmail).HasColumnName("contact_email").HasMaxLength(255);
+            entity.Property(e => e.Type).HasColumnName("org_type").HasConversion<string>();
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.RegistrationNumber).IsUnique();
         });
     }
 
