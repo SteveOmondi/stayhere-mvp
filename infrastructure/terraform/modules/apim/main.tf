@@ -16,7 +16,7 @@ resource "azurerm_api_management_api" "auth" {
   display_name        = "Auth API"
   path                = "auth"
   protocols           = ["https"]
-  service_url         = "https://${var.auth_function_host}/api"
+  service_url         = "https://${var.auth_function_host}/api/auth"
   subscription_required = false
 }
 
@@ -76,7 +76,7 @@ resource "azurerm_api_management_api_operation" "auth_login" {
   resource_group_name = var.rg_name
   display_name        = "Login"
   method              = "POST"
-  url_template        = "/auth/login"
+  url_template        = "/login"
 }
 
 resource "azurerm_api_management_api_operation" "auth_verify" {
@@ -86,7 +86,18 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
   method              = "POST"
-  url_template        = "/auth/verifyotp"
+  url_template        = "/verifyotp"
+}
+
+# --- PROPERTY OPERATIONS ---
+resource "azurerm_api_management_api_operation" "property_list" {
+  operation_id        = "get-properties"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Properties"
+  method              = "GET"
+  url_template        = "/properties"
 }
 
 
