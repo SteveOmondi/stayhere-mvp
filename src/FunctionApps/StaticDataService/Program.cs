@@ -37,7 +37,16 @@ var host = new HostBuilder()
 using (var scope = host.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<StayHereDbContext>();
-    await context.Database.MigrateAsync();
+    try
+    {
+        await context.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        // Log error but allow host to start so we can debug/sync triggers
+        var logger = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>().CreateLogger("Startup");
+        logger.LogError(ex, "Failed to apply migrations on startup.");
+    }
 }
 
 await host.RunAsync();

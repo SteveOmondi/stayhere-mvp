@@ -28,7 +28,7 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_service
   name             = "AllowAllAzureServices"
   server_id        = azurerm_postgresql_flexible_server.main.id
   start_ip_address = "0.0.0.0"
-  end_ip_address   = "0.0.0.0"
+  end_ip_address   = "255.255.255.255"
 }
 
 resource "azurerm_postgresql_flexible_server_database" "main" {
