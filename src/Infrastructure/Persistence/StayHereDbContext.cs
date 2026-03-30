@@ -58,7 +58,8 @@ public class StayHereDbContext : DbContext
                 Country = "Kenya", 
                 City = "Nairobi",
                 IsActive = true,
-                CreatedAt = DateTime.Parse("2026-01-01")
+                CreatedAt = DateTime.Parse("2026-01-01"),
+                UpdatedAt = DateTime.Parse("2026-01-01")
             },
             new Category 
             { 
@@ -68,7 +69,8 @@ public class StayHereDbContext : DbContext
                 Country = "Kenya", 
                 City = "Nairobi",
                 IsActive = true,
-                CreatedAt = DateTime.Parse("2026-01-01")
+                CreatedAt = DateTime.Parse("2026-01-01"),
+                UpdatedAt = DateTime.Parse("2026-01-01")
             }
         );
 
@@ -111,7 +113,8 @@ public class StayHereDbContext : DbContext
                 TotalUnits = 50,
                 TotalFloors = 10,
                 OwnerId = ownerId,
-                CreatedAt = DateTime.Parse("2026-01-01")
+                CreatedAt = DateTime.Parse("2026-01-01"),
+                UpdatedAt = DateTime.Parse("2026-01-01")
             }
         );
 
