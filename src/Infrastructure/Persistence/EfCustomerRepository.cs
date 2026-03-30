@@ -56,6 +56,9 @@ public class EfCustomerRepository : ICustomerRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Customer>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await _db.Customers.ToListAsync(cancellationToken);
+
     public async Task UpdateAsync(Customer customer, CancellationToken cancellationToken = default)
     {
         _db.Customers.Update(customer);

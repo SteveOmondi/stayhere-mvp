@@ -9,6 +9,7 @@ public interface ICustomerService
     Task<CustomerDto?> GetCustomerByPhoneAsync(string phone);
     Task<IReadOnlyList<CustomerDto>> GetCustomersByRegionAsync(Guid? countryId, Guid? cityId);
     Task<IReadOnlyList<CustomerDto>> GetCustomersByListingAsync(Guid listingId);
+    Task<IReadOnlyList<CustomerDto>> GetAllCustomersAsync();
     Task<CustomerDto?> UpdateCustomerAsync(Guid id, UpdateCustomerRequest request);
     Task DeactivateCustomerAsync(Guid id);
 

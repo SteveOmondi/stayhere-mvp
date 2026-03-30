@@ -65,6 +65,12 @@ public class CustomerService : ICustomerService
         return customers.Select(MapToDto).ToList();
     }
 
+    public async Task<IReadOnlyList<CustomerDto>> GetAllCustomersAsync()
+    {
+        var customers = await _customerRepository.GetAllAsync();
+        return customers.Select(MapToDto).ToList();
+    }
+
     public async Task<CustomerDto?> UpdateCustomerAsync(Guid id, UpdateCustomerRequest request)
     {
         var customer = await _customerRepository.GetByIdAsync(id);

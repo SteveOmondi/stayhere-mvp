@@ -40,6 +40,14 @@ public class CustomerFunctions
         }
     }
 
+    [Function("GetCustomers")]
+    public async Task<HttpResponseData> GetCustomers(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "customers")] HttpRequestData req)
+    {
+        var customers = await _customerService.GetAllCustomersAsync();
+        return await CreateJsonResponse(req, HttpStatusCode.OK, customers);
+    }
+
     [Function("GetCustomerById")]
     public async Task<HttpResponseData> GetCustomerById(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "customers/{id:guid}")] HttpRequestData req,

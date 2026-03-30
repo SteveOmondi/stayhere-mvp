@@ -38,7 +38,7 @@ resource "azurerm_api_management_api" "customer" {
   api_management_name = azurerm_api_management.main.name
   revision            = "1"
   display_name        = "Customer API"
-  path                = "customer"
+  path                = "customers"
   protocols           = ["https"]
   service_url         = "https://${var.customer_function_host}/api"
   subscription_required = false
@@ -120,7 +120,23 @@ resource "azurerm_api_management_api_operation" "customer_list" {
   resource_group_name = var.rg_name
   display_name        = "Get Customers"
   method              = "GET"
-  url_template        = "/customers"
+  url_template        = "/list"
+}
+
+resource "azurerm_api_management_api_operation_policy" "customer_list" {
+  api_name            = azurerm_api_management_api_operation.customer_list.api_name
+  operation_id        = azurerm_api_management_api_operation.customer_list.operation_id
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <base />
+        <rewrite-uri template="/customers" />
+    </inbound>
+</policies>
+XML
 }
 
 # --- PROPERTY OWNER OPERATIONS ---

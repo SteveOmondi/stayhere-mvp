@@ -87,9 +87,40 @@ stages:
     - publish: $(Build.ArtifactStagingDirectory)/StaticDataService
       artifact: StaticDataService_Pkg
 
+- stage: Migrate_Database
+  displayName: 'Migrate Database'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: Migrate
+    pool:
+      vmImage: $(vmImageName)
+    variables:
+    - group: StayHere-Variables
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        version: $(dotnetVersion)
+
+    - script: dotnet tool install --global dotnet-ef
+      displayName: 'Install dotnet-ef'
+
+    - script: |
+        dotnet ef database update \
+          --project src/Infrastructure \
+          --startup-project src/Infrastructure \
+          --verbose
+      displayName: 'Run EF Migrations'
+      env:
+        DB_HOST: $(DB_HOST)
+        DB_PORT: $(DB_PORT)
+        DB_NAME: $(DB_NAME)
+        DB_USER: $(DB_USER)
+        DB_PASSWORD: $(DB_PASSWORD)
+
 - stage: Deploy_AuthService
   displayName: 'Deploy Auth'
-  dependsOn: Build
+  dependsOn: Migrate_Database
   condition: succeeded()
   jobs:
   - job: Deploy
@@ -136,7 +167,7 @@ stages:
 
 - stage: Deploy_PropertyService
   displayName: 'Deploy Property'
-  dependsOn: Build
+  dependsOn: Migrate_Database
   condition: succeeded()
   jobs:
   - job: Deploy
@@ -169,7 +200,7 @@ stages:
 
 - stage: Deploy_CustomerService
   displayName: 'Deploy Customer'
-  dependsOn: Build
+  dependsOn: Migrate_Database
   condition: succeeded()
   jobs:
   - job: Deploy
@@ -202,7 +233,7 @@ stages:
 
 - stage: Deploy_PropertyOwnerService
   displayName: 'Deploy PropertyOwner'
-  dependsOn: Build
+  dependsOn: Migrate_Database
   condition: succeeded()
   jobs:
   - job: Deploy
@@ -235,7 +266,7 @@ stages:
 
 - stage: Deploy_StaticDataService
   displayName: 'Deploy StaticData'
-  dependsOn: Build
+  dependsOn: Migrate_Database
   condition: succeeded()
   jobs:
   - job: Deploy
