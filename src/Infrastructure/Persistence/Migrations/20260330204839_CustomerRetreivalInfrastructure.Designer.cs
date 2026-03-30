@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using StayHere.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using StayHere.Infrastructure.Persistence;
 namespace StayHere.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(StayHereDbContext))]
-    partial class StayHereDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260330204839_CustomerRetreivalInfrastructure")]
+    partial class CustomerRetreivalInfrastructure
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
