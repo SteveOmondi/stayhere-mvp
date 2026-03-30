@@ -102,6 +102,15 @@ stages:
       inputs:
         version: $(dotnetVersion)
 
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore Infrastructure Project'
+      inputs:
+        command: 'restore'
+        projects: 'src/Infrastructure/StayHere.Infrastructure.csproj'
+
+    - script: dotnet build src/Infrastructure/StayHere.Infrastructure.csproj --configuration $(buildConfiguration)
+      displayName: 'Build Infrastructure'
+
     - script: dotnet tool install --global dotnet-ef
       displayName: 'Install dotnet-ef'
 

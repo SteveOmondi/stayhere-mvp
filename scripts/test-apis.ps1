@@ -51,7 +51,7 @@ $Tests = @(
     @{ Name = "StaticData: Categories"; Method = "GET";  Path = "/staticdata/categories";  BackendApi = "/api/categories"; Svc = "staticdata" }
     @{ Name = "Property: List All";     Method = "GET";  Path = "/property/properties";    BackendApi = "/api/properties"; Svc = "property" }
     @{ Name = "Auth: Login";            Method = "POST"; Path = "/auth/login";             BackendApi = "/api/auth/login"; Svc = "auth"; Body = @{ email = "test@example.com" } }
-    @{ Name = "Customer: List";         Method = "GET";  Path = "/customer/customers";     BackendApi = "/api/customers";  Svc = "customer" }
+    @{ Name = "Customer: List";         Method = "GET";  Path = "/customers/list";         BackendApi = "/api/customers";  Svc = "customer" }
     @{ Name = "Owner: Properties";      Method = "GET";  Path = "/propertyowner/owners/$dummyId/properties"; BackendApi = "/api/owners/$dummyId/properties"; Svc = "propertyowner" }
 )
 
