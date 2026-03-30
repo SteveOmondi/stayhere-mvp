@@ -194,7 +194,9 @@ resource "azurerm_linux_function_app" "staticdata" {
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
-    "SKIP_AUTH"                      = var.skip_auth  
+    "SKIP_AUTH"                      = var.skip_auth
+    "ENTRA_CLIENT_ID"                = var.entra_client_id != "" ? var.entra_client_id : "REPLACE_ME"
+    "ENTRA_TENANT_ID"                = var.entra_tenant_id != "" ? var.entra_tenant_id : "REPLACE_ME"
   }
 
   identity {

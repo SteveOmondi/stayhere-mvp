@@ -259,7 +259,7 @@ resource "azurerm_api_management_named_value" "entra_client_id" {
   resource_group_name = var.rg_name
   api_management_name = azurerm_api_management.main.name
   display_name        = "ENTRA_CLIENT_ID"
-  value               = var.entra_client_id
+  value               = var.entra_client_id != "" ? var.entra_client_id : "REPLACE_ME"
 }
 
 resource "azurerm_api_management_named_value" "entra_tenant_id" {
@@ -267,5 +267,5 @@ resource "azurerm_api_management_named_value" "entra_tenant_id" {
   resource_group_name = var.rg_name
   api_management_name = azurerm_api_management.main.name
   display_name        = "ENTRA_TENANT_ID"
-  value               = var.entra_tenant_id
+  value               = var.entra_tenant_id != "" ? var.entra_tenant_id : "REPLACE_ME"
 }
