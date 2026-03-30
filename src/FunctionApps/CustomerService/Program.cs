@@ -19,7 +19,7 @@ var host = new HostBuilder()
         var dbUser = config["DB_USER"] ?? "postgres";
         var dbPassword = config["DB_PASSWORD"] ?? "";
 
-        var connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+        var connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword};Ssl Mode=Require;Trust Server Certificate=true";
 
         services.AddDbContext<StayHereDbContext>(options =>
             options.UseNpgsql(connectionString));
