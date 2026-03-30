@@ -72,6 +72,34 @@ public class StayHereDbContext : DbContext
             }
         );
 
+        var ownerId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        var walletId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+
+        modelBuilder.Entity<PropertyOwner>().HasData(
+            new PropertyOwner
+            {
+                Id = ownerId,
+                FullName = "StayHere Master Owner",
+                Email = "owner@stayhere.com",
+                Phone = "+254700000000",
+                WalletId = walletId,
+                CreatedAt = DateTime.Parse("2026-01-01"),
+                UpdatedAt = DateTime.Parse("2026-01-01")
+            }
+        );
+
+        modelBuilder.Entity<Wallet>().HasData(
+            new Wallet
+            {
+                Id = walletId,
+                PropertyOwnerId = ownerId,
+                Balance = 0,
+                Currency = "KES",
+                CreatedAt = DateTime.Parse("2026-01-01"),
+                UpdatedAt = DateTime.Parse("2026-01-01")
+            }
+        );
+
         var propertyId = Guid.Parse("33333333-3333-3333-3333-333333333333");
         modelBuilder.Entity<Property>().HasData(
             new 
@@ -82,6 +110,7 @@ public class StayHereDbContext : DbContext
                 Description = "Luxury living in the heart of the city",
                 TotalUnits = 50,
                 TotalFloors = 10,
+                OwnerId = ownerId,
                 CreatedAt = DateTime.Parse("2026-01-01")
             }
         );
