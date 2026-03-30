@@ -173,24 +173,24 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             City = "Nairobi",
                             Country = "Kenya",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Modern apartments in the city",
                             IsActive = true,
                             Name = "Apartment",
                             SortOrder = 0,
-                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("22222222-2222-2222-2222-222222222222"),
                             City = "Nairobi",
                             Country = "Kenya",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Spacious family houses",
                             IsActive = true,
                             Name = "House",
                             SortOrder = 0,
-                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -706,13 +706,13 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("33333333-3333-3333-3333-333333333333"),
                             BuildingName = "StayHere Heights",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Luxury living in the heart of the city",
                             OwnerId = new Guid("44444444-4444-4444-4444-444444444444"),
                             PropertyCode = "PROP-001",
                             TotalFloors = 10,
                             TotalUnits = 50,
-                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -772,11 +772,11 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("44444444-4444-4444-4444-444444444444"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "owner@stayhere.com",
                             FullName = "StayHere Master Owner",
                             Phone = "+254700000000",
-                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             WalletId = new Guid("55555555-5555-5555-5555-555555555555")
                         });
                 });
@@ -880,10 +880,10 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("55555555-5555-5555-5555-555555555555"),
                             Balance = 0m,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Currency = "KES",
                             PropertyOwnerId = new Guid("44444444-4444-4444-4444-444444444444"),
-                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 

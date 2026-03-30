@@ -58,8 +58,8 @@ public class StayHereDbContext : DbContext
                 Country = "Kenya", 
                 City = "Nairobi",
                 IsActive = true,
-                CreatedAt = DateTime.Parse("2026-01-01"),
-                UpdatedAt = DateTime.Parse("2026-01-01")
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             },
             new Category 
             { 
@@ -69,8 +69,8 @@ public class StayHereDbContext : DbContext
                 Country = "Kenya", 
                 City = "Nairobi",
                 IsActive = true,
-                CreatedAt = DateTime.Parse("2026-01-01"),
-                UpdatedAt = DateTime.Parse("2026-01-01")
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
 
@@ -85,8 +85,8 @@ public class StayHereDbContext : DbContext
                 Email = "owner@stayhere.com",
                 Phone = "+254700000000",
                 WalletId = walletId,
-                CreatedAt = DateTime.Parse("2026-01-01"),
-                UpdatedAt = DateTime.Parse("2026-01-01")
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
 
@@ -97,8 +97,8 @@ public class StayHereDbContext : DbContext
                 PropertyOwnerId = ownerId,
                 Balance = 0,
                 Currency = "KES",
-                CreatedAt = DateTime.Parse("2026-01-01"),
-                UpdatedAt = DateTime.Parse("2026-01-01")
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
 
@@ -113,8 +113,8 @@ public class StayHereDbContext : DbContext
                 TotalUnits = 50,
                 TotalFloors = 10,
                 OwnerId = ownerId,
-                CreatedAt = DateTime.Parse("2026-01-01"),
-                UpdatedAt = DateTime.Parse("2026-01-01")
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
 
