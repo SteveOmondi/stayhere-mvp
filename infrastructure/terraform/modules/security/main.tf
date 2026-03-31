@@ -43,7 +43,7 @@ resource "azuread_application" "main" {
   owners       = [data.azuread_client_config.current.object_id]
 
   single_page_application {
-    redirect_uris = ["http://localhost:3000"]
+    redirect_uris = ["http://localhost:3000/"]
   }
 
   api {
