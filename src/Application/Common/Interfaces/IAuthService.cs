@@ -7,4 +7,5 @@ public interface IAuthService
     Task<AuthResponse> LoginWithEntraAsync(string entraToken);
     Task<bool> RequestOtpAsync(OtpRequest request);
     Task<AuthResponse> VerifyOtpAndLoginAsync(OtpVerificationRequest request);
+    Task<UserDto> RegisterAsync(RegisterRequest request);
 }

@@ -314,6 +314,15 @@ public class PropertyOwnerFunctions
         }
     }
 
+    [Function("GetOwners")]
+    public async Task<HttpResponseData> GetOwners(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners")] HttpRequestData req)
+    {
+        var (page, pageSize) = ParsePageQuery(req);
+        var owners = await _ownerService.GetAllPropertyOwnersAsync(page, pageSize);
+        return await CreateJsonResponse(req, HttpStatusCode.OK, owners);
+    }
+
     private static (int page, int pageSize) ParsePageQuery(HttpRequestData req)
     {
         var query = req.Url.Query?.TrimStart('?') ?? "";

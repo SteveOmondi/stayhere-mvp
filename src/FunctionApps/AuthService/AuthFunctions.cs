@@ -19,6 +19,31 @@ public class AuthFunctions
         _logger = logger;
     }
 
+    [Function("Signup")]
+    public async Task<HttpResponseData> Signup(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/signup")] HttpRequestData req)
+    {
+        _logger.LogInformation("Processing Signup request.");
+
+        var body = await new StreamReader(req.Body).ReadToEndAsync();
+        var registerRequest = JsonSerializer.Deserialize<RegisterRequest>(body, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+
+        if (registerRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
+
+        try
+        {
+            var user = await _authService.RegisterAsync(registerRequest);
+            return await CreateJsonResponse(req, user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during Signup");
+            var res = req.CreateResponse(HttpStatusCode.BadRequest);
+            await res.WriteStringAsync(ex.Message);
+            return res;
+        }
+    }
+
     [Function("Login")]
     public async Task<HttpResponseData> Login(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/login")] HttpRequestData req)

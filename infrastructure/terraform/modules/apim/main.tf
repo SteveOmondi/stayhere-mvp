@@ -69,6 +69,16 @@ resource "azurerm_api_management_api" "staticdata" {
 }
 
 # --- AUTH OPERATIONS ---
+resource "azurerm_api_management_api_operation" "auth_signup" {
+  operation_id        = "signup"
+  api_name            = azurerm_api_management_api.auth.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Signup"
+  method              = "POST"
+  url_template        = "/signup"
+}
+
 resource "azurerm_api_management_api_operation" "auth_login" {
   operation_id        = "login"
   api_name            = azurerm_api_management_api.auth.name

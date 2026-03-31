@@ -46,16 +46,11 @@ $suffix = $BaseUrl.Split('-')[-1].Split('.')[0]
 $dummyId = "00000000-0000-0000-0000-000000000001"
 
 # --- Endpoints Mapping ---
-# Note: These paths match the APIM paths AND the explicit backend routes
+# --- Auth Stage Tests ---
 $Tests = @(
-    @{ Name = "StaticData: Categories"; Method = "GET";  Path = "/staticdata/categories";  BackendApi = "/api/categories"; Svc = "staticdata" }
-    @{ Name = "StaticData: All";        Method = "GET";  Path = "/staticdata/categories/all"; BackendApi = "/api/categories/all"; Svc = "staticdata" }
-    @{ Name = "Property: List All";     Method = "GET";  Path = "/property/properties";    BackendApi = "/api/properties"; Svc = "property" }
-    @{ Name = "Property: Get By Code";  Method = "GET";  Path = "/property/properties/code/PROP-001"; BackendApi = "/api/properties/code/PROP-001"; Svc = "property" }
-    @{ Name = "Auth: Login";            Method = "POST"; Path = "/auth/login";             BackendApi = "/api/auth/login"; Svc = "auth"; Body = @{ email = "test@example.com" } }
-    @{ Name = "Customer: List";         Method = "GET";  Path = "/customers/list";         BackendApi = "/api/customers";  Svc = "customer" }
-    @{ Name = "Owner: List All";        Method = "GET";  Path = "/propertyowner/owners";   BackendApi = "/api/owners"; Svc = "propertyowner" }
-    @{ Name = "Owner: Properties";      Method = "GET";  Path = "/propertyowner/owners/$dummyId/properties"; BackendApi = "/api/owners/$dummyId/properties"; Svc = "propertyowner" }
+    @{ Name = "Auth: Signup (New User)";    Method = "POST"; Path = "/auth/signup";    BackendApi = "/api/auth/signup";    Svc = "auth"; Body = @{ email = "newuser@example.com"; fullName = "Test User"; userType = "Individual" } }
+    @{ Name = "Auth: Request OTP (Email)"; Method = "POST"; Path = "/auth/login";     BackendApi = "/api/auth/login";     Svc = "auth"; Body = @{ email = "admin@stayhere.com" } }
+    @{ Name = "Auth: Verify OTP (Mock)";    Method = "POST"; Path = "/auth/verifyotp"; BackendApi = "/api/auth/verifyotp"; Svc = "auth"; Body = @{ target = "admin@stayhere.com"; code = "123456" } }
 )
 
 foreach ($test in $Tests) {

@@ -79,6 +79,26 @@ public class AuthService : IAuthService
         return new AuthResponse(token, MapToDto(user));
     }
 
+    public async Task<UserDto> RegisterAsync(RegisterRequest request)
+    {
+        var existing = await _userRepository.GetByEmailAsync(request.Email);
+        if (existing != null) throw new Exception("User already exists.");
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber,
+            FullName = request.FullName,
+            Roles = new List<UserRole> { UserRole.Tenant }, // Default role
+            Type = Enum.TryParse<UserType>(request.UserType, true, out var type) ? type : UserType.Individual,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _userRepository.CreateAsync(user);
+        return MapToDto(user);
+    }
+
     private UserDto MapToDto(User user) => 
         new UserDto(
             user.Id, 

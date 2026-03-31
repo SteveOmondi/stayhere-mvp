@@ -1,0 +1,120 @@
+﻿
+  infrastructure\terraform\modules\apim\
+main.tf:1:resource 
+"azurerm_api_management" "main" {
+  infrastructure\terraform\modules\apim\
+main.tf:2:  name                = 
+"apim-${var.environment}-${var.suffix}"
+  infrastructure\terraform\modules\apim\
+main.tf:3:  location            = 
+var.location
+  infrastructure\terraform\modules\apim\
+main.tf:4:  resource_group_name = 
+var.rg_name
+  infrastructure\terraform\modules\apim\
+main.tf:5:  publisher_name      = 
+var.publisher_name
+  infrastructure\terraform\modules\apim\
+main.tf:6:  publisher_email     = 
+var.publisher_email
+  infrastructure\terraform\modules\apim\
+main.tf:7:
+  infrastructure\terraform\modules\apim\
+main.tf:8:  sku_name = "Consumption_0"
+  infrastructure\terraform\modules\apim\
+main.tf:9:}
+  infrastructure\terraform\modules\apim\
+main.tf:10:
+  infrastructure\terraform\modules\apim\
+main.tf:11:resource 
+"azurerm_api_management_api" "auth" {
+> infrastructure\terraform\modules\apim\
+main.tf:12:  name                = 
+"auth-api"
+  infrastructure\terraform\modules\apim\
+main.tf:13:  resource_group_name = 
+var.rg_name
+  infrastructure\terraform\modules\apim\
+main.tf:14:  api_management_name = 
+azurerm_api_management.main.name
+  infrastructure\terraform\modules\apim\
+main.tf:15:  revision            = "1"
+  infrastructure\terraform\modules\apim\
+main.tf:16:  display_name        = 
+"Auth API"
+  infrastructure\terraform\modules\apim\
+main.tf:17:  path                = 
+"auth"
+  infrastructure\terraform\modules\apim\
+main.tf:18:  protocols           = 
+["https"]
+  infrastructure\terraform\modules\apim\
+main.tf:19:  service_url         = "http
+s://${var.auth_function_host}/api/auth"
+  infrastructure\terraform\modules\apim\
+main.tf:20:  subscription_required = 
+false
+  infrastructure\terraform\modules\apim\
+main.tf:21:}
+  infrastructure\terraform\modules\apim\
+main.tf:22:
+  infrastructure\terraform\modules\apim\
+main.tf:23:resource 
+"azurerm_api_management_api" "property" 
+{
+  infrastructure\terraform\modules\apim\
+main.tf:24:  name                = 
+"property-api"
+  infrastructure\terraform\modules\apim\
+main.tf:25:  resource_group_name = 
+var.rg_name
+  infrastructure\terraform\modules\apim\
+main.tf:26:  api_management_name = 
+azurerm_api_management.main.name
+  infrastructure\terraform\modules\apim\
+main.tf:27:  revision            = "1"
+  infrastructure\terraform\modules\apim\
+main.tf:28:  display_name        = 
+"Property API"
+  infrastructure\terraform\modules\apim\
+main.tf:29:  path                = 
+"property"
+  infrastructure\terraform\modules\apim\
+main.tf:30:  protocols           = 
+["https"]
+  infrastructure\terraform\modules\apim\
+main.tf:31:  service_url         = "http
+s://${var.property_function_host}/api"
+  infrastructure\terraform\modules\apim\
+main.tf:32:  subscription_required = 
+false
+  infrastructure\terraform\modules\apim\
+main.tf:33:}
+  infrastructure\terraform\modules\apim\
+main.tf:34:
+  infrastructure\terraform\modules\apim\
+main.tf:35:resource 
+"azurerm_api_management_api" "customer" 
+{
+  infrastructure\terraform\modules\apim\
+main.tf:36:  name                = 
+"customer-api"
+  infrastructure\terraform\modules\apim\
+main.tf:37:  resource_group_name = 
+var.rg_name
+  infrastructure\terraform\modules\apim\
+main.tf:38:  api_management_name = 
+azurerm_api_management.main.name
+  infrastructure\terraform\modules\apim\
+main.tf:39:  revision            = "1"
+  infrastructure\terraform\modules\apim\
+main.tf:40:  display_name        = 
+"Customer API"
+  infrastructure\terraform\modules\apim\
+main.tf:41:  path                = 
+"customers"
+  infrastructure\terraform\modules\apim\
+main.tf:42:  protocols           = 
+["https"]
+
+
