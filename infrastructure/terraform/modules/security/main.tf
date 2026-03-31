@@ -65,3 +65,4 @@ output "entra_client_id" {
 output "entra_tenant_id" {
   value = data.azuread_client_config.current.tenant_id
 }
+
