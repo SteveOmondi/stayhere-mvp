@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.Categories.Models;
 using StayHere.Application.Common.Interfaces;
+using StayHere.Domain.Entities;
 
 namespace StayHere.StaticDataService.Functions;
 
@@ -42,6 +43,24 @@ public class CategoryFunctions
             _logger.LogError(ex, "Error getting categories");
             return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, "Failed to retrieve categories");
         }
+    }
+
+    [Function("GetUserTypes")]
+    public async Task<HttpResponseData> GetUserTypes(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user-types")] HttpRequestData req)
+    {
+        _logger.LogInformation("Getting user types");
+        var types = Enum.GetNames(typeof(UserType));
+        return await CreateJsonResponse(req, HttpStatusCode.OK, types);
+    }
+
+    [Function("GetUserRoles")]
+    public async Task<HttpResponseData> GetUserRoles(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user-roles")] HttpRequestData req)
+    {
+        _logger.LogInformation("Getting user roles");
+        var roles = Enum.GetNames(typeof(UserRole));
+        return await CreateJsonResponse(req, HttpStatusCode.OK, roles);
     }
 
     [Function("GetAllCategories")]

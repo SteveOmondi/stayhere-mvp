@@ -158,6 +158,26 @@ resource "azurerm_api_management_api_operation" "static_all_categories" {
   url_template        = "/categories/all"
 }
 
+resource "azurerm_api_management_api_operation" "static_user_types" {
+  operation_id        = "get-user-types"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get User Types"
+  method              = "GET"
+  url_template        = "/user-types"
+}
+
+resource "azurerm_api_management_api_operation" "static_user_roles" {
+  operation_id        = "get-user-roles"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get User Roles"
+  method              = "GET"
+  url_template        = "/user-roles"
+}
+
 resource "azurerm_api_management_api_operation" "propertyowner_list" {
   operation_id        = "get-owners"
   api_name            = azurerm_api_management_api.propertyowner.name

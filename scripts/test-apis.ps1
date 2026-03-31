@@ -46,8 +46,10 @@ $suffix = $BaseUrl.Split('-')[-1].Split('.')[0]
 $dummyId = "00000000-0000-0000-0000-000000000001"
 
 # --- Endpoints Mapping ---
-# --- Auth Stage Tests ---
+# --- Static Data Stage Tests ---
 $Tests = @(
+    @{ Name = "Static: Get User Types";     Method = "GET";  Path = "/staticdata/user-types"; BackendApi = "/api/user-types"; Svc = "staticdata"; Body = $null }
+    @{ Name = "Static: Get User Roles";     Method = "GET";  Path = "/staticdata/user-roles"; BackendApi = "/api/user-roles"; Svc = "staticdata"; Body = $null }
     @{ Name = "Auth: Signup (New User)";    Method = "POST"; Path = "/auth/signup";    BackendApi = "/api/auth/signup";    Svc = "auth"; Body = @{ email = "newuser@example.com"; fullName = "Test User"; userType = "Individual" } }
     @{ Name = "Auth: Request OTP (Email)"; Method = "POST"; Path = "/auth/login";     BackendApi = "/api/auth/login";     Svc = "auth"; Body = @{ email = "admin@stayhere.com" } }
     @{ Name = "Auth: Verify OTP (Mock)";    Method = "POST"; Path = "/auth/verifyotp"; BackendApi = "/api/auth/verifyotp"; Svc = "auth"; Body = @{ target = "admin@stayhere.com"; code = "123456" } }
