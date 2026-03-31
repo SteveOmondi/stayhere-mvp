@@ -45,6 +45,11 @@ public class EfPropertyOwnerRepository : IPropertyOwnerRepository
             .ToListAsync();
     }
 
+    public async Task<int> GetCountAsync()
+    {
+        return await _context.PropertyOwners.CountAsync();
+    }
+
     public async Task CreateAsync(PropertyOwner owner)
     {
         _context.PropertyOwners.Add(owner);

@@ -10,6 +10,7 @@ public interface IPropertyOwnerService
     Task<PropertyOwnerDto?> GetPropertyOwnerByUserIdAsync(Guid userId);
     Task<PropertyOwnerDto?> GetPropertyOwnerByEmailAsync(string email);
     Task<PropertyOwnerDto?> UpdatePropertyOwnerAsync(Guid id, UpdatePropertyOwnerRequest request);
+    Task<PaginatedResult<PropertyOwnerDto>> GetAllPropertyOwnersAsync(int page = 1, int pageSize = 20);
 
     Task<WalletDto?> GetWalletAsync(Guid propertyOwnerId);
     Task<WalletDto?> GetWalletByOwnerIdAsync(Guid propertyOwnerId);

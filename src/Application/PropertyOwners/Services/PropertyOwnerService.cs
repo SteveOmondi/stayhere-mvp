@@ -100,6 +100,22 @@ public class PropertyOwnerService : IPropertyOwnerService
         return MapToDto(owner, wallet);
     }
 
+    public async Task<PaginatedResult<PropertyOwnerDto>> GetAllPropertyOwnersAsync(int page = 1, int pageSize = 20)
+    {
+        var owners = await _ownerRepository.GetAllAsync(page, pageSize);
+        var totalCount = await _ownerRepository.GetCountAsync();
+
+        var items = new List<PropertyOwnerDto>();
+        foreach (var owner in owners)
+        {
+            var wallet = await _walletRepository.GetByIdAsync(owner.WalletId);
+            items.Add(MapToDto(owner, wallet));
+        }
+
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        return new PaginatedResult<PropertyOwnerDto>(items, totalCount, page, pageSize, totalPages);
+    }
+
     public async Task<WalletDto?> GetWalletAsync(Guid propertyOwnerId)
     {
         var wallet = await _walletRepository.GetByOwnerIdAsync(propertyOwnerId);

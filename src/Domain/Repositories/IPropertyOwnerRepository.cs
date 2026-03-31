@@ -9,6 +9,7 @@ public interface IPropertyOwnerRepository
     Task<PropertyOwner?> GetByEmailAsync(string email);
     Task<PropertyOwner?> GetByPhoneAsync(string phone);
     Task<IEnumerable<PropertyOwner>> GetAllAsync(int page = 1, int pageSize = 20);
+    Task<int> GetCountAsync();
     Task CreateAsync(PropertyOwner owner);
     Task UpdateAsync(PropertyOwner owner);
 }
