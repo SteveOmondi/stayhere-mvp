@@ -96,6 +96,7 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
   method              = "POST"
+  url_template        = "/verifyotp"
 }
 
 resource "azurerm_api_management_api_operation" "auth_onboard" {
