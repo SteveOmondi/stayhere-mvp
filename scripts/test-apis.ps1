@@ -21,7 +21,7 @@ function Test-Endpoint {
             Uri = $Url
             Method = $Method
             Headers = $headers
-            TimeoutSec = 10
+            TimeoutSec = 30
         }
         if ($Body) { $params.Body = ($Body | ConvertTo-Json) }
         

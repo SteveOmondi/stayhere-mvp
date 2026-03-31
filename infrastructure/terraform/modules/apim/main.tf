@@ -259,7 +259,7 @@ resource "azurerm_api_management_api_policy" "property" {
     <inbound>
         <base />
         <set-header name="Host" exists-action="override"><value>${var.property_function_host}</value></set-header>
-        <rewrite-uri template="/api{relative-url}" />
+        <set-header name="X-Original-URL" exists-action="delete" />
     </inbound>
 </policies>
 XML
@@ -304,7 +304,7 @@ resource "azurerm_api_management_api_policy" "staticdata" {
     <inbound>
         <base />
         <set-header name="Host" exists-action="override"><value>${var.staticdata_function_host}</value></set-header>
-        <rewrite-uri template="/api{relative-url}" />
+        <set-header name="X-Original-URL" exists-action="delete" />
     </inbound>
 </policies>
 XML
