@@ -33,6 +33,8 @@ var host = new HostBuilder()
         // Infrastructure Services
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IUserRepository, EfUserRepository>();
+        services.AddScoped<IOtpRepository, EfOtpRepository>();
         
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
