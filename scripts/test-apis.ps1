@@ -51,6 +51,8 @@ $Tests = @(
     @{ Name = "Auth: Signup (New User)";    Method = "POST"; Path = "/auth/signup";    BackendApi = "/api/auth/signup";    Svc = "auth"; Body = @{ email = "newuser@example.com"; fullName = "Test User"; userType = "Individual" } }
     @{ Name = "Auth: Request OTP (Email)"; Method = "POST"; Path = "/auth/login";     BackendApi = "/api/auth/login";     Svc = "auth"; Body = @{ email = "admin@stayhere.com" } }
     @{ Name = "Auth: Verify OTP (Mock)";    Method = "POST"; Path = "/auth/verifyotp"; BackendApi = "/api/auth/verifyotp"; Svc = "auth"; Body = @{ target = "admin@stayhere.com"; code = "123456" } }
+    @{ Name = "Auth: Get Profiles";         Method = "GET";  Path = "/auth/profiles/66666666-6666-6666-6666-666666666666"; BackendApi = "/api/auth/profiles/66666666-6666-6666-6666-666666666666"; Svc = "auth"; Body = $null }
+    @{ Name = "Auth: Onboard Tenant";       Method = "POST"; Path = "/auth/onboard";   BackendApi = "/api/auth/onboard";   Svc = "auth"; Body = @{ userId = "66666666-6666-6666-6666-666666666666"; role = "Tenant"; fullName = "Admin Tenant"; email = "admin@stayhere.com" } }
 )
 
 foreach ($test in $Tests) {

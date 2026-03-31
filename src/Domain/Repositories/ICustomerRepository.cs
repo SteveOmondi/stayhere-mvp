@@ -6,6 +6,7 @@ public interface ICustomerRepository
 {
     Task<Customer> AddAsync(Customer customer, CancellationToken cancellationToken = default);
     Task<Customer?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Customer?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<Customer?> GetByPhoneAsync(string phone, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Customer>> GetByRegionAsync(Guid? countryId, Guid? cityId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Customer>> GetByListingAsync(Guid listingId, CancellationToken cancellationToken = default);

@@ -96,7 +96,32 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
   method              = "POST"
-  url_template        = "/verifyotp"
+}
+
+resource "azurerm_api_management_api_operation" "auth_onboard" {
+  operation_id        = "onboard"
+  api_name            = azurerm_api_management_api.auth.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Onboard User"
+  method              = "POST"
+  url_template        = "/onboard"
+}
+
+resource "azurerm_api_management_api_operation" "auth_profiles" {
+  operation_id        = "profiles"
+  api_name            = azurerm_api_management_api.auth.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get User Profiles"
+  method              = "GET"
+  url_template        = "/profiles/{userId}"
+  
+  template_parameter {
+    name     = "userId"
+    type     = "string"
+    required = true
+  }
 }
 
 # --- PROPERTY OPERATIONS ---

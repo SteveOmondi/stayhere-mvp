@@ -35,6 +35,8 @@ resource "azurerm_linux_function_app" "auth" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "ENTRA_CLIENT_ID"                = var.entra_client_id
+    "ENTRA_TENANT_ID"                = var.entra_tenant_id
   }
 
   identity {

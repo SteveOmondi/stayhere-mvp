@@ -10,15 +10,21 @@ public class AuthService : IAuthService
     private readonly IIdentityService _identityService;
     private readonly IOtpService _otpService;
     private readonly IUserRepository _userRepository;
+    private readonly IPropertyOwnerRepository _propertyOwnerRepository;
+    private readonly ICustomerRepository _customerRepository;
 
     public AuthService(
         IIdentityService identityService,
         IOtpService otpService,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IPropertyOwnerRepository propertyOwnerRepository,
+        ICustomerRepository customerRepository)
     {
         _identityService = identityService;
         _otpService = otpService;
         _userRepository = userRepository;
+        _propertyOwnerRepository = propertyOwnerRepository;
+        _customerRepository = customerRepository;
     }
 
     public async Task<AuthResponse> LoginWithEntraAsync(string entraToken)
@@ -40,7 +46,7 @@ public class AuthService : IAuthService
                 EntraObjectId = entraObjectId,
                 Email = email ?? "guest@stayhere.com",
                 FullName = name,
-                Roles = new List<UserRole> { UserRole.Tenant },
+                Roles = new List<UserRole>(), // No initial role until onboarded
                 CreatedAt = DateTime.UtcNow
             };
             await _userRepository.CreateAsync(user);
@@ -90,13 +96,40 @@ public class AuthService : IAuthService
             Email = request.Email,
             PhoneNumber = request.PhoneNumber,
             FullName = request.FullName,
-            Roles = new List<UserRole> { UserRole.Tenant }, // Default role
+            Roles = new List<UserRole>(), // No default role
             Type = Enum.TryParse<UserType>(request.UserType, true, out var type) ? type : UserType.Individual,
             CreatedAt = DateTime.UtcNow
         };
 
         await _userRepository.CreateAsync(user);
         return MapToDto(user);
+    }
+
+    public async Task<List<UserProfileDto>> GetProfilesAsync(Guid userId)
+    {
+        var profiles = new List<UserProfileDto>();
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null) return profiles;
+
+        if (user.Roles.Contains(UserRole.PropertyOwner))
+        {
+            var owner = await _propertyOwnerRepository.GetByUserIdAsync(userId);
+            if (owner != null)
+            {
+                profiles.Add(new UserProfileDto(owner.Id, UserRole.PropertyOwner.ToString(), owner.FullName ?? user.Email));
+            }
+        }
+
+        if (user.Roles.Contains(UserRole.Tenant))
+        {
+            var tenant = await _customerRepository.GetByUserIdAsync(userId);
+            if (tenant != null)
+            {
+                profiles.Add(new UserProfileDto(tenant.Id, UserRole.Tenant.ToString(), tenant.DisplayName ?? user.Email));
+            }
+        }
+
+        return profiles;
     }
 
     private UserDto MapToDto(User user) => 
@@ -107,7 +140,8 @@ public class AuthService : IAuthService
             user.Roles.Select(r => r.ToString()).ToList(),
             user.Type.ToString(),
             user.OrganizationId,
-            user.Organization?.Name);
+            user.Organization?.Name,
+            user.Roles.Any());
 
     private OtpType MapOtpType(OtpTypeDto type) => type switch
     {

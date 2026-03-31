@@ -20,10 +20,19 @@ public class EfCustomerRepository : ICustomerRepository
         return customer;
     }
 
-    public Task<Customer?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-        _db.Customers
+    public async Task<Customer?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _db.Customers
             .Include(c => c.Properties)
+            .Include(c => c.Documents)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+    }
+
+    public async Task<Customer?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _db.Customers
+            .FirstOrDefaultAsync(c => c.UserId == userId, cancellationToken);
+    }
 
     public Task<Customer?> GetByPhoneAsync(string phone, CancellationToken cancellationToken = default) =>
         _db.Customers.FirstOrDefaultAsync(c => c.Phone == phone, cancellationToken);

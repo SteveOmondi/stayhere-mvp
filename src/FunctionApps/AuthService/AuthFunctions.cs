@@ -111,6 +111,27 @@ public class AuthFunctions
         }
     }
 
+    [Function("GetProfiles")]
+    public async Task<HttpResponseData> GetProfiles(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "auth/profiles/{userId:guid}")] HttpRequestData req,
+        Guid userId)
+    {
+        _logger.LogInformation("Processing GetProfiles request.");
+
+        try
+        {
+            var profiles = await _authService.GetProfilesAsync(userId);
+            return await CreateJsonResponse(req, profiles);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during GetProfiles");
+            var res = req.CreateResponse(HttpStatusCode.BadRequest);
+            await res.WriteStringAsync(ex.Message);
+            return res;
+        }
+    }
+
     private async Task<HttpResponseData> CreateJsonResponse<T>(HttpRequestData req, T content)
     {
         var response = req.CreateResponse(HttpStatusCode.OK);

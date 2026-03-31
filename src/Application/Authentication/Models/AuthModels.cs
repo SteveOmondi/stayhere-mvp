@@ -16,7 +16,8 @@ public record UserDto(
     List<string> Roles, 
     string UserType, 
     Guid? OrganizationId = null,
-    string? OrganizationName = null);
+    string? OrganizationName = null,
+    bool IsOnboarded = false);
 
 public enum OtpTypeDto
 {
@@ -24,3 +25,5 @@ public enum OtpTypeDto
     Sms,
     WhatsApp
 }
+
+public record UserProfileDto(Guid ProfileId, string Role, string DisplayName);
