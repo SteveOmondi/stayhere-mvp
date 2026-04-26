@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Web;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -13,13 +14,19 @@ namespace StayHere.PropertyService.Functions;
 public class ListingFunctions
 {
     private readonly IListingService _listingService;
+    private readonly ICacheService _cacheService;
     private readonly ILogger<ListingFunctions> _logger;
     private readonly IConfiguration _configuration;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public ListingFunctions(IListingService listingService, ILogger<ListingFunctions> logger, IConfiguration configuration)
+    public ListingFunctions(
+        IListingService listingService,
+        ICacheService cacheService,
+        ILogger<ListingFunctions> logger,
+        IConfiguration configuration)
     {
         _listingService = listingService;
+        _cacheService = cacheService;
         _logger = logger;
         _configuration = configuration;
     }
@@ -28,9 +35,9 @@ public class ListingFunctions
     public async Task<HttpResponseData> CreateListing(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "listings")] HttpRequestData req)
     {
-        var ownerId = GetUserIdFromRequest(req);
-        if (ownerId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
@@ -39,7 +46,7 @@ public class ListingFunctions
             if (request == null)
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
-            var listing = await _listingService.CreateListingAsync(ownerId.Value, request);
+            var listing = await _listingService.CreateListingAsync(callerId, request);
             return await CreateJsonResponse(req, HttpStatusCode.Created, listing);
         }
         catch (UnauthorizedAccessException ex)
@@ -58,9 +65,9 @@ public class ListingFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "properties/{propertyId:guid}/listings")] HttpRequestData req,
         Guid propertyId)
     {
-        var ownerId = GetUserIdFromRequest(req);
-        if (ownerId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
@@ -69,7 +76,7 @@ public class ListingFunctions
             if (request == null)
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
-            var listing = await _listingService.CreateListingFromPropertyAsync(propertyId, ownerId.Value, request);
+            var listing = await _listingService.CreateListingFromPropertyAsync(propertyId, callerId, request);
             return await CreateJsonResponse(req, HttpStatusCode.Created, listing);
         }
         catch (ArgumentException ex)
@@ -219,6 +226,42 @@ public class ListingFunctions
         }
     }
 
+    /// <summary>
+    /// Cached elastic location search: <c>location</c> matches country, county, city, suburb, or street (substring, case-insensitive).
+    /// Redis key shape: <c>stayhere:property:listings:loc:{normalized}:p{page}:s{pageSize}</c> (e.g. <c>...loc:westlands:p1:s20</c>).
+    /// </summary>
+    [Function("GetListingsByLocation")]
+    public async Task<HttpResponseData> GetListingsByLocation(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/by-location")] HttpRequestData req)
+    {
+        try
+        {
+            var query = HttpUtility.ParseQueryString(req.Url.Query);
+            var location = query["location"];
+            if (string.IsNullOrWhiteSpace(location))
+            {
+                return await CreateErrorResponse(req, HttpStatusCode.BadRequest,
+                    "Query parameter \"location\" is required (e.g. ?location=westlands).");
+            }
+
+            var page = GetQueryInt(req, "page", 1);
+            var pageSize = Math.Clamp(GetQueryInt(req, "pageSize", 20), 1, 100);
+
+            var cacheKey = BuildElasticLocationCacheKey(location, page, pageSize);
+            var result = await _cacheService.GetOrSetAsync(
+                cacheKey,
+                async () => await _listingService.GetListingsByElasticLocationAsync(location, page, pageSize),
+                TimeSpan.FromHours(1));
+
+            return await CreateJsonResponse(req, HttpStatusCode.OK, result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting listings by location");
+            return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, ex.Message);
+        }
+    }
+
     [Function("GetListingsByType")]
     public async Task<HttpResponseData> GetListingsByType(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/type/{propertyType}")] HttpRequestData req,
@@ -300,7 +343,7 @@ public class ListingFunctions
         {
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             var request = JsonSerializer.Deserialize<ListingSearchRequest>(body, JsonOptions)
-                ?? new ListingSearchRequest(null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 20, null, true);
+                ?? new ListingSearchRequest(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 20, null, true);
             var result = await _listingService.SearchListingsAsync(request);
             return await CreateJsonResponse(req, HttpStatusCode.OK, result);
         }
@@ -316,9 +359,9 @@ public class ListingFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "listings/{id:guid}")] HttpRequestData req,
         Guid id)
     {
-        var requesterId = GetUserIdFromRequest(req);
-        if (requesterId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
@@ -327,7 +370,7 @@ public class ListingFunctions
             if (request == null)
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
-            var listing = await _listingService.UpdateListingAsync(id, requesterId.Value, request);
+            var listing = await _listingService.UpdateListingAsync(id, callerId, request);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
@@ -343,14 +386,41 @@ public class ListingFunctions
         }
     }
 
+    [Function("RegenerateListingEmbedding")]
+    public async Task<HttpResponseData> RegenerateListingEmbedding(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "listings/{id:guid}/embedding")] HttpRequestData req,
+        Guid id)
+    {
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
+
+        try
+        {
+            var listing = await _listingService.RegenerateListingEmbeddingAsync(id, callerId);
+            if (listing == null)
+                return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
+            return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return await CreateErrorResponse(req, HttpStatusCode.Forbidden, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error regenerating listing embedding");
+            return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, ex.Message);
+        }
+    }
+
     [Function("UpdateListingAvailability")]
     public async Task<HttpResponseData> UpdateListingAvailability(
         [HttpTrigger(AuthorizationLevel.Anonymous, "patch", Route = "listings/{id:guid}/availability")] HttpRequestData req,
         Guid id)
     {
-        var requesterId = GetUserIdFromRequest(req);
-        if (requesterId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
@@ -359,7 +429,7 @@ public class ListingFunctions
             if (request == null)
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
-            var listing = await _listingService.UpdateAvailabilityAsync(id, requesterId.Value, request);
+            var listing = await _listingService.UpdateAvailabilityAsync(id, callerId, request);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
@@ -447,9 +517,9 @@ public class ListingFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "listings/{id:guid}/agent")] HttpRequestData req,
         Guid id)
     {
-        var ownerId = GetUserIdFromRequest(req);
-        if (ownerId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
@@ -458,7 +528,7 @@ public class ListingFunctions
             if (request == null)
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
-            var listing = await _listingService.AssignAgentAsync(id, ownerId.Value, request);
+            var listing = await _listingService.AssignAgentAsync(id, callerId, request);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
@@ -479,13 +549,13 @@ public class ListingFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "listings/{id:guid}/agent")] HttpRequestData req,
         Guid id)
     {
-        var ownerId = GetUserIdFromRequest(req);
-        if (ownerId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
-            var listing = await _listingService.RemoveAgentAsync(id, ownerId.Value);
+            var listing = await _listingService.RemoveAgentAsync(id, callerId);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
@@ -506,9 +576,9 @@ public class ListingFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "listings/{id:guid}/caretaker")] HttpRequestData req,
         Guid id)
     {
-        var ownerId = GetUserIdFromRequest(req);
-        if (ownerId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
@@ -517,7 +587,7 @@ public class ListingFunctions
             if (request == null)
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
-            var listing = await _listingService.AssignCaretakerAsync(id, ownerId.Value, request);
+            var listing = await _listingService.AssignCaretakerAsync(id, callerId, request);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
@@ -538,13 +608,13 @@ public class ListingFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "listings/{id:guid}/caretaker")] HttpRequestData req,
         Guid id)
     {
-        var ownerId = GetUserIdFromRequest(req);
-        if (ownerId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
-            var listing = await _listingService.RemoveCaretakerAsync(id, ownerId.Value);
+            var listing = await _listingService.RemoveCaretakerAsync(id, callerId);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
@@ -565,13 +635,13 @@ public class ListingFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "listings/{id:guid}")] HttpRequestData req,
         Guid id)
     {
-        var requesterId = GetUserIdFromRequest(req);
-        if (requesterId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
-            var deleted = await _listingService.DeleteListingAsync(id, requesterId.Value);
+            var deleted = await _listingService.DeleteListingAsync(id, callerId);
             if (!deleted)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
             return req.CreateResponse(HttpStatusCode.NoContent);
@@ -587,18 +657,44 @@ public class ListingFunctions
         }
     }
 
+    private async Task<(Guid UserId, HttpResponseData? Error)> RequireUserIdAsync(HttpRequestData req)
+    {
+        var id = GetUserIdFromRequest(req);
+        if (id != null)
+            return (id.Value, null);
+
+        if (string.Equals(_configuration["SKIP_AUTH"], "true", StringComparison.OrdinalIgnoreCase))
+        {
+            const string msg =
+                "SKIP_AUTH is enabled: send header X-User-Id with a valid GUID equal to properties.owner_id for that property (PropertyOwner id, not listing id).";
+            return (default, await CreateErrorResponse(req, HttpStatusCode.BadRequest, msg));
+        }
+
+        return (default, await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized"));
+    }
+
     private Guid? GetUserIdFromRequest(HttpRequestData req)
     {
-        if (_configuration["SKIP_AUTH"]?.ToLower() == "true")
+        if (string.Equals(_configuration["SKIP_AUTH"], "true", StringComparison.OrdinalIgnoreCase))
         {
-            if (req.Headers.TryGetValues("X-User-Id", out var vals))
-            {
-                var s = vals.FirstOrDefault();
-                if (Guid.TryParse(s, out var g)) return g;
-            }
-            return Guid.NewGuid();
+            if (!req.Headers.TryGetValues("X-User-Id", out var vals))
+                return null;
+            var s = vals.FirstOrDefault();
+            return Guid.TryParse(s, out var g) ? g : null;
         }
+
         return null;
+    }
+
+    /// <summary>Stable, readable Redis segment: lowercased, whitespace to hyphen, length-capped.</summary>
+    private static string BuildElasticLocationCacheKey(string location, int page, int pageSize)
+    {
+        var slug = Regex.Replace(location.Trim().ToLowerInvariant(), @"\s+", "-");
+        if (slug.Length > 120)
+            slug = slug[..120];
+        if (string.IsNullOrEmpty(slug))
+            slug = "_";
+        return $"stayhere:property:listings:loc:{slug}:p{page}:s{pageSize}";
     }
 
     private static int GetQueryInt(HttpRequestData req, string name, int defaultValue)

@@ -116,6 +116,17 @@ public class PropertyOwnerService : IPropertyOwnerService
         return new PaginatedResult<PropertyOwnerDto>(items, totalCount, page, pageSize, totalPages);
     }
 
+    public async Task<IReadOnlyList<PropertyOwnerDirectoryEntryDto>> GetPortalOwnerDirectoryAsync(
+        int maxItems = 500,
+        CancellationToken cancellationToken = default)
+    {
+        maxItems = Math.Clamp(maxItems, 1, 2000);
+        var owners = await _ownerRepository.GetDirectoryAsync(maxItems, cancellationToken);
+        return owners
+            .Select(o => new PropertyOwnerDirectoryEntryDto(o.Id, o.UserId, o.FullName, o.Email, o.Phone))
+            .ToList();
+    }
+
     public async Task<WalletDto?> GetWalletAsync(Guid propertyOwnerId)
     {
         var wallet = await _walletRepository.GetByOwnerIdAsync(propertyOwnerId);

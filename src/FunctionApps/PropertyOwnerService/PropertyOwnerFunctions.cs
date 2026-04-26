@@ -314,6 +314,28 @@ public class PropertyOwnerFunctions
         }
     }
 
+    /// <summary>Flat list of property owners for management portal pickers (cap via <c>max</c>, default 500).</summary>
+    [Function("GetOwnersPortalDirectory")]
+    public async Task<HttpResponseData> GetOwnersPortalDirectory(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/portal-directory")] HttpRequestData req)
+    {
+        try
+        {
+            var max = 500;
+            var q = System.Web.HttpUtility.ParseQueryString(req.Url.Query ?? "");
+            if (int.TryParse(q["max"], out var parsed) && parsed > 0)
+                max = Math.Min(parsed, 2000);
+
+            var items = await _ownerService.GetPortalOwnerDirectoryAsync(max, CancellationToken.None);
+            return await CreateJsonResponse(req, HttpStatusCode.OK, items);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error listing owners for portal directory");
+            return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, ex.Message);
+        }
+    }
+
     [Function("GetOwners")]
     public async Task<HttpResponseData> GetOwners(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners")] HttpRequestData req)

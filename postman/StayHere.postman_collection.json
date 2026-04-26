@@ -1,0 +1,1226 @@
+{
+  "info": {
+    "_postman_id": "stayhere-mvp-collection",
+    "name": "StayHere \u2014 All Function Apps",
+    "description": "HTTP APIs for StayHere MVP Azure Functions. Set each baseUrl_* to your local func host (include /api). PropertyService uses X-User-Id when SKIP_AUTH=true.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl_AuthService",
+      "value": "http://localhost:7100/api"
+    },
+    {
+      "key": "baseUrl_PropertyService",
+      "value": "http://localhost:7101/api"
+    },
+    {
+      "key": "baseUrl_CustomerService",
+      "value": "http://localhost:7102/api"
+    },
+    {
+      "key": "baseUrl_PropertyOwnerService",
+      "value": "http://localhost:7103/api"
+    },
+    {
+      "key": "baseUrl_StaticDataService",
+      "value": "http://localhost:7104/api"
+    },
+    {
+      "key": "baseUrl_AiAgentService",
+      "value": "http://localhost:7105/api"
+    }
+  ],
+  "item": [
+    {
+      "name": "AuthService",
+      "description": "Identity: signup, OTP login, profiles, post-login onboarding.",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_AuthService}}/auth/signup",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"phoneNumber\": \"+254700000000\",\n  \"fullName\": \"Test User\",\n  \"userType\": \"Individual\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (request OTP email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_AuthService}}/auth/login",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (request OTP SMS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_AuthService}}/auth/login",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+254700000000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (Entra token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_AuthService}}/auth/login",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entraToken\": \"<azure-ad-access-token>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_AuthService}}/auth/verifyotp",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"user@example.com\",\n  \"code\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get profiles for user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_AuthService}}/auth/profiles/11111111-1111-1111-1111-111111111111",
+            "description": ""
+          }
+        },
+        {
+          "name": "Onboard user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_AuthService}}/auth/onboard",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"11111111-1111-1111-1111-111111111111\",\n  \"role\": \"PropertyOwner\",\n  \"fullName\": \"Onboarded User\",\n  \"phone\": \"+254700000001\",\n  \"email\": \"onboarded@example.com\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "PropertyService",
+      "description": "Buildings (properties) and rentable units (listings). Uses X-User-Id when SKIP_AUTH=true.",
+      "item": [
+        {
+          "name": "Properties",
+          "description": "",
+          "item": [
+            {
+              "name": "Create property",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/properties",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"buildingName\": \"Fairdeal Apartments\",\n  \"description\": \"Secure block near Waiyaki Way\",\n  \"totalUnits\": 24,\n  \"totalFloors\": 8,\n  \"location\": {\n    \"country\": \"Kenya\",\n    \"county\": \"Nairobi\",\n    \"city\": \"Nairobi\",\n    \"suburb\": \"Westlands\",\n    \"street\": \"Waiyaki Way\",\n    \"latitude\": -1.267,\n    \"longitude\": 36.81\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "Get property by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/properties/33333333-3333-3333-3333-333333333333",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get property by code",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/properties/code/P1001",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get all properties",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/properties?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get properties by owner",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/properties/owner/22222222-2222-2222-2222-222222222222?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Update property",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/properties/33333333-3333-3333-3333-333333333333",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"buildingName\": \"Fairdeal Apartments (updated)\",\n  \"description\": \"Updated\",\n  \"totalUnits\": 24,\n  \"totalFloors\": 8,\n  \"location\": {\n    \"country\": \"Kenya\",\n    \"county\": \"Nairobi\",\n    \"city\": \"Nairobi\",\n    \"suburb\": \"Westlands\",\n    \"street\": \"Waiyaki Way\",\n    \"latitude\": -1.267,\n    \"longitude\": 36.81\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete property",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/properties/33333333-3333-3333-3333-333333333333",
+                "description": ""
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listings",
+          "description": "",
+          "item": [
+            {
+              "name": "Create listing",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"propertyId\": \"33333333-3333-3333-3333-333333333333\",\n  \"unitNumber\": \"5A\",\n  \"floorNumber\": 3,\n  \"title\": \"2BR apartment\",\n  \"description\": \"Bright corner unit\",\n  \"price\": 85000,\n  \"priceCurrency\": \"KES\",\n  \"propertyType\": \"Apartment\",\n  \"listingType\": \"Rent\",\n  \"bedrooms\": 2,\n  \"bathrooms\": 2,\n  \"isFurnished\": false,\n  \"location\": {\n    \"country\": \"Kenya\",\n    \"county\": \"Nairobi\",\n    \"city\": \"Nairobi\",\n    \"suburb\": \"Westlands\",\n    \"street\": \"Waiyaki Way\",\n    \"latitude\": -1.267,\n    \"longitude\": 36.81\n  },\n  \"amenities\": [\n    \"Parking\",\n    \"Balcony\"\n  ],\n  \"images\": [],\n  \"sizeSqft\": 900,\n  \"yearBuilt\": 2018,\n  \"developer\": null,\n  \"owner\": {\n    \"name\": \"Jane Owner\",\n    \"phone\": \"+254712000000\",\n    \"email\": \"owner@example.com\"\n  },\n  \"agent\": {\n    \"name\": \"Alex Agent\",\n    \"phone\": \"+254722000000\",\n    \"email\": \"agent@example.com\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "Create listing from property",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/properties/33333333-3333-3333-3333-333333333333/listings",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"unitNumber\": \"6B\",\n  \"floorNumber\": 4,\n  \"title\": \"Studio\",\n  \"description\": null,\n  \"price\": 45000,\n  \"priceCurrency\": \"KES\",\n  \"propertyType\": \"Studio\",\n  \"listingType\": \"Rent\",\n  \"bedrooms\": 0,\n  \"bathrooms\": 1,\n  \"isFurnished\": false,\n  \"location\": null,\n  \"amenities\": [\n    \"Water backup\"\n  ],\n  \"images\": [],\n  \"owner\": {\n    \"name\": \"Jane Owner\",\n    \"phone\": \"+254712000000\",\n    \"email\": \"owner@example.com\"\n  },\n  \"agent\": null\n}"
+                }
+              }
+            },
+            {
+              "name": "Get listing by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get listing by code",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/code/L1001",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get all listings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get listings by property",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/property/33333333-3333-3333-3333-333333333333?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get listings by owner",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/owner/22222222-2222-2222-2222-222222222222?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get listings by city",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/city/Nairobi?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get listings by county",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/county/Nairobi?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get listings by location (query)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/by-location?location=westlands&page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get listings by property type",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/type/Apartment?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get listings by listing type",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/listing-type/Rent?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get featured listings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/featured?limit=10",
+                "description": ""
+              }
+            },
+            {
+              "name": "Get available listings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl_PropertyService}}/listings/available?page=1&pageSize=20",
+                "description": ""
+              }
+            },
+            {
+              "name": "Search listings (POST)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/search",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"city\": \"Nairobi\",\n  \"suburb\": \"Westlands\",\n  \"minPrice\": 50000,\n  \"maxPrice\": 120000,\n  \"propertyType\": \"Apartment\",\n  \"listingType\": \"Rent\",\n  \"page\": 1,\n  \"pageSize\": 20,\n  \"sortDescending\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "Update listing",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Updated title\",\n  \"price\": 90000,\n  \"amenities\": [\n    \"Parking\",\n    \"Balcony\",\n    \"Water backup\"\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "Regenerate listing embedding",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/embedding",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              }
+            },
+            {
+              "name": "Patch listing availability",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/availability",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"availabilityStatus\": \"Available\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Patch listing rating",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/rating",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newRating\": 4.5\n}"
+                }
+              }
+            },
+            {
+              "name": "Post listing view",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/view",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              }
+            },
+            {
+              "name": "Patch listing featured",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/featured",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isFeatured\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "Assign listing agent",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/agent",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"agentId\": \"55555555-5555-5555-5555-555555555555\",\n  \"agentName\": \"Alex Agent\",\n  \"agentPhone\": \"+254722000000\",\n  \"agentEmail\": \"agent@example.com\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Remove listing agent",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/agent",
+                "description": ""
+              }
+            },
+            {
+              "name": "Assign listing caretaker",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/caretaker",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"caretakerId\": \"11111111-1111-1111-1111-111111111111\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Remove listing caretaker",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/caretaker",
+                "description": ""
+              }
+            },
+            {
+              "name": "Delete listing",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "22222222-2222-2222-2222-222222222222",
+                    "description": "Required when SKIP_AUTH=true on PropertyService \u2014 must match property/listing owner_id (PropertyOwner id)."
+                  }
+                ],
+                "url": "{{baseUrl_PropertyService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7",
+                "description": ""
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CustomerService",
+      "description": "Renter / customer profiles, KYC documents, saved interests.",
+      "item": [
+        {
+          "name": "Create customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_CustomerService}}/customers",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"renter@example.com\",\n  \"phone\": \"+254733000000\",\n  \"firstName\": \"Sam\",\n  \"lastName\": \"Renter\",\n  \"displayName\": \"Sam R.\",\n  \"countryId\": null,\n  \"cityId\": null,\n  \"preferredLanguage\": \"en\",\n  \"preferredCurrency\": \"KES\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_CustomerService}}/customers/list",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get customer by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_CustomerService}}/customers/44444444-4444-4444-4444-444444444444",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get customer by phone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_CustomerService}}/customers/by-phone/%2B254733000000",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get customers by region",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_CustomerService}}/customers/profile?countryId=&cityId=",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get customers by listing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_CustomerService}}/listings/9aa1052f-d3b5-4e79-8d7c-cb580c9731f7/customers",
+            "description": ""
+          }
+        },
+        {
+          "name": "Update customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_CustomerService}}/customers/44444444-4444-4444-4444-444444444444",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Sam\",\n  \"lastName\": \"Renter\",\n  \"displayName\": \"Sam R.\",\n  \"addressLine\": \"Westlands\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_CustomerService}}/customers/44444444-4444-4444-4444-444444444444/deactivate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "Attach customer property",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_CustomerService}}/customers/44444444-4444-4444-4444-444444444444/properties",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"9aa1052f-d3b5-4e79-8d7c-cb580c9731f7\",\n  \"relationshipType\": \"Interested\",\n  \"agreedPrice\": null,\n  \"currency\": \"KES\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get customer properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_CustomerService}}/customers/44444444-4444-4444-4444-444444444444/properties",
+            "description": ""
+          }
+        },
+        {
+          "name": "Add customer document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_CustomerService}}/customers/44444444-4444-4444-4444-444444444444/documents",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entityType\": \"Customer\",\n  \"entityId\": \"44444444-4444-4444-4444-444444444444\",\n  \"documentType\": \"ID\",\n  \"fileUrl\": \"https://storage.example.com/id.pdf\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get customer documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_CustomerService}}/customers/44444444-4444-4444-4444-444444444444/documents",
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "PropertyOwnerService",
+      "description": "Landlord accounts, wallet, agents, caretakers.",
+      "item": [
+        {
+          "name": "Create property owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Jane Landlord\",\n  \"phone\": \"+254711000000\",\n  \"email\": \"landlord@example.com\",\n  \"userId\": \"11111111-1111-1111-1111-111111111111\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get owner by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/22222222-2222-2222-2222-222222222222",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get owner by user id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/user/11111111-1111-1111-1111-111111111111",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get owner by email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/email/landlord%40example.com",
+            "description": ""
+          }
+        },
+        {
+          "name": "Update owner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/22222222-2222-2222-2222-222222222222",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Jane L.\",\n  \"phone\": \"+254711000000\",\n  \"email\": \"landlord@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get owner wallet",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/22222222-2222-2222-2222-222222222222/wallet",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get owner properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/22222222-2222-2222-2222-222222222222/properties",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get owner listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/22222222-2222-2222-2222-222222222222/listings?page=1&pageSize=20",
+            "description": ""
+          }
+        },
+        {
+          "name": "Create agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/22222222-2222-2222-2222-222222222222/agents",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Agent Lee\",\n  \"phone\": \"+254722000001\",\n  \"email\": \"agent@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get agent by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/agents/55555555-5555-5555-5555-555555555555",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get owner agents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/22222222-2222-2222-2222-222222222222/agents",
+            "description": ""
+          }
+        },
+        {
+          "name": "Create caretaker",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/22222222-2222-2222-2222-222222222222/caretakers",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Caretaker Kim\",\n  \"phone\": \"+254733000001\",\n  \"email\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Get caretaker by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/caretakers/11111111-1111-1111-1111-111111111111",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get owner caretakers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/22222222-2222-2222-2222-222222222222/caretakers",
+            "description": ""
+          }
+        },
+        {
+          "name": "List owners (paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners?page=1&pageSize=20",
+            "description": ""
+          }
+        },
+        {
+          "name": "Portal owner directory (flat)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_PropertyOwnerService}}/owners/portal-directory?max=500",
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "StaticDataService",
+      "description": "Reference data: categories, enums. Mutating routes need Authorization: Bearer mock-jwt-token unless SKIP_AUTH=true.",
+      "item": [
+        {
+          "name": "Get active categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/categories",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get user types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/user-types",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get user roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/user-roles",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get all categories (admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": "{{baseUrl_StaticDataService}}/categories/all",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get category by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/categories/66666666-6666-6666-6666-666666666666",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get categories by city",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/categories/city/Nairobi",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get categories by country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/categories/country/Kenya",
+            "description": ""
+          }
+        },
+        {
+          "name": "Create category (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": "{{baseUrl_StaticDataService}}/categories",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Short stay\",\n  \"description\": \"Nightly rentals\",\n  \"iconUrl\": null,\n  \"country\": \"Kenya\",\n  \"city\": \"Nairobi\",\n  \"isActive\": true,\n  \"sortOrder\": 10\n}"
+            }
+          }
+        },
+        {
+          "name": "Update category (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": "{{baseUrl_StaticDataService}}/categories/66666666-6666-6666-6666-666666666666",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Short stay+\",\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete category (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": "{{baseUrl_StaticDataService}}/categories/66666666-6666-6666-6666-666666666666",
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "AiAgentService",
+      "description": "AI chat, recommendations, knowledge status, lightweight listing lookup for the agent.",
+      "item": [
+        {
+          "name": "Chat (knowledge + LLM)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_AiAgentService}}/chat",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"What are typical rents in Westlands?\",\n  \"conversationId\": null,\n  \"maxTokens\": 800,\n  \"temperature\": 0.7\n}"
+            }
+          }
+        },
+        {
+          "name": "Respond and recommend",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl_AiAgentService}}/respondandrecommend",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"2 bedroom under 100k in Kilimani\",\n  \"conversationId\": null,\n  \"maxResults\": 5,\n  \"temperature\": 0.7\n}"
+            }
+          }
+        },
+        {
+          "name": "Knowledge base status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_AiAgentService}}/knowledge/status",
+            "description": ""
+          }
+        },
+        {
+          "name": "Agent listing search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_AiAgentService}}/listings?listing_id=9aa1052f-d3b5-4e79-8d7c-cb580c9731f7&location=Nairobi&amenity=Balcony",
+            "description": ""
+          }
+        },
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_AiAgentService}}/health",
+            "description": ""
+          }
+        }
+      ]
+    }
+  ]
+}

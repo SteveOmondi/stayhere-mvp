@@ -194,6 +194,10 @@ public record ListingSearchRequest(
     string? City,
     string? County,
     string? Country,
+    string? Suburb,
+    string? Street,
+    /// <summary>Optional elastic match on any address field (same as GET <c>listings/by-location?location=</c>).</summary>
+    string? Location,
     string? PropertyType,
     string? ListingType,
     decimal? MinPrice,

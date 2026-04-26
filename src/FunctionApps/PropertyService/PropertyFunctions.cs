@@ -28,9 +28,9 @@ public class PropertyFunctions
     public async Task<HttpResponseData> CreateProperty(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "properties")] HttpRequestData req)
     {
-        var ownerId = GetUserIdFromRequest(req);
-        if (ownerId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
@@ -39,7 +39,7 @@ public class PropertyFunctions
             if (request == null)
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
-            var property = await _propertyService.CreatePropertyAsync(ownerId.Value, request);
+            var property = await _propertyService.CreatePropertyAsync(callerId, request);
             return await CreateJsonResponse(req, HttpStatusCode.Created, property);
         }
         catch (Exception ex)
@@ -129,9 +129,9 @@ public class PropertyFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "properties/{id:guid}")] HttpRequestData req,
         Guid id)
     {
-        var requesterId = GetUserIdFromRequest(req);
-        if (requesterId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
@@ -140,7 +140,7 @@ public class PropertyFunctions
             if (request == null)
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
-            var property = await _propertyService.UpdatePropertyAsync(id, requesterId.Value, request);
+            var property = await _propertyService.UpdatePropertyAsync(id, callerId, request);
             if (property == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Property not found");
             return await CreateJsonResponse(req, HttpStatusCode.OK, property);
@@ -161,13 +161,13 @@ public class PropertyFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "properties/{id:guid}")] HttpRequestData req,
         Guid id)
     {
-        var requesterId = GetUserIdFromRequest(req);
-        if (requesterId == null)
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
+        var (callerId, authError) = await RequireUserIdAsync(req);
+        if (authError != null)
+            return authError;
 
         try
         {
-            var deleted = await _propertyService.DeletePropertyAsync(id, requesterId.Value);
+            var deleted = await _propertyService.DeletePropertyAsync(id, callerId);
             if (!deleted)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Property not found");
             return req.CreateResponse(HttpStatusCode.NoContent);
@@ -183,17 +183,32 @@ public class PropertyFunctions
         }
     }
 
+    private async Task<(Guid UserId, HttpResponseData? Error)> RequireUserIdAsync(HttpRequestData req)
+    {
+        var id = GetUserIdFromRequest(req);
+        if (id != null)
+            return (id.Value, null);
+
+        if (string.Equals(_configuration["SKIP_AUTH"], "true", StringComparison.OrdinalIgnoreCase))
+        {
+            const string msg =
+                "SKIP_AUTH is enabled: send header X-User-Id with a valid GUID equal to properties.owner_id (PropertyOwner id).";
+            return (default, await CreateErrorResponse(req, HttpStatusCode.BadRequest, msg));
+        }
+
+        return (default, await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized"));
+    }
+
     private Guid? GetUserIdFromRequest(HttpRequestData req)
     {
-        if (_configuration["SKIP_AUTH"]?.ToLower() == "true")
+        if (string.Equals(_configuration["SKIP_AUTH"], "true", StringComparison.OrdinalIgnoreCase))
         {
-            if (req.Headers.TryGetValues("X-User-Id", out var vals))
-            {
-                var s = vals.FirstOrDefault();
-                if (Guid.TryParse(s, out var g)) return g;
-            }
-            return Guid.NewGuid();
+            if (!req.Headers.TryGetValues("X-User-Id", out var vals))
+                return null;
+            var s = vals.FirstOrDefault();
+            return Guid.TryParse(s, out var g) ? g : null;
         }
+
         return null;
     }
 

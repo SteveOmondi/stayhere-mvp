@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "DB_HOST": "localhost",
+    "DB_PORT": "5432",
+    "DB_NAME": "stayhere",
+    "DB_USER": "postgres",
+    "DB_PASSWORD": "your-postgres-password",
+    "DB_SSL_MODE": "Prefer",
+    "SKIP_AUTH": "true"
+  }
+}

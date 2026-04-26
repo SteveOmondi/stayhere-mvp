@@ -10,7 +10,14 @@ namespace StayHere.FunctionApps.CustomerService;
 
 public class CustomerFunctions
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
+
+    private static JsonSerializerOptions CreateJsonOptions()
+    {
+        var o = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        o.Converters.Insert(0, new NullableGuidWebJsonConverter());
+        return o;
+    }
 
     private readonly ICustomerService _customerService;
     private readonly ILogger<CustomerFunctions> _logger;

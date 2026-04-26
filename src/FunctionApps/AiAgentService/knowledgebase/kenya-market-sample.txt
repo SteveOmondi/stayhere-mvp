@@ -1,0 +1,7 @@
+StayHere knowledge snippet (sample)
+
+Nairobi rental overview: one-bedroom apartments in Kilimani and Westlands often range widely by building quality and amenities. Two-bedroom units in similar areas are popular with young professionals. Karen and Runda skew toward larger homes and higher budgets.
+
+When searching, consider proximity to work, security, water reliability, and service charge for apartments.
+
+This file is loaded as plain text chunks for the AI agent knowledge search. Add more .txt files to this folder to expand context.

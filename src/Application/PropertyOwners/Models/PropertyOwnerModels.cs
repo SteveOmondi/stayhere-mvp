@@ -26,6 +26,14 @@ public record PropertyOwnerDto(
     DateTime UpdatedAt
 );
 
+/// <summary>Compact row for management portal owner pickers (no wallet round-trip).</summary>
+public record PropertyOwnerDirectoryEntryDto(
+    Guid Id,
+    Guid? UserId,
+    string FullName,
+    string Email,
+    string Phone);
+
 public record WalletDto(
     Guid Id,
     Guid PropertyOwnerId,

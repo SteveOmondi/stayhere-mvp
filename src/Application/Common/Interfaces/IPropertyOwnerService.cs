@@ -11,6 +11,8 @@ public interface IPropertyOwnerService
     Task<PropertyOwnerDto?> GetPropertyOwnerByEmailAsync(string email);
     Task<PropertyOwnerDto?> UpdatePropertyOwnerAsync(Guid id, UpdatePropertyOwnerRequest request);
     Task<PaginatedResult<PropertyOwnerDto>> GetAllPropertyOwnersAsync(int page = 1, int pageSize = 20);
+    /// <summary>All owners up to <paramref name="maxItems"/> for management portal dropdowns.</summary>
+    Task<IReadOnlyList<PropertyOwnerDirectoryEntryDto>> GetPortalOwnerDirectoryAsync(int maxItems = 500, CancellationToken cancellationToken = default);
 
     Task<WalletDto?> GetWalletAsync(Guid propertyOwnerId);
     Task<WalletDto?> GetWalletByOwnerIdAsync(Guid propertyOwnerId);

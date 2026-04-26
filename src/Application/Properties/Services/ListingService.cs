@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Properties.Models;
 using StayHere.Domain.Entities;
@@ -7,13 +8,34 @@ namespace StayHere.Application.Properties.Services;
 
 public class ListingService : IListingService
 {
+    public const int MaxListingImages = 15;
+
     private readonly IListingRepository _listingRepository;
     private readonly IPropertyRepository _propertyRepository;
+    private readonly IEmbeddingService _embeddingService;
+    private readonly ILogger<ListingService> _logger;
 
-    public ListingService(IListingRepository listingRepository, IPropertyRepository propertyRepository)
+    public ListingService(
+        IListingRepository listingRepository,
+        IPropertyRepository propertyRepository,
+        IEmbeddingService embeddingService,
+        ILogger<ListingService> logger)
     {
         _listingRepository = listingRepository;
         _propertyRepository = propertyRepository;
+        _embeddingService = embeddingService;
+        _logger = logger;
+    }
+
+    private static List<string> NormalizeListingImages(IReadOnlyList<string>? images)
+    {
+        var list = images?
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim())
+            .ToList() ?? new List<string>();
+        if (list.Count > MaxListingImages)
+            throw new ArgumentException($"At most {MaxListingImages} images are allowed per listing.");
+        return list;
     }
 
     public async Task<ListingDto> CreateListingAsync(Guid ownerId, CreateListingRequest request)
@@ -53,7 +75,7 @@ public class ListingService : IListingService
             IsFurnished = request.IsFurnished,
             Location = new PropertyLocation(location.Country, location.County, location.City, location.Suburb, location.Street, location.Latitude, location.Longitude),
             Amenities = request.Amenities ?? new List<string>(),
-            Images = request.Images ?? new List<string>(),
+            Images = NormalizeListingImages(request.Images),
             SizeSqft = request.SizeSqft,
             YearBuilt = request.YearBuilt,
             Developer = request.Developer,
@@ -74,6 +96,7 @@ public class ListingService : IListingService
         };
 
         await _listingRepository.CreateAsync(listing);
+        await TryComputeAndPersistEmbeddingAsync(listing);
         return await MapToDtoAsync(listing);
     }
 
@@ -114,7 +137,7 @@ public class ListingService : IListingService
             IsFurnished = request.IsFurnished,
             Location = new PropertyLocation(location.Country, location.County, location.City, location.Suburb, location.Street, location.Latitude, location.Longitude),
             Amenities = request.Amenities ?? new List<string>(),
-            Images = request.Images ?? new List<string>(),
+            Images = NormalizeListingImages(request.Images),
             SizeSqft = request.SizeSqft,
             YearBuilt = request.YearBuilt,
             Developer = request.Developer,
@@ -135,6 +158,7 @@ public class ListingService : IListingService
         };
 
         await _listingRepository.CreateAsync(listing);
+        await TryComputeAndPersistEmbeddingAsync(listing);
         return await MapToDtoAsync(listing);
     }
 
@@ -193,6 +217,19 @@ public class ListingService : IListingService
         return CreatePaginatedResult(listings, listings.Count(), page, pageSize);
     }
 
+    public async Task<PaginatedResult<ListingListDto>> GetListingsByElasticLocationAsync(string location, int page = 1, int pageSize = 20)
+    {
+        var criteria = new ListingSearchCriteria
+        {
+            LocationText = TrimOrNull(location),
+            Page = page,
+            PageSize = pageSize,
+            SortDescending = true
+        };
+        var listings = await _listingRepository.SearchAsync(criteria);
+        return CreatePaginatedResult(listings, listings.Count(), page, pageSize);
+    }
+
     public async Task<PaginatedResult<ListingListDto>> GetListingsByTypeAsync(string propertyType, int page = 1, int pageSize = 20)
     {
         var type = ParsePropertyType(propertyType);
@@ -227,6 +264,9 @@ public class ListingService : IListingService
             City = request.City,
             County = request.County,
             Country = request.Country,
+            Suburb = request.Suburb,
+            Street = request.Street,
+            LocationText = TrimOrNull(request.Location),
             PropertyType = string.IsNullOrEmpty(request.PropertyType) ? null : ParsePropertyType(request.PropertyType),
             ListingType = string.IsNullOrEmpty(request.ListingType) ? null : ParseListingType(request.ListingType),
             MinPrice = request.MinPrice,
@@ -265,7 +305,7 @@ public class ListingService : IListingService
         if (request.Location != null)
             listing.Location = new PropertyLocation(request.Location.Country, request.Location.County, request.Location.City, request.Location.Suburb, request.Location.Street, request.Location.Latitude, request.Location.Longitude);
         if (request.Amenities != null) listing.Amenities = request.Amenities;
-        if (request.Images != null) listing.Images = request.Images;
+        if (request.Images != null) listing.Images = NormalizeListingImages(request.Images);
         if (request.SizeSqft.HasValue) listing.SizeSqft = request.SizeSqft;
         if (request.YearBuilt.HasValue) listing.YearBuilt = request.YearBuilt;
         if (request.Developer != null) listing.Developer = request.Developer;
@@ -276,6 +316,20 @@ public class ListingService : IListingService
         if (request.RecommendedScore.HasValue) listing.RecommendedScore = request.RecommendedScore.Value;
         listing.UpdatedAt = DateTime.UtcNow;
 
+        await TryComputeEmbeddingOnListingAsync(listing);
+        await _listingRepository.UpdateAsync(listing);
+        return await MapToDtoAsync(listing);
+    }
+
+    public async Task<ListingDto?> RegenerateListingEmbeddingAsync(Guid id, Guid requesterId)
+    {
+        var listing = await _listingRepository.GetByIdAsync(id);
+        if (listing == null) return null;
+        if (listing.OwnerId != requesterId && listing.AgentId != requesterId)
+            throw new UnauthorizedAccessException("You don't have permission to update this listing");
+
+        await TryComputeEmbeddingOnListingAsync(listing);
+        listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
         return await MapToDtoAsync(listing);
     }
@@ -384,6 +438,9 @@ public class ListingService : IListingService
         return true;
     }
 
+    private static string? TrimOrNull(string? s) =>
+        string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
     private async Task<ListingDto> MapToDtoAsync(Listing listing)
     {
         var property = await _propertyRepository.GetByIdAsync(listing.PropertyId);
@@ -474,6 +531,35 @@ public class ListingService : IListingService
         var items = listings.Select(l => MapToListDto(l));
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         return new PaginatedResult<ListingListDto>(items, totalCount, page, pageSize, totalPages);
+    }
+
+    private async Task TryComputeAndPersistEmbeddingAsync(Listing listing)
+    {
+        await TryComputeEmbeddingOnListingAsync(listing);
+        if (listing.Embedding == null)
+            return;
+        try
+        {
+            await _listingRepository.UpdateAsync(listing);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to persist embedding for listing {ListingId}", listing.Id);
+        }
+    }
+
+    private async Task TryComputeEmbeddingOnListingAsync(Listing listing)
+    {
+        try
+        {
+            var property = await _propertyRepository.GetByIdAsync(listing.PropertyId);
+            var text = ListingEmbeddingTextBuilder.Build(listing, property?.BuildingName);
+            listing.Embedding = await _embeddingService.EmbedAsync(text);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to compute embedding for listing {ListingId}", listing.Id);
+        }
     }
 
     private static PropertyType ParsePropertyType(string value) =>

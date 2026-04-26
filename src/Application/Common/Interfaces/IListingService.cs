@@ -17,6 +17,9 @@ public interface IListingService
     Task<PaginatedResult<ListingListDto>> GetListingsByAgentAsync(Guid agentId, int page = 1, int pageSize = 20);
     Task<PaginatedResult<ListingListDto>> GetListingsByCityAsync(string city, int page = 1, int pageSize = 20);
     Task<PaginatedResult<ListingListDto>> GetListingsByCountyAsync(string county, int page = 1, int pageSize = 20);
+
+    /// <summary>Elastic location: <paramref name="location"/> matches any of country, county, city, suburb, or street (case-insensitive substring).</summary>
+    Task<PaginatedResult<ListingListDto>> GetListingsByElasticLocationAsync(string location, int page = 1, int pageSize = 20);
     Task<PaginatedResult<ListingListDto>> GetListingsByTypeAsync(string propertyType, int page = 1, int pageSize = 20);
     Task<PaginatedResult<ListingListDto>> GetListingsByListingTypeAsync(string listingType, int page = 1, int pageSize = 20);
     Task<IEnumerable<ListingListDto>> GetFeaturedListingsAsync(int limit = 10);
@@ -24,6 +27,9 @@ public interface IListingService
     Task<PaginatedResult<ListingListDto>> SearchListingsAsync(ListingSearchRequest request);
 
     Task<ListingDto?> UpdateListingAsync(Guid id, Guid requesterId, UpdateListingRequest request);
+
+    /// <summary>Recomputes and stores the pgvector embedding (OpenRouter). Owner or agent only.</summary>
+    Task<ListingDto?> RegenerateListingEmbeddingAsync(Guid id, Guid requesterId);
     Task<ListingDto?> UpdateAvailabilityAsync(Guid id, Guid requesterId, UpdateAvailabilityRequest request);
     Task<ListingDto?> UpdateRatingAsync(Guid id, UpdateRatingRequest request);
     Task<ListingDto?> IncrementViewsAsync(Guid id);

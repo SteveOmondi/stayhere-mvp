@@ -1,4 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Pgvector;
+using StayHere.Domain;
 using StayHere.Domain.Entities;
 using StayHere.Domain.Repositories;
 
@@ -138,6 +141,29 @@ public class EfListingRepository : IListingRepository
             query = query.Where(l => l.Location.County.ToLower() == criteria.County.ToLower());
         if (!string.IsNullOrEmpty(criteria.Country))
             query = query.Where(l => l.Location.Country.ToLower() == criteria.Country.ToLower());
+        if (!string.IsNullOrWhiteSpace(criteria.Suburb))
+        {
+            var s = criteria.Suburb.Trim().ToLowerInvariant();
+            query = query.Where(l => l.Location.Suburb != null && l.Location.Suburb.ToLower().Contains(s));
+        }
+
+        if (!string.IsNullOrWhiteSpace(criteria.Street))
+        {
+            var s = criteria.Street.Trim().ToLowerInvariant();
+            query = query.Where(l => l.Location.Street != null && l.Location.Street.ToLower().Contains(s));
+        }
+
+        if (!string.IsNullOrWhiteSpace(criteria.LocationText))
+        {
+            var t = criteria.LocationText.Trim().ToLowerInvariant();
+            query = query.Where(l =>
+                l.Location.Country.ToLower().Contains(t) ||
+                l.Location.County.ToLower().Contains(t) ||
+                l.Location.City.ToLower().Contains(t) ||
+                (l.Location.Suburb != null && l.Location.Suburb.ToLower().Contains(t)) ||
+                (l.Location.Street != null && l.Location.Street.ToLower().Contains(t)));
+        }
+
         if (criteria.PropertyType.HasValue)
             query = query.Where(l => l.PropertyType == criteria.PropertyType.Value);
         if (criteria.ListingType.HasValue)
@@ -206,5 +232,58 @@ public class EfListingRepository : IListingRepository
     {
         var count = await _context.Listings.CountAsync();
         return $"L{(count + 1001):D4}";
+    }
+
+    public async Task<IReadOnlyList<(Listing Listing, double Similarity)>> SearchByEmbeddingSimilarityAsync(
+        float[] queryEmbedding,
+        int topK,
+        CancellationToken cancellationToken = default)
+    {
+        if (queryEmbedding.Length != StayHereEmbeddingDimensions.Default)
+            throw new ArgumentException($"Query embedding must have length {StayHereEmbeddingDimensions.Default}.", nameof(queryEmbedding));
+
+        var conn = (NpgsqlConnection)_context.Database.GetDbConnection();
+        await _context.Database.OpenConnectionAsync(cancellationToken);
+
+        var ids = new List<Guid>();
+        var sims = new List<double>();
+
+        await using (var cmd = new NpgsqlCommand(
+            """
+            SELECT id, (1 - (embedding <=> @q::vector))::double precision AS sim
+            FROM listings
+            WHERE embedding IS NOT NULL
+              AND availability_status = 'Available'
+            ORDER BY embedding <=> @q::vector
+            LIMIT @lim
+            """,
+            conn))
+        {
+            cmd.Parameters.AddWithValue("q", new Vector(queryEmbedding));
+            cmd.Parameters.AddWithValue("lim", topK);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                ids.Add(reader.GetGuid(0));
+                sims.Add(reader.GetDouble(1));
+            }
+        }
+
+        if (ids.Count == 0)
+            return Array.Empty<(Listing, double)>();
+
+        var listings = await _context.Listings
+            .Where(l => ids.Contains(l.Id))
+            .ToListAsync(cancellationToken);
+
+        var result = new List<(Listing, double)>();
+        for (var i = 0; i < ids.Count; i++)
+        {
+            var listing = listings.FirstOrDefault(l => l.Id == ids[i]);
+            if (listing != null)
+                result.Add((listing, sims[i]));
+        }
+
+        return result;
     }
 }

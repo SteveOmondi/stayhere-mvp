@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-brand-cream text-brand-900 font-sans min-h-screen;
+}
+
+.hero-overlay {
+  background: linear-gradient(
+    105deg,
+    rgba(12, 18, 34, 0.92) 0%,
+    rgba(12, 18, 34, 0.75) 45%,
+    rgba(12, 18, 34, 0.55) 100%
+  );
+}
+
+.glass-panel {
+  @apply bg-white/80 backdrop-blur-md border border-white/60 shadow-glass rounded-2xl;
+}

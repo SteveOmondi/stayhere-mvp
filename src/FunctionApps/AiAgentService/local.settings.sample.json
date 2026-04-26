@@ -1,0 +1,21 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "DB_HOST": "localhost",
+    "DB_PORT": "5432",
+    "DB_NAME": "stayhere",
+    "DB_USER": "postgres",
+    "DB_PASSWORD": "your-postgres-password",
+    "REDIS_CONNECTION": "localhost:6379",
+    "OpenRouter__ApiKey": "YOUR_OPENROUTER_API_KEY",
+    "OpenRouter__Model": "deepseek/deepseek-chat-v3.1:free",
+    "OpenRouter__EmbeddingModel": "nvidia/llama-nemotron-embed-vl-1b-v2:free",
+    "OpenRouter__HttpReferer": "http://localhost:7105",
+    "OpenRouter__RecommendNarrationMode": "Llm",
+    "OpenRouter__RecommendNarrationMaxTokens": "280",
+    "OpenRouter__RecommendLlmTimeoutSeconds": "40",
+    "ListingPortalBaseUrl": "http://localhost:7101/api"
+  }
+}

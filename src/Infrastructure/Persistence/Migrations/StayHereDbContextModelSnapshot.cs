@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pgvector;
 using StayHere.Infrastructure.Persistence;
 
 #nullable disable
@@ -20,6 +21,7 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("StayHere.Domain.Entities.Agent", b =>
@@ -471,6 +473,10 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("developer");
+
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector(1536)")
+                        .HasColumnName("embedding");
 
                     b.Property<int>("FloorNumber")
                         .HasColumnType("integer")

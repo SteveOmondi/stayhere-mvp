@@ -23,6 +23,12 @@ public interface IListingRepository
     Task UpdateAsync(Listing listing);
     Task DeleteAsync(Guid id);
     Task<string> GenerateListingCodeAsync();
+
+    /// <summary>Order by pgvector cosine distance; similarity is 1 minus distance.</summary>
+    Task<IReadOnlyList<(Listing Listing, double Similarity)>> SearchByEmbeddingSimilarityAsync(
+        float[] queryEmbedding,
+        int topK,
+        CancellationToken cancellationToken = default);
 }
 
 public class ListingSearchCriteria
@@ -31,6 +37,12 @@ public class ListingSearchCriteria
     public string? City { get; set; }
     public string? County { get; set; }
     public string? Country { get; set; }
+    /// <summary>Case-insensitive partial match on <see cref="Listing.Location"/> suburb.</summary>
+    public string? Suburb { get; set; }
+    /// <summary>Case-insensitive partial match on <see cref="Listing.Location"/> street.</summary>
+    public string? Street { get; set; }
+    /// <summary>Case-insensitive partial match on any of country, county, city, suburb, or street (OR).</summary>
+    public string? LocationText { get; set; }
     public PropertyType? PropertyType { get; set; }
     public ListingType? ListingType { get; set; }
     public decimal? MinPrice { get; set; }

@@ -45,6 +45,16 @@ public class EfPropertyOwnerRepository : IPropertyOwnerRepository
             .ToListAsync();
     }
 
+    public async Task<IReadOnlyList<PropertyOwner>> GetDirectoryAsync(int maxItems, CancellationToken cancellationToken = default)
+    {
+        return await _context.PropertyOwners
+            .AsNoTracking()
+            .OrderBy(o => o.FullName)
+            .ThenBy(o => o.Email)
+            .Take(maxItems)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<int> GetCountAsync()
     {
         return await _context.PropertyOwners.CountAsync();

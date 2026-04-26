@@ -1,42 +1,86 @@
 using System.Text.Json;
-using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json.Serialization.Metadata;
+using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 using StayHere.Application.Common.Interfaces;
+using StayHere.Domain.Entities;
 
 namespace StayHere.Infrastructure.Caching;
 
-public class RedisCacheService : ICacheService
+public sealed class RedisCacheService : ICacheService
 {
-    private readonly IDistributedCache _cache;
+    private static readonly TimeSpan DefaultExpiration = TimeSpan.FromHours(1);
 
-    public RedisCacheService(IDistributedCache cache)
+    private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
+
+    private readonly IConnectionMultiplexer _multiplexer;
+    private readonly ILogger<RedisCacheService> _logger;
+
+    public RedisCacheService(IConnectionMultiplexer multiplexer, ILogger<RedisCacheService> logger)
     {
-        _cache = cache;
+        _multiplexer = multiplexer;
+        _logger = logger;
     }
 
-    public async Task<T?> GetAsync<T>(string key)
+    public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiration = null)
     {
-        var cachedData = await _cache.GetStringAsync(key);
-        if (string.IsNullOrEmpty(cachedData))
+        var ttl = expiration ?? DefaultExpiration;
+
+        try
         {
-            return default;
+            var db = _multiplexer.GetDatabase();
+            var cached = await db.StringGetAsync(key).ConfigureAwait(false);
+            if (cached.HasValue)
+            {
+                var deserialized = JsonSerializer.Deserialize<T>(cached!, JsonOptions);
+                if (deserialized is not null)
+                    return deserialized;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis cache read failed for key {CacheKey}", key);
         }
 
-        return JsonSerializer.Deserialize<T>(cachedData);
-    }
+        var value = await factory().ConfigureAwait(false);
 
-    public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null)
-    {
-        var options = new DistributedCacheEntryOptions
+        if (value is null)
+            return value!;
+
+        try
         {
-            AbsoluteExpirationRelativeToNow = expiration ?? TimeSpan.FromHours(1)
-        };
+            var db = _multiplexer.GetDatabase();
+            var json = JsonSerializer.Serialize(value, JsonOptions);
+            await db.StringSetAsync(key, json, ttl).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis cache write failed for key {CacheKey}", key);
+        }
 
-        var jsonData = JsonSerializer.Serialize(value);
-        await _cache.SetStringAsync(key, jsonData, options);
+        return value;
     }
 
-    public async Task RemoveAsync(string key)
+    /// <summary>Web defaults; omits <see cref="Listing.Embedding"/> on serialize to keep payloads small for catalog-style caches.</summary>
+    private static JsonSerializerOptions CreateJsonOptions()
     {
-        await _cache.RemoveAsync(key);
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        options.TypeInfoResolver = new DefaultJsonTypeInfoResolver
+        {
+            Modifiers =
+            {
+                static ti =>
+                {
+                    if (ti.Type != typeof(Listing))
+                        return;
+                    foreach (var p in ti.Properties)
+                    {
+                        if (p.Name == nameof(Listing.Embedding))
+                            p.ShouldSerialize = static (_, _) => false;
+                    }
+                }
+            }
+        };
+        return options;
     }
 }

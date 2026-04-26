@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Pgvector;
+using StayHere.Domain;
 using StayHere.Domain.Entities;
 using System.Text.Json;
 
@@ -28,6 +31,8 @@ public class StayHereDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.HasPostgresExtension("vector");
 
         ConfigureUser(modelBuilder);
         ConfigureProperty(modelBuilder);
@@ -306,6 +311,19 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.RecommendedScore).HasColumnName("recommended_score").HasPrecision(3, 2).HasDefaultValue(0);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            var embeddingComparer = new ValueComparer<float[]?>(
+                (a, b) => a == b || (a != null && b != null && a.SequenceEqual(b)),
+                v => v == null ? 0 : v.Aggregate(0, (hash, x) => HashCode.Combine(hash, x.GetHashCode())),
+                v => v == null ? null : (float[])v.Clone());
+
+            entity.Property(e => e.Embedding)
+                .HasColumnName("embedding")
+                .HasColumnType($"vector({StayHereEmbeddingDimensions.Default})")
+                .HasConversion(new ValueConverter<float[]?, Vector?>(
+                    v => v == null ? null : new Vector(v),
+                    v => v == null ? null : v.ToArray()))
+                .Metadata.SetValueComparer(embeddingComparer);
 
             entity.OwnsOne(e => e.Location, location =>
             {
