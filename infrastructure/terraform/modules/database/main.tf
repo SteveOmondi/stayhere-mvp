@@ -31,6 +31,12 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_service
   end_ip_address   = "255.255.255.255"
 }
 
+resource "azurerm_postgresql_flexible_server_configuration" "extensions" {
+  name      = "azure.extensions"
+  server_id = azurerm_postgresql_flexible_server.main.id
+  value     = "VECTOR"
+}
+
 resource "azurerm_postgresql_flexible_server_database" "main" {
   name      = "stayhere"
   server_id = azurerm_postgresql_flexible_server.main.id
