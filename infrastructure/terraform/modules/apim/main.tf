@@ -68,6 +68,18 @@ resource "azurerm_api_management_api" "staticdata" {
   subscription_required = false
 }
 
+resource "azurerm_api_management_api" "aiagent" {
+  name                = "aiagent-api"
+  resource_group_name = var.rg_name
+  api_management_name = azurerm_api_management.main.name
+  revision            = "1"
+  display_name        = "AI Agent API"
+  path                = "aiagent"
+  protocols           = ["https"]
+  service_url         = "https://${var.aiagent_function_host}/api"
+  subscription_required = false
+}
+
 # --- AUTH OPERATIONS ---
 resource "azurerm_api_management_api_operation" "auth_signup" {
   operation_id        = "signup"
@@ -136,6 +148,38 @@ resource "azurerm_api_management_api_operation" "property_list" {
   url_template        = "/properties"
 }
 
+resource "azurerm_api_management_api_operation" "property_listings_alias" {
+  operation_id        = "get-listings-alias"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Listings (Alias for Properties)"
+  method              = "GET"
+  url_template        = "/listings/{id}"
+
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "property_listings_alias" {
+  api_name            = azurerm_api_management_api_operation.property_listings_alias.api_name
+  operation_id        = azurerm_api_management_api_operation.property_listings_alias.operation_id
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <base />
+        <rewrite-uri template="/properties/{id}" />
+    </inbound>
+</policies>
+XML
+}
+
 
 # --- STATIC DATA OPERATIONS ---
 resource "azurerm_api_management_api_operation" "static_categories" {
@@ -176,6 +220,47 @@ resource "azurerm_api_management_api_operation" "static_user_roles" {
   display_name        = "Get User Roles"
   method              = "GET"
   url_template        = "/user-roles"
+}
+
+# --- AI AGENT OPERATIONS ---
+resource "azurerm_api_management_api_operation" "aiagent_chat" {
+  operation_id        = "ai-chat"
+  api_name            = azurerm_api_management_api.aiagent.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "AI Agent Chat"
+  method              = "POST"
+  url_template        = "/chat"
+}
+
+resource "azurerm_api_management_api_operation" "aiagent_recommend" {
+  operation_id        = "ai-recommend"
+  api_name            = azurerm_api_management_api.aiagent.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "AI Agent Recommend"
+  method              = "POST"
+  url_template        = "/respondandrecommend"
+}
+
+resource "azurerm_api_management_api_operation" "aiagent_knowledge_status" {
+  operation_id        = "ai-knowledge-status"
+  api_name            = azurerm_api_management_api.aiagent.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "AI Agent Knowledge Status"
+  method              = "GET"
+  url_template        = "/knowledge/status"
+}
+
+resource "azurerm_api_management_api_operation" "aiagent_listings" {
+  operation_id        = "ai-listings"
+  api_name            = azurerm_api_management_api.aiagent.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "AI Agent Search Listings"
+  method              = "GET"
+  url_template        = "/listings"
 }
 
 resource "azurerm_api_management_api_operation" "propertyowner_list" {
@@ -304,6 +389,21 @@ resource "azurerm_api_management_api_policy" "staticdata" {
     <inbound>
         <base />
         <set-header name="Host" exists-action="override"><value>${var.staticdata_function_host}</value></set-header>
+        <set-header name="X-Original-URL" exists-action="delete" />
+    </inbound>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_policy" "aiagent" {
+  api_name            = azurerm_api_management_api.aiagent.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <base />
+        <set-header name="Host" exists-action="override"><value>${var.aiagent_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
     </inbound>
 </policies>

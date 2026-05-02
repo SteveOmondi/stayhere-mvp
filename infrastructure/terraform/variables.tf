@@ -50,3 +50,21 @@ variable "entra_tenant_id" {
   description = "Entra ID Tenant ID"
   default     = ""
 }
+
+variable "openrouter_api_key" {
+  type        = string
+  description = "OpenRouter API Key for AI Agent"
+  sensitive   = true
+}
+
+variable "openrouter_model" {
+  type        = string
+  description = "OpenRouter Model to use"
+  default     = "deepseek/deepseek-chat-v3.1:free"
+}
+
+variable "openrouter_embedding_model" {
+  type        = string
+  description = "OpenRouter Embedding Model to use"
+  default     = "nvidia/llama-nemotron-embed-vl-1b-v2:free"
+}

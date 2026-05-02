@@ -29,6 +29,18 @@ public sealed class StayHereDbContextFactory : IDesignTimeDbContextFactory<StayH
         if (!string.IsNullOrWhiteSpace(fromEnv))
             return fromEnv;
 
+        // Check for individual environment variables (common in CI/CD)
+        var host = Environment.GetEnvironmentVariable("DB_HOST");
+        if (!string.IsNullOrWhiteSpace(host))
+        {
+            var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+            var name = Environment.GetEnvironmentVariable("DB_NAME") ?? "stayhere";
+            var user = Environment.GetEnvironmentVariable("DB_USER") ?? "postgres";
+            var password = NpgsqlConnectionStringHelper.ResolveDbPassword(Environment.GetEnvironmentVariable("DB_PASSWORD"));
+            var sslMode = Environment.GetEnvironmentVariable("DB_SSL_MODE");
+            return NpgsqlConnectionStringHelper.Build(host, port, name, user, password, sslMode);
+        }
+
         var path = FindLocalSettingsPath();
         if (path != null)
         {
@@ -50,14 +62,14 @@ public sealed class StayHereDbContextFactory : IDesignTimeDbContextFactory<StayH
                 if (!string.IsNullOrWhiteSpace(fullCs))
                     return fullCs.Trim();
 
-                var host = Read(values, "DB_HOST", "localhost");
-                var port = Read(values, "DB_PORT", "5432");
-                var name = Read(values, "DB_NAME", "stayhere");
-                var user = Read(values, "DB_USER", "postgres");
-                var password = NpgsqlConnectionStringHelper.ResolveDbPassword(ReadOptional(values, "DB_PASSWORD"));
-                var sslMode = Read(values, "DB_SSL_MODE", "");
-                return NpgsqlConnectionStringHelper.Build(host, port, name, user, password,
-                    string.IsNullOrEmpty(sslMode) ? null : sslMode);
+                var h = Read(values, "DB_HOST", "localhost");
+                var p = Read(values, "DB_PORT", "5432");
+                var n = Read(values, "DB_NAME", "stayhere");
+                var u = Read(values, "DB_USER", "postgres");
+                var pwd = NpgsqlConnectionStringHelper.ResolveDbPassword(ReadOptional(values, "DB_PASSWORD"));
+                var ssl = Read(values, "DB_SSL_MODE", "");
+                return NpgsqlConnectionStringHelper.Build(h, p, n, u, pwd,
+                    string.IsNullOrEmpty(ssl) ? null : ssl);
             }
         }
 

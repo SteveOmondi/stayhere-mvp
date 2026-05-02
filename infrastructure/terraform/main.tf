@@ -70,6 +70,10 @@ module "compute" {
   redis_connection_string   = module.cache.redis_connection_string
   entra_client_id           = module.security.entra_client_id
   entra_tenant_id           = module.security.entra_tenant_id
+
+  openrouter_api_key         = var.openrouter_api_key
+  openrouter_model           = var.openrouter_model
+  openrouter_embedding_model = var.openrouter_embedding_model
 }
 
 # APIM Module
@@ -85,6 +89,7 @@ module "apim" {
   customer_function_host      = module.compute.customer_function_host
   propertyowner_function_host = module.compute.propertyowner_function_host
   staticdata_function_host    = module.compute.staticdata_function_host
+  aiagent_function_host       = module.compute.aiagent_function_host
   entra_client_id             = module.security.entra_client_id
   entra_tenant_id             = module.security.entra_tenant_id
 }

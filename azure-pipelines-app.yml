@@ -81,6 +81,15 @@ stages:
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/StaticDataService'
         zipAfterPublish: true
 
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish AiAgentService'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'src/FunctionApps/AiAgentService/StayHere.AiAgentService.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/AiAgentService'
+        zipAfterPublish: true
+
     - publish: $(Build.ArtifactStagingDirectory)/AuthService
       artifact: AuthService_Pkg
     - publish: $(Build.ArtifactStagingDirectory)/PropertyService
@@ -91,6 +100,8 @@ stages:
       artifact: PropertyOwnerService_Pkg
     - publish: $(Build.ArtifactStagingDirectory)/StaticDataService
       artifact: StaticDataService_Pkg
+    - publish: $(Build.ArtifactStagingDirectory)/AiAgentService
+      artifact: AiAgentService_Pkg
 
 - stage: Migrate_Database
   displayName: 'Migrate Database'
@@ -159,6 +170,7 @@ stages:
           export DB_NAME=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_NAME") | .value')
           export DB_USER=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_USER") | .value')
           export DB_PASSWORD=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_PASSWORD") | .value')
+          export DB_SSL_MODE=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_SSL_MODE") | .value')
           
           if [ -z "$DB_HOST" ] || [ "$DB_HOST" == "null" ]; then
              echo "##vso[task.logissue type=error]Failed to extract DB_HOST from app settings."
@@ -350,3 +362,36 @@ stages:
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
         package: '$(Pipeline.Workspace)/StaticDataService_Pkg/**/*.zip'
+
+- stage: Deploy_AiAgentService
+  displayName: 'Deploy AiAgent'
+  dependsOn: Migrate_Database
+  condition: succeeded()
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - download: current
+      artifact: AiAgentService_Pkg
+    - task: AzureCLI@2
+      displayName: 'Discover Function App Name'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          APP_NAME=$(az functionapp list --query "[?tags.Service=='AiAgentService'].name" -o tsv | head -n 1)
+          if [ -z "$APP_NAME" ]; then
+            APP_NAME=$(az functionapp list --query "[?contains(name, 'func-dev-aiagent')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$APP_NAME" ]; then echo "AiAgentService not found"; exit 1; fi
+          echo "Found: $APP_NAME"
+          echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
+    - task: AzureFunctionApp@2
+      displayName: 'Deploy to Azure'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        appType: 'functionAppLinux'
+        appName: $(DynamicAppName)
+        package: '$(Pipeline.Workspace)/AiAgentService_Pkg/**/*.zip'

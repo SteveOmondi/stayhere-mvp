@@ -210,6 +210,54 @@ resource "azurerm_linux_function_app" "staticdata" {
   }
 }
 
+resource "azurerm_linux_function_app" "aiagent" {
+  name                = "func-${var.environment}-aiagent-${var.suffix}"
+  resource_group_name = var.rg_name
+  location            = var.location
+
+  storage_account_name       = azurerm_storage_account.main.name
+  storage_account_access_key = azurerm_storage_account.main.primary_access_key
+  service_plan_id            = azurerm_service_plan.main.id
+
+  site_config {
+    application_stack {
+      dotnet_version              = "9.0"
+      use_dotnet_isolated_runtime = true
+    }
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME"                 = "dotnet-isolated"
+    "AzureWebJobsStorage"                      = azurerm_storage_account.main.primary_connection_string
+    "DB_HOST"                                  = var.psql_host
+    "DB_PORT"                                  = "5432"
+    "DB_NAME"                                  = var.psql_database_name
+    "DB_USER"                                  = var.psql_admin_login
+    "DB_PASSWORD"                              = var.psql_admin_password
+    "MONGODB_CONNECTION_STRING"                = var.mongodb_connection_string
+    "REDIS_CONNECTION_STRING"                  = var.redis_connection_string
+    "SCM_DO_BUILD_DURING_DEPLOYMENT"           = "false"
+    "FUNCTIONS_EXTENSION_VERSION"              = "~4"
+    "SKIP_AUTH"                                = var.skip_auth
+    "OpenRouter__ApiKey"                       = var.openrouter_api_key
+    "OpenRouter__Model"                        = var.openrouter_model
+    "OpenRouter__EmbeddingModel"               = var.openrouter_embedding_model
+    "OpenRouter__HttpReferer"                  = "https://stayhere.com"
+    "OpenRouter__RecommendNarrationMode"       = "Llm"
+    "OpenRouter__RecommendNarrationMaxTokens"  = "280"
+    "OpenRouter__RecommendLlmTimeoutSeconds"   = "40"
+    "ListingPortalBaseUrl"                     = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    Service = "AiAgentService"
+  }
+}
+
 resource "azurerm_storage_account" "main" {
   name                     = "st${var.environment}${var.suffix}"
   resource_group_name      = var.rg_name
@@ -276,6 +324,21 @@ variable "entra_tenant_id" {
   default = ""
 }
 
+variable "openrouter_api_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "openrouter_model" {
+  type    = string
+  default = "deepseek/deepseek-chat-v3.1:free"
+}
+
+variable "openrouter_embedding_model" {
+  type    = string
+  default = "nvidia/llama-nemotron-embed-vl-1b-v2:free"
+}
+
 output "auth_function_name" {
   value = azurerm_linux_function_app.auth.name
 }
@@ -314,4 +377,12 @@ output "staticdata_function_name" {
 
 output "staticdata_function_host" {
   value = azurerm_linux_function_app.staticdata.default_hostname
+}
+
+output "aiagent_function_name" {
+  value = azurerm_linux_function_app.aiagent.name
+}
+
+output "aiagent_function_host" {
+  value = azurerm_linux_function_app.aiagent.default_hostname
 }
