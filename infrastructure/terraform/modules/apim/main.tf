@@ -13,10 +13,7 @@ resource "azurerm_api_management_api" "auth" {
   resource_group_name = var.rg_name
   api_management_name = azurerm_api_management.main.name
   revision            = "1"
-  display_name        = "Auth API"
-  path                = "auth"
-  protocols           = ["https"]
-  service_url         = "https://${var.auth_function_host}/auth"
+  service_url         = "https://${var.auth_function_host}"
   subscription_required = false
 }
 
@@ -27,7 +24,7 @@ resource "azurerm_api_management_api_operation" "auth_login" {
   api_management_name = azurerm_api_management.main.name
   display_name        = "Login"
   method              = "POST"
-  url_template        = "/login"
+  url_template        = "/auth/login"
 }
 
 resource "azurerm_api_management_api_operation" "auth_signup" {
@@ -37,7 +34,7 @@ resource "azurerm_api_management_api_operation" "auth_signup" {
   api_management_name = azurerm_api_management.main.name
   display_name        = "Signup"
   method              = "POST"
-  url_template        = "/signup"
+  url_template        = "/auth/signup"
 }
 
 resource "azurerm_api_management_api" "property" {
@@ -60,7 +57,7 @@ resource "azurerm_api_management_api" "customer" {
   display_name        = "Customer API"
   path                = "customers"
   protocols           = ["https"]
-  service_url         = "https://${var.customer_function_host}/customers"
+  service_url         = "https://${var.customer_function_host}"
   subscription_required = false
 }
 
@@ -110,7 +107,7 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
   method              = "POST"
-  url_template        = "/verifyotp"
+  url_template        = "/auth/verifyotp"
 }
 
 resource "azurerm_api_management_api_operation" "auth_onboard" {
@@ -120,7 +117,7 @@ resource "azurerm_api_management_api_operation" "auth_onboard" {
   resource_group_name = var.rg_name
   display_name        = "Onboard User"
   method              = "POST"
-  url_template        = "/onboard"
+  url_template        = "/auth/onboard"
 }
 
 resource "azurerm_api_management_api_operation" "auth_profiles" {
@@ -130,7 +127,7 @@ resource "azurerm_api_management_api_operation" "auth_profiles" {
   resource_group_name = var.rg_name
   display_name        = "Get User Profiles"
   method              = "GET"
-  url_template        = "/profiles/{userId}"
+  url_template        = "/auth/profiles/{userId}"
   
   template_parameter {
     name     = "userId"
@@ -334,7 +331,7 @@ resource "azurerm_api_management_api_operation" "customer_create" {
   resource_group_name = var.rg_name
   display_name        = "Create Customer"
   method              = "POST"
-  url_template        = ""
+  url_template        = "/customers"
 }
 
 resource "azurerm_api_management_api_operation" "customer_list" {
@@ -344,7 +341,7 @@ resource "azurerm_api_management_api_operation" "customer_list" {
   resource_group_name = var.rg_name
   display_name        = "Get Customers"
   method              = "GET"
-  url_template        = "/list"
+  url_template        = "/customers/list"
 }
 
 resource "azurerm_api_management_api_operation" "customer_get_by_id" {
@@ -354,7 +351,7 @@ resource "azurerm_api_management_api_operation" "customer_get_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Customer By ID"
   method              = "GET"
-  url_template        = "/{id}"
+  url_template        = "/customers/{id}"
   template_parameter {
     name     = "id"
     type     = "string"
