@@ -9,18 +9,29 @@ resource "azurerm_key_vault" "main" {
 
   sku_name = "standard"
 
-  # Use inline policy for the Terraform SP to avoid state conflicts
+  # 1. Pipeline Identity (Always present)
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azurerm_client_config.current.object_id
 
-    secret_permissions = [
-      "Get", "List", "Set", "Delete", "Purge", "Recover"
-    ]
-    key_permissions = [
-      "Get", "List", "Create", "Update", "Delete"
-    ]
+    secret_permissions = ["Get", "List", "Set", "Delete", "Purge", "Recover"]
+    key_permissions    = ["Get", "List", "Create", "Update", "Delete"]
   }
+
+  # 2. Auth App Identity (Conditional to break the cycle)
+  dynamic "access_policy" {
+    for_each = var.auth_app_principal_id != null ? [1] : []
+    content {
+      tenant_id = data.azurerm_client_config.current.tenant_id
+      object_id = var.auth_app_principal_id
+      secret_permissions = ["Get"]
+    }
+  }
+}
+
+variable "auth_app_principal_id" {
+  type    = string
+  default = null
 }
 
 variable "suffix" {

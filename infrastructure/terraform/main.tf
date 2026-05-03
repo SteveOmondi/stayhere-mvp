@@ -52,6 +52,8 @@ module "security" {
   location    = azurerm_resource_group.main.location
   environment = var.environment
   suffix      = random_id.suffix.hex
+
+  auth_app_principal_id = module.compute.auth_principal_id
 }
 
 # Compute Module

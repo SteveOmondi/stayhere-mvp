@@ -37,7 +37,7 @@ resource "azurerm_linux_function_app" "auth" {
     "SKIP_AUTH"                      = var.skip_auth
     "ENTRA_CLIENT_ID"                = var.entra_client_id
     "ENTRA_TENANT_ID"                = var.entra_tenant_id
-    "ENTRA_CLIENT_SECRET"            = "@Microsoft.KeyVault(SecretUri=https://${split("/", var.key_vault_id)[8]}.vault.azure.net/secrets/${var.entra_client_secret_name}/)"
+    "ENTRA_CLIENT_SECRET"            = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/${var.entra_client_secret_name}/)"
   }
 
   identity {
@@ -49,17 +49,9 @@ resource "azurerm_linux_function_app" "auth" {
   }
 }
 
-# Grant the Auth App access to Key Vault via CLI to avoid Terraform state conflicts
-# with the inline policies in the security module.
-resource "null_resource" "auth_kv_permission" {
-  triggers = {
-    principal_id = azurerm_linux_function_app.auth.identity[0].principal_id
-    key_vault_id = var.key_vault_id
-  }
-
-  provisioner "local-exec" {
-    command = "az keyvault set-policy --name ${split("/", var.key_vault_id)[8]} --object-id ${azurerm_linux_function_app.auth.identity[0].principal_id} --secret-permissions get"
-  }
+# Key Vault URI is constructed manually to break the circular dependency with the security module
+locals {
+  kv_uri = "https://kv-${var.environment}-${var.suffix}.vault.azure.net/"
 }
 
 resource "azurerm_linux_function_app" "property" {
@@ -407,4 +399,8 @@ output "aiagent_function_name" {
 
 output "aiagent_function_host" {
   value = azurerm_linux_function_app.aiagent.default_hostname
+}
+
+output "auth_principal_id" {
+  value = azurerm_linux_function_app.auth.identity[0].principal_id
 }
