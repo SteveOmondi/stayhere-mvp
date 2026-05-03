@@ -49,10 +49,14 @@ resource "azurerm_linux_function_app" "auth" {
   }
 }
 
-resource "azurerm_role_assignment" "auth_kv" {
-  scope                = var.key_vault_id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_linux_function_app.auth.identity[0].principal_id
+resource "azurerm_key_vault_access_policy" "auth_app" {
+  key_vault_id = var.key_vault_id
+  tenant_id    = azurerm_linux_function_app.auth.identity[0].tenant_id
+  object_id    = azurerm_linux_function_app.auth.identity[0].principal_id
+
+  secret_permissions = [
+    "Get"
+  ]
 }
 
 resource "azurerm_linux_function_app" "property" {
