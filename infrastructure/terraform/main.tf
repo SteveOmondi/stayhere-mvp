@@ -1,3 +1,29 @@
+provider "azurerm" {
+  features {}
+}
+
+provider "azuread" {}
+
+# Root level App Registration to break dependency cycles
+resource "azuread_application" "main" {
+  display_name = "StayHere-EntraID-${var.environment}"
+  
+  web {
+    implicit_grant {
+      access_token_issuance_enabled = false
+      id_token_issuance_enabled     = true
+    }
+  }
+}
+
+resource "azuread_service_principal" "main" {
+  application_id = azuread_application.main.application_id
+}
+
+resource "azuread_application_password" "main" {
+  application_id = azuread_application.main.id
+}
+
 resource "random_id" "suffix" {
   byte_length = 4
   keepers = {
@@ -53,27 +79,32 @@ module "security" {
   environment = var.environment
   suffix      = random_id.suffix.hex
 
-  auth_app_principal_id = module.compute.auth_principal_id
+  # Entra ID credentials from root
+  entra_client_secret_value = azuread_application_password.main.value
+  auth_app_principal_id     = module.compute.auth_principal_id
 }
 
 # Compute Module
 module "compute" {
-  source = "./modules/compute"
+  source      = "./modules/compute"
+  rg_name     = azurerm_resource_group.main.name
+  location    = azurerm_resource_group.main.location
+  environment = var.environment
+  suffix      = random_id.suffix.hex
 
-  rg_name                   = azurerm_resource_group.main.name
-  location                  = azurerm_resource_group.main.location
-  environment               = var.environment
-  suffix                    = random_id.suffix.hex
+  # Entra ID details
+  entra_client_id          = azuread_application.main.application_id
+  entra_tenant_id          = data.azurerm_client_config.current.tenant_id
+  entra_client_secret_name = "entra-client-secret"
+  key_vault_id             = "" # No longer used for direct dependency
+
   psql_host                 = module.database.psql_host
   psql_admin_login          = module.database.psql_admin_login
   psql_admin_password       = module.database.psql_admin_password
   psql_database_name        = module.database.psql_database_name
   mongodb_connection_string = module.database.mongodb_connection_string
   redis_connection_string   = module.cache.redis_connection_string
-  entra_client_id           = module.security.entra_client_id
-  entra_tenant_id           = module.security.entra_tenant_id
-  key_vault_id              = module.security.key_vault_id
-  entra_client_secret_name  = module.security.entra_client_secret_name
+  entra_client_secret_name  = "entra-client-secret"
 
   openrouter_api_key         = var.openrouter_api_key
   openrouter_model           = var.openrouter_model
