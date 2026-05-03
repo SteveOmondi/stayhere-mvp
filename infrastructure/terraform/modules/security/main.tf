@@ -8,6 +8,19 @@ resource "azurerm_key_vault" "main" {
   purge_protection_enabled    = false
 
   sku_name = "standard"
+
+  # Grant the Terraform Service Principal access to manage the vault
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+
+    secret_permissions = [
+      "Get", "List", "Set", "Delete", "Purge", "Recover"
+    ]
+    key_permissions = [
+      "Get", "List", "Create", "Update", "Delete"
+    ]
+  }
 }
 
 variable "suffix" {
@@ -94,17 +107,21 @@ data "azuread_service_principal" "msgraph" {
   client_id = "00000003-0000-0000-c000-000000000000" # Microsoft Graph
 }
 
-resource "azuread_app_role_assignment" "user_read_all" {
-  app_role_id         = data.azuread_service_principal.msgraph.app_role_ids["User.Read.All"]
-  principal_object_id = azuread_service_principal.main.object_id
-  resource_object_id  = data.azuread_service_principal.msgraph.object_id
-}
+# NOTE: These assignments are currently commented out because they were already 
+# assigned manually in the tenant, causing a conflict during Terraform apply.
+# To manage them via Terraform in the future, they should be imported into the state.
 
-resource "azuread_app_role_assignment" "auth_method_write" {
-  app_role_id         = data.azuread_service_principal.msgraph.app_role_ids["UserAuthenticationMethod.ReadWrite.All"]
-  principal_object_id = azuread_service_principal.main.object_id
-  resource_object_id  = data.azuread_service_principal.msgraph.object_id
-}
+# resource "azuread_app_role_assignment" "user_read_all" {
+#   app_role_id         = data.azuread_service_principal.msgraph.app_role_ids["User.Read.All"]
+#   principal_object_id = azuread_service_principal.main.object_id
+#   resource_object_id  = data.azuread_service_principal.msgraph.object_id
+# }
+
+# resource "azuread_app_role_assignment" "auth_method_write" {
+#   app_role_id         = data.azuread_service_principal.msgraph.app_role_ids["UserAuthenticationMethod.ReadWrite.All"]
+#   principal_object_id = azuread_service_principal.main.object_id
+#   resource_object_id  = data.azuread_service_principal.msgraph.object_id
+# }
 
 output "entra_client_id" {
   value = azuread_application.main.client_id
