@@ -90,7 +90,7 @@ module "compute" {
   entra_client_id          = azuread_application.main.application_id
   entra_tenant_id          = data.azurerm_client_config.current.tenant_id
   entra_client_secret_name = "entra-client-secret"
-  key_vault_id             = "" # No longer used for direct dependency
+  key_vault_id             = "" 
 
   psql_host                 = module.database.psql_host
   psql_admin_login          = module.database.psql_admin_login
@@ -98,7 +98,6 @@ module "compute" {
   psql_database_name        = module.database.psql_database_name
   mongodb_connection_string = module.database.mongodb_connection_string
   redis_connection_string   = module.cache.redis_connection_string
-  entra_client_secret_name  = "entra-client-secret"
 
   openrouter_api_key         = var.openrouter_api_key
   openrouter_model           = var.openrouter_model
