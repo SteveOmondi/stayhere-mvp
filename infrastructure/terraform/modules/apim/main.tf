@@ -16,8 +16,33 @@ resource "azurerm_api_management_api" "auth" {
   display_name        = "Auth API"
   path                = "auth"
   protocols           = ["https"]
-  service_url         = "https://${var.auth_function_host}/api/auth"
+  service_url         = "https://${var.auth_function_host}"
   subscription_required = false
+}
+
+resource "azurerm_api_management_api_operation" "auth_login" {
+  operation_id        = "auth-login"
+  api_name            = azurerm_api_management_api.auth.name
+  resource_group_name = var.rg_name
+  api_management_name = azurerm_api_management.main.name
+  display_name        = "Login"
+  method              = "POST"
+  url_template        = "/api/auth/login"
+  template_parameter {
+    name     = "auth"
+    type     = "string"
+    required = false
+  }
+}
+
+resource "azurerm_api_management_api_operation" "auth_signup" {
+  operation_id        = "auth-signup"
+  api_name            = azurerm_api_management_api.auth.name
+  resource_group_name = var.rg_name
+  api_management_name = azurerm_api_management.main.name
+  display_name        = "Signup"
+  method              = "POST"
+  url_template        = "/api/auth/signup"
 }
 
 resource "azurerm_api_management_api" "property" {
@@ -28,7 +53,7 @@ resource "azurerm_api_management_api" "property" {
   display_name        = "Property API"
   path                = "property"
   protocols           = ["https"]
-  service_url         = "https://${var.property_function_host}/api"
+  service_url         = "https://${var.property_function_host}"
   subscription_required = false
 }
 
@@ -40,7 +65,7 @@ resource "azurerm_api_management_api" "customer" {
   display_name        = "Customer API"
   path                = "customers"
   protocols           = ["https"]
-  service_url         = "https://${var.customer_function_host}/api/customers"
+  service_url         = "https://${var.customer_function_host}"
   subscription_required = false
 }
 
@@ -52,7 +77,7 @@ resource "azurerm_api_management_api" "propertyowner" {
   display_name        = "Property Owner API"
   path                = "propertyowner"
   protocols           = ["https"]
-  service_url         = "https://${var.propertyowner_function_host}/api"
+  service_url         = "https://${var.propertyowner_function_host}"
   subscription_required = false
 }
 
@@ -64,7 +89,7 @@ resource "azurerm_api_management_api" "staticdata" {
   display_name        = "Static Data API"
   path                = "staticdata"
   protocols           = ["https"]
-  service_url         = "https://${var.staticdata_function_host}/api"
+  service_url         = "https://${var.staticdata_function_host}"
   subscription_required = false
 }
 
@@ -76,30 +101,12 @@ resource "azurerm_api_management_api" "aiagent" {
   display_name        = "AI Agent API"
   path                = "aiagent"
   protocols           = ["https"]
-  service_url         = "https://${var.aiagent_function_host}/api"
+  service_url         = "https://${var.aiagent_function_host}"
   subscription_required = false
 }
 
-# --- AUTH OPERATIONS ---
-resource "azurerm_api_management_api_operation" "auth_signup" {
-  operation_id        = "signup"
-  api_name            = azurerm_api_management_api.auth.name
-  api_management_name = azurerm_api_management.main.name
-  resource_group_name = var.rg_name
-  display_name        = "Signup"
-  method              = "POST"
-  url_template        = "/signup"
-}
+# --- AUTH OPERATIONS (CLEANED) ---
 
-resource "azurerm_api_management_api_operation" "auth_login" {
-  operation_id        = "login"
-  api_name            = azurerm_api_management_api.auth.name
-  api_management_name = azurerm_api_management.main.name
-  resource_group_name = var.rg_name
-  display_name        = "Login"
-  method              = "POST"
-  url_template        = "/login"
-}
 
 resource "azurerm_api_management_api_operation" "auth_verify" {
   operation_id        = "verify-otp"
@@ -108,7 +115,7 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
   method              = "POST"
-  url_template        = "/verifyotp"
+  url_template        = "/api/auth/verifyotp"
 }
 
 resource "azurerm_api_management_api_operation" "auth_onboard" {
@@ -118,7 +125,7 @@ resource "azurerm_api_management_api_operation" "auth_onboard" {
   resource_group_name = var.rg_name
   display_name        = "Onboard User"
   method              = "POST"
-  url_template        = "/onboard"
+  url_template        = "/api/auth/onboard"
 }
 
 resource "azurerm_api_management_api_operation" "auth_profiles" {
@@ -128,7 +135,7 @@ resource "azurerm_api_management_api_operation" "auth_profiles" {
   resource_group_name = var.rg_name
   display_name        = "Get User Profiles"
   method              = "GET"
-  url_template        = "/profiles/{userId}"
+  url_template        = "/api/auth/profiles/{userId}"
   
   template_parameter {
     name     = "userId"
@@ -145,7 +152,7 @@ resource "azurerm_api_management_api_operation" "static_categories" {
   resource_group_name = var.rg_name
   display_name        = "Get Categories"
   method              = "GET"
-  url_template        = "/categories"
+  url_template        = "/api/categories"
 }
 
 resource "azurerm_api_management_api_operation" "static_all_categories" {
@@ -155,7 +162,7 @@ resource "azurerm_api_management_api_operation" "static_all_categories" {
   resource_group_name = var.rg_name
   display_name        = "Get All Categories"
   method              = "GET"
-  url_template        = "/categories/all"
+  url_template        = "/api/categories/all"
 }
 
 resource "azurerm_api_management_api_operation" "static_user_types" {
@@ -165,7 +172,7 @@ resource "azurerm_api_management_api_operation" "static_user_types" {
   resource_group_name = var.rg_name
   display_name        = "Get User Types"
   method              = "GET"
-  url_template        = "/user-types"
+  url_template        = "/api/user-types"
 }
 
 resource "azurerm_api_management_api_operation" "static_user_roles" {
@@ -175,7 +182,7 @@ resource "azurerm_api_management_api_operation" "static_user_roles" {
   resource_group_name = var.rg_name
   display_name        = "Get User Roles"
   method              = "GET"
-  url_template        = "/user-roles"
+  url_template        = "/api/user-roles"
 }
 
 resource "azurerm_api_management_api_operation" "static_category_by_id" {
@@ -185,7 +192,7 @@ resource "azurerm_api_management_api_operation" "static_category_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Category By ID"
   method              = "GET"
-  url_template        = "/categories/{id}"
+  url_template        = "/api/categories/{id}"
   template_parameter {
     name     = "id"
     type     = "string"
@@ -200,7 +207,7 @@ resource "azurerm_api_management_api_operation" "static_category_by_city" {
   resource_group_name = var.rg_name
   display_name        = "Get Categories By City"
   method              = "GET"
-  url_template        = "/categories/city/{city}"
+  url_template        = "/api/categories/city/{city}"
   template_parameter {
     name     = "city"
     type     = "string"
@@ -215,7 +222,7 @@ resource "azurerm_api_management_api_operation" "static_create_category" {
   resource_group_name = var.rg_name
   display_name        = "Create Category"
   method              = "POST"
-  url_template        = "/categories"
+  url_template        = "/api/categories"
 }
 
 # --- AI AGENT OPERATIONS ---
@@ -226,7 +233,7 @@ resource "azurerm_api_management_api_operation" "aiagent_chat" {
   resource_group_name = var.rg_name
   display_name        = "AI Agent Chat"
   method              = "POST"
-  url_template        = "/chat"
+  url_template        = "/api/chat"
 }
 
 resource "azurerm_api_management_api_operation" "aiagent_recommend" {
@@ -236,7 +243,7 @@ resource "azurerm_api_management_api_operation" "aiagent_recommend" {
   resource_group_name = var.rg_name
   display_name        = "AI Agent Recommend"
   method              = "POST"
-  url_template        = "/respondandrecommend"
+  url_template        = "/api/respondandrecommend"
 }
 
 resource "azurerm_api_management_api_operation" "aiagent_knowledge_status" {
@@ -246,7 +253,7 @@ resource "azurerm_api_management_api_operation" "aiagent_knowledge_status" {
   resource_group_name = var.rg_name
   display_name        = "AI Agent Knowledge Status"
   method              = "GET"
-  url_template        = "/knowledge/status"
+  url_template        = "/api/knowledge/status"
 }
 
 resource "azurerm_api_management_api_operation" "aiagent_listings" {
@@ -256,7 +263,7 @@ resource "azurerm_api_management_api_operation" "aiagent_listings" {
   resource_group_name = var.rg_name
   display_name        = "AI Agent Search Listings"
   method              = "GET"
-  url_template        = "/listings"
+  url_template        = "/api/listings"
 }
 
 resource "azurerm_api_management_api_operation" "propertyowner_create" {
@@ -266,7 +273,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_create" {
   resource_group_name = var.rg_name
   display_name        = "Create Property Owner"
   method              = "POST"
-  url_template        = "/owners"
+  url_template        = "/api/owners"
 }
 
 resource "azurerm_api_management_api_operation" "propertyowner_list" {
@@ -276,7 +283,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_list" {
   resource_group_name = var.rg_name
   display_name        = "Get All Owners"
   method              = "GET"
-  url_template        = "/owners"
+  url_template        = "/api/owners"
 }
 
 resource "azurerm_api_management_api_operation" "propertyowner_get_by_id" {
@@ -286,7 +293,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_get_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner By ID"
   method              = "GET"
-  url_template        = "/owners/{id}"
+  url_template        = "/api/owners/{id}"
   template_parameter {
     name     = "id"
     type     = "string"
@@ -301,7 +308,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_wallet" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner Wallet"
   method              = "GET"
-  url_template        = "/owners/{ownerId}/wallet"
+  url_template        = "/api/owners/{ownerId}/wallet"
   template_parameter {
     name     = "ownerId"
     type     = "string"
@@ -316,7 +323,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_agents" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner Agents"
   method              = "GET"
-  url_template        = "/owners/{ownerId}/agents"
+  url_template        = "/api/owners/{ownerId}/agents"
   template_parameter {
     name     = "ownerId"
     type     = "string"
@@ -332,7 +339,7 @@ resource "azurerm_api_management_api_operation" "customer_create" {
   resource_group_name = var.rg_name
   display_name        = "Create Customer"
   method              = "POST"
-  url_template        = "/customers"
+  url_template        = "/api/customers"
 }
 
 resource "azurerm_api_management_api_operation" "customer_list" {
@@ -342,7 +349,7 @@ resource "azurerm_api_management_api_operation" "customer_list" {
   resource_group_name = var.rg_name
   display_name        = "Get Customers"
   method              = "GET"
-  url_template        = "/customers/list"
+  url_template        = "/api/customers/list"
 }
 
 resource "azurerm_api_management_api_operation" "customer_get_by_id" {
@@ -352,7 +359,7 @@ resource "azurerm_api_management_api_operation" "customer_get_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Customer By ID"
   method              = "GET"
-  url_template        = "/customers/{id}"
+  url_template        = "/api/customers/{id}"
   template_parameter {
     name     = "id"
     type     = "string"
@@ -367,7 +374,7 @@ resource "azurerm_api_management_api_operation" "customer_by_listing" {
   resource_group_name = var.rg_name
   display_name        = "Get Customers By Listing"
   method              = "GET"
-  url_template        = "/listings/{listingId}/customers"
+  url_template        = "/api/listings/{listingId}/customers"
   template_parameter {
     name     = "listingId"
     type     = "string"
@@ -383,7 +390,7 @@ resource "azurerm_api_management_api_operation" "owner_properties" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner Properties"
   method              = "GET"
-  url_template        = "/owners/{ownerId}/properties"
+  url_template        = "/api/owners/{ownerId}/properties"
 
   template_parameter {
     name     = "ownerId"

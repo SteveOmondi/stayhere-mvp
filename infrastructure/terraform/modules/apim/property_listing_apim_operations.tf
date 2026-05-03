@@ -9,7 +9,7 @@ resource "azurerm_api_management_api_operation" "create_listing" {
   resource_group_name = var.rg_name
   display_name        = "Create Listing"
   method              = "POST"
-  url_template        = "/listings"
+  url_template        = "/api/listings"
 }
 
 resource "azurerm_api_management_api_operation" "create_listing_from_property" {
@@ -40,7 +40,7 @@ resource "azurerm_api_management_api_operation" "get_listing_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Listing by ID"
   method              = "GET"
-  url_template        = "/listings/{id}"
+  url_template        = "/api/listings/{id}"
 
   template_parameter {
     name        = "id"
@@ -57,7 +57,7 @@ resource "azurerm_api_management_api_operation" "get_listing_by_code" {
   resource_group_name = var.rg_name
   display_name        = "Get Listing by Code"
   method              = "GET"
-  url_template        = "/listings/code/{code}"
+  url_template        = "/api/listings/code/{code}"
 
   template_parameter {
     name        = "code"
@@ -80,7 +80,7 @@ resource "azurerm_api_management_api_operation" "get_listings_by_property" {
   resource_group_name = var.rg_name
   display_name        = "Get Listings by Property"
   method              = "GET"
-  url_template        = "/listings/property/{propertyId}"
+  url_template        = "/api/listings/property/{propertyId}"
 
   template_parameter {
     name        = "propertyId"
@@ -97,7 +97,7 @@ resource "azurerm_api_management_api_operation" "get_listings_by_owner" {
   resource_group_name = var.rg_name
   display_name        = "Get Listings by Owner"
   method              = "GET"
-  url_template        = "/listings/owner/{ownerId}"
+  url_template        = "/api/listings/owner/{ownerId}"
 
   template_parameter {
     name        = "ownerId"
@@ -114,7 +114,7 @@ resource "azurerm_api_management_api_operation" "get_listings_by_city" {
   resource_group_name = var.rg_name
   display_name        = "Get Listings by City"
   method              = "GET"
-  url_template        = "/listings/city/{city}"
+  url_template        = "/api/listings/city/{city}"
 
   template_parameter {
     name        = "city"
@@ -131,7 +131,7 @@ resource "azurerm_api_management_api_operation" "get_listings_by_county" {
   resource_group_name = var.rg_name
   display_name        = "Get Listings by County"
   method              = "GET"
-  url_template        = "/listings/county/{county}"
+  url_template        = "/api/listings/county/{county}"
 
   template_parameter {
     name        = "county"
@@ -148,7 +148,7 @@ resource "azurerm_api_management_api_operation" "get_listings_by_type" {
   resource_group_name = var.rg_name
   display_name        = "Get Listings by Property Type"
   method              = "GET"
-  url_template        = "/listings/type/{propertyType}"
+  url_template        = "/api/listings/type/{propertyType}"
 
   template_parameter {
     name        = "propertyType"
@@ -165,7 +165,7 @@ resource "azurerm_api_management_api_operation" "get_listings_by_listing_type" {
   resource_group_name = var.rg_name
   display_name        = "Get Listings by Listing Type"
   method              = "GET"
-  url_template        = "/listings/listing-type/{listingType}"
+  url_template        = "/api/listings/listing-type/{listingType}"
 
   template_parameter {
     name        = "listingType"
@@ -182,7 +182,7 @@ resource "azurerm_api_management_api_operation" "get_featured_listings" {
   resource_group_name = var.rg_name
   display_name        = "Get Featured Listings"
   method              = "GET"
-  url_template        = "/listings/featured"
+  url_template        = "/api/listings/featured"
 }
 
 resource "azurerm_api_management_api_operation" "get_available_listings" {
@@ -192,7 +192,7 @@ resource "azurerm_api_management_api_operation" "get_available_listings" {
   resource_group_name = var.rg_name
   display_name        = "Get Available Listings"
   method              = "GET"
-  url_template        = "/listings/available"
+  url_template        = "/api/listings/available"
 }
 
 resource "azurerm_api_management_api_operation" "get_all_listings" {
@@ -202,7 +202,7 @@ resource "azurerm_api_management_api_operation" "get_all_listings" {
   resource_group_name = var.rg_name
   display_name        = "Get All Listings"
   method              = "GET"
-  url_template        = "/listings"
+  url_template        = "/api/listings"
 }
 
 # ──────────────────────────────────────────────
@@ -216,7 +216,7 @@ resource "azurerm_api_management_api_operation" "search_listings" {
   resource_group_name = var.rg_name
   display_name        = "Search Listings"
   method              = "POST"
-  url_template        = "/listings/search"
+  url_template        = "/api/listings/search"
 }
 
 # ──────────────────────────────────────────────
@@ -230,7 +230,7 @@ resource "azurerm_api_management_api_operation" "update_listing" {
   resource_group_name = var.rg_name
   display_name        = "Update Listing"
   method              = "PUT"
-  url_template        = "/listings/{id}"
+  url_template        = "/api/listings/{id}"
 
   template_parameter {
     name        = "id"
@@ -247,7 +247,7 @@ resource "azurerm_api_management_api_operation" "update_listing_availability" {
   resource_group_name = var.rg_name
   display_name        = "Update Listing Availability"
   method              = "PATCH"
-  url_template        = "/listings/{id}/availability"
+  url_template        = "/api/listings/{id}/availability"
 
   template_parameter {
     name        = "id"
@@ -264,7 +264,7 @@ resource "azurerm_api_management_api_operation" "update_listing_rating" {
   resource_group_name = var.rg_name
   display_name        = "Update Listing Rating"
   method              = "PATCH"
-  url_template        = "/listings/{id}/rating"
+  url_template        = "/api/listings/{id}/rating"
 
   template_parameter {
     name        = "id"
@@ -298,7 +298,7 @@ resource "azurerm_api_management_api_operation" "increment_listing_views" {
   resource_group_name = var.rg_name
   display_name        = "Increment Listing Views"
   method              = "POST"
-  url_template        = "/listings/{id}/view"
+  url_template        = "/api/listings/{id}/view"
 
   template_parameter {
     name        = "id"
@@ -319,7 +319,7 @@ resource "azurerm_api_management_api_operation" "assign_listing_agent" {
   resource_group_name = var.rg_name
   display_name        = "Assign Listing Agent"
   method              = "POST"
-  url_template        = "/listings/{id}/agent"
+  url_template        = "/api/listings/{id}/agent"
 
   template_parameter {
     name        = "id"
@@ -336,7 +336,7 @@ resource "azurerm_api_management_api_operation" "remove_listing_agent" {
   resource_group_name = var.rg_name
   display_name        = "Remove Listing Agent"
   method              = "DELETE"
-  url_template        = "/listings/{id}/agent"
+  url_template        = "/api/listings/{id}/agent"
 
   template_parameter {
     name        = "id"
@@ -357,7 +357,7 @@ resource "azurerm_api_management_api_operation" "assign_listing_caretaker" {
   resource_group_name = var.rg_name
   display_name        = "Assign Listing Caretaker"
   method              = "POST"
-  url_template        = "/listings/{id}/caretaker"
+  url_template        = "/api/listings/{id}/caretaker"
 
   template_parameter {
     name        = "id"
@@ -374,7 +374,7 @@ resource "azurerm_api_management_api_operation" "remove_listing_caretaker" {
   resource_group_name = var.rg_name
   display_name        = "Remove Listing Caretaker"
   method              = "DELETE"
-  url_template        = "/listings/{id}/caretaker"
+  url_template        = "/api/listings/{id}/caretaker"
 
   template_parameter {
     name        = "id"
@@ -395,7 +395,7 @@ resource "azurerm_api_management_api_operation" "delete_listing" {
   resource_group_name = var.rg_name
   display_name        = "Delete Listing"
   method              = "DELETE"
-  url_template        = "/listings/{id}"
+  url_template        = "/api/listings/{id}"
 
   template_parameter {
     name        = "id"
