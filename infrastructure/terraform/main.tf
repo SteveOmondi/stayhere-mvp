@@ -114,12 +114,19 @@ module "apim" {
   environment = var.environment
   suffix      = random_id.suffix.hex
 
+  auth_function_name          = module.compute.auth_function_name
   auth_function_host          = module.compute.auth_function_host
+  property_function_name      = module.compute.property_function_name
   property_function_host      = module.compute.property_function_host
+  customer_function_name      = module.compute.customer_function_name
   customer_function_host      = module.compute.customer_function_host
+  propertyowner_function_name = module.compute.propertyowner_function_name
   propertyowner_function_host = module.compute.propertyowner_function_host
+  staticdata_function_name    = module.compute.staticdata_function_name
   staticdata_function_host    = module.compute.staticdata_function_host
+  aiagent_function_name       = module.compute.aiagent_function_name
   aiagent_function_host       = module.compute.aiagent_function_host
-  entra_client_id             = module.security.entra_client_id
-  entra_tenant_id             = module.security.entra_tenant_id
+
+  entra_client_id             = azuread_application.main.client_id
+  entra_tenant_id             = data.azurerm_client_config.current.tenant_id
 }
