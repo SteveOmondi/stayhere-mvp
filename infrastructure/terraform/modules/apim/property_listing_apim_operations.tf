@@ -182,7 +182,7 @@ resource "azurerm_api_management_api_operation" "get_featured_listings" {
   resource_group_name = var.rg_name
   display_name        = "Get Featured Listings"
   method              = "GET"
-  url_template        = "/api/listings/featured"
+  url_template        = "/listings/featured"
 }
 
 resource "azurerm_api_management_api_operation" "get_available_listings" {
@@ -192,7 +192,7 @@ resource "azurerm_api_management_api_operation" "get_available_listings" {
   resource_group_name = var.rg_name
   display_name        = "Get Available Listings"
   method              = "GET"
-  url_template        = "/api/listings/available"
+  url_template        = "/listings/available"
 }
 
 resource "azurerm_api_management_api_operation" "get_all_listings" {
@@ -281,7 +281,7 @@ resource "azurerm_api_management_api_operation" "update_listing_featured" {
   resource_group_name = var.rg_name
   display_name        = "Update Listing Featured Status"
   method              = "PATCH"
-  url_template        = "/listings/{id}/featured"
+  url_template        = "/api/listings/{id}/featured"
 
   template_parameter {
     name        = "id"
