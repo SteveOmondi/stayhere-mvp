@@ -17,7 +17,6 @@
   },
   "extensions": {
     "http": {
-      "routePrefix": "api"
     }
   }
 }

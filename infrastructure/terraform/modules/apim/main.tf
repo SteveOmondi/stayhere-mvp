@@ -16,7 +16,7 @@ resource "azurerm_api_management_api" "auth" {
   display_name        = "Auth API"
   path                = "auth"
   protocols           = ["https"]
-  service_url         = "https://${var.auth_function_host}"
+  service_url         = "https://${var.auth_function_host}/auth"
   subscription_required = false
 }
 
@@ -27,7 +27,7 @@ resource "azurerm_api_management_api_operation" "auth_login" {
   api_management_name = azurerm_api_management.main.name
   display_name        = "Login"
   method              = "POST"
-  url_template        = "/api/auth/login"
+  url_template        = "/login"
 }
 
 resource "azurerm_api_management_api_operation" "auth_signup" {
@@ -37,7 +37,7 @@ resource "azurerm_api_management_api_operation" "auth_signup" {
   api_management_name = azurerm_api_management.main.name
   display_name        = "Signup"
   method              = "POST"
-  url_template        = "/api/auth/signup"
+  url_template        = "/signup"
 }
 
 resource "azurerm_api_management_api" "property" {
@@ -60,7 +60,7 @@ resource "azurerm_api_management_api" "customer" {
   display_name        = "Customer API"
   path                = "customers"
   protocols           = ["https"]
-  service_url         = "https://${var.customer_function_host}"
+  service_url         = "https://${var.customer_function_host}/customers"
   subscription_required = false
 }
 
@@ -110,7 +110,7 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
   method              = "POST"
-  url_template        = "/api/auth/verifyotp"
+  url_template        = "/verifyotp"
 }
 
 resource "azurerm_api_management_api_operation" "auth_onboard" {
@@ -120,7 +120,7 @@ resource "azurerm_api_management_api_operation" "auth_onboard" {
   resource_group_name = var.rg_name
   display_name        = "Onboard User"
   method              = "POST"
-  url_template        = "/api/auth/onboard"
+  url_template        = "/onboard"
 }
 
 resource "azurerm_api_management_api_operation" "auth_profiles" {
@@ -130,7 +130,7 @@ resource "azurerm_api_management_api_operation" "auth_profiles" {
   resource_group_name = var.rg_name
   display_name        = "Get User Profiles"
   method              = "GET"
-  url_template        = "/api/auth/profiles/{userId}"
+  url_template        = "/profiles/{userId}"
   
   template_parameter {
     name     = "userId"
@@ -147,7 +147,7 @@ resource "azurerm_api_management_api_operation" "static_categories" {
   resource_group_name = var.rg_name
   display_name        = "Get Categories"
   method              = "GET"
-  url_template        = "/api/categories"
+  url_template        = "/categories"
 }
 
 resource "azurerm_api_management_api_operation" "static_all_categories" {
@@ -157,7 +157,7 @@ resource "azurerm_api_management_api_operation" "static_all_categories" {
   resource_group_name = var.rg_name
   display_name        = "Get All Categories"
   method              = "GET"
-  url_template        = "/api/categories/all"
+  url_template        = "/categories/all"
 }
 
 resource "azurerm_api_management_api_operation" "static_user_types" {
@@ -167,7 +167,7 @@ resource "azurerm_api_management_api_operation" "static_user_types" {
   resource_group_name = var.rg_name
   display_name        = "Get User Types"
   method              = "GET"
-  url_template        = "/api/user-types"
+  url_template        = "/user-types"
 }
 
 resource "azurerm_api_management_api_operation" "static_user_roles" {
@@ -177,7 +177,7 @@ resource "azurerm_api_management_api_operation" "static_user_roles" {
   resource_group_name = var.rg_name
   display_name        = "Get User Roles"
   method              = "GET"
-  url_template        = "/api/user-roles"
+  url_template        = "/user-roles"
 }
 
 resource "azurerm_api_management_api_operation" "static_category_by_id" {
@@ -187,7 +187,7 @@ resource "azurerm_api_management_api_operation" "static_category_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Category By ID"
   method              = "GET"
-  url_template        = "/api/categories/{id}"
+  url_template        = "/categories/{id}"
   template_parameter {
     name     = "id"
     type     = "string"
@@ -202,7 +202,7 @@ resource "azurerm_api_management_api_operation" "static_category_by_city" {
   resource_group_name = var.rg_name
   display_name        = "Get Categories By City"
   method              = "GET"
-  url_template        = "/api/categories/city/{city}"
+  url_template        = "/categories/city/{city}"
   template_parameter {
     name     = "city"
     type     = "string"
@@ -217,7 +217,7 @@ resource "azurerm_api_management_api_operation" "static_create_category" {
   resource_group_name = var.rg_name
   display_name        = "Create Category"
   method              = "POST"
-  url_template        = "/api/categories"
+  url_template        = "/categories"
 }
 
 # --- AI AGENT OPERATIONS ---
@@ -228,7 +228,7 @@ resource "azurerm_api_management_api_operation" "aiagent_chat" {
   resource_group_name = var.rg_name
   display_name        = "AI Agent Chat"
   method              = "POST"
-  url_template        = "/api/chat"
+  url_template        = "/chat"
 }
 
 resource "azurerm_api_management_api_operation" "aiagent_recommend" {
@@ -238,7 +238,7 @@ resource "azurerm_api_management_api_operation" "aiagent_recommend" {
   resource_group_name = var.rg_name
   display_name        = "AI Agent Recommend"
   method              = "POST"
-  url_template        = "/api/respondandrecommend"
+  url_template        = "/respondandrecommend"
 }
 
 resource "azurerm_api_management_api_operation" "aiagent_knowledge_status" {
@@ -248,7 +248,7 @@ resource "azurerm_api_management_api_operation" "aiagent_knowledge_status" {
   resource_group_name = var.rg_name
   display_name        = "AI Agent Knowledge Status"
   method              = "GET"
-  url_template        = "/api/knowledge/status"
+  url_template        = "/knowledge/status"
 }
 
 resource "azurerm_api_management_api_operation" "aiagent_listings" {
@@ -258,7 +258,7 @@ resource "azurerm_api_management_api_operation" "aiagent_listings" {
   resource_group_name = var.rg_name
   display_name        = "AI Agent Search Listings"
   method              = "GET"
-  url_template        = "/api/listings"
+  url_template        = "/listings"
 }
 
 resource "azurerm_api_management_api_operation" "propertyowner_create" {
@@ -268,7 +268,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_create" {
   resource_group_name = var.rg_name
   display_name        = "Create Property Owner"
   method              = "POST"
-  url_template        = "/api/owners"
+  url_template        = "/owners"
 }
 
 resource "azurerm_api_management_api_operation" "propertyowner_list" {
@@ -278,7 +278,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_list" {
   resource_group_name = var.rg_name
   display_name        = "Get All Owners"
   method              = "GET"
-  url_template        = "/api/owners"
+  url_template        = "/owners"
 }
 
 resource "azurerm_api_management_api_operation" "propertyowner_get_by_id" {
@@ -288,7 +288,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_get_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner By ID"
   method              = "GET"
-  url_template        = "/api/owners/{id}"
+  url_template        = "/owners/{id}"
   template_parameter {
     name     = "id"
     type     = "string"
@@ -303,7 +303,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_wallet" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner Wallet"
   method              = "GET"
-  url_template        = "/api/owners/{ownerId}/wallet"
+  url_template        = "/owners/{ownerId}/wallet"
   template_parameter {
     name     = "ownerId"
     type     = "string"
@@ -318,7 +318,7 @@ resource "azurerm_api_management_api_operation" "propertyowner_agents" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner Agents"
   method              = "GET"
-  url_template        = "/api/owners/{ownerId}/agents"
+  url_template        = "/owners/{ownerId}/agents"
   template_parameter {
     name     = "ownerId"
     type     = "string"
@@ -334,7 +334,7 @@ resource "azurerm_api_management_api_operation" "customer_create" {
   resource_group_name = var.rg_name
   display_name        = "Create Customer"
   method              = "POST"
-  url_template        = "/api/customers"
+  url_template        = ""
 }
 
 resource "azurerm_api_management_api_operation" "customer_list" {
@@ -344,7 +344,7 @@ resource "azurerm_api_management_api_operation" "customer_list" {
   resource_group_name = var.rg_name
   display_name        = "Get Customers"
   method              = "GET"
-  url_template        = "/api/customers/list"
+  url_template        = "/list"
 }
 
 resource "azurerm_api_management_api_operation" "customer_get_by_id" {
@@ -354,7 +354,7 @@ resource "azurerm_api_management_api_operation" "customer_get_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Customer By ID"
   method              = "GET"
-  url_template        = "/api/customers/{id}"
+  url_template        = "/{id}"
   template_parameter {
     name     = "id"
     type     = "string"
@@ -369,7 +369,7 @@ resource "azurerm_api_management_api_operation" "customer_by_listing" {
   resource_group_name = var.rg_name
   display_name        = "Get Customers By Listing"
   method              = "GET"
-  url_template        = "/api/listings/{listingId}/customers"
+  url_template        = "/listings/{listingId}/customers"
   template_parameter {
     name     = "listingId"
     type     = "string"
@@ -385,7 +385,7 @@ resource "azurerm_api_management_api_operation" "owner_properties" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner Properties"
   method              = "GET"
-  url_template        = "/api/owners/{ownerId}/properties"
+  url_template        = "/owners/{ownerId}/properties"
 
   template_parameter {
     name     = "ownerId"
@@ -405,6 +405,7 @@ resource "azurerm_api_management_api_policy" "auth" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.auth_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
+        <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
     </inbound>
 </policies>
 XML
@@ -420,6 +421,7 @@ resource "azurerm_api_management_api_policy" "property" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.property_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
+        <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
     </inbound>
 </policies>
 XML
@@ -435,6 +437,7 @@ resource "azurerm_api_management_api_policy" "customer" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.customer_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
+        <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
     </inbound>
 </policies>
 XML
@@ -450,6 +453,7 @@ resource "azurerm_api_management_api_policy" "propertyowner" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.propertyowner_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
+        <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
     </inbound>
 </policies>
 XML
@@ -465,6 +469,7 @@ resource "azurerm_api_management_api_policy" "staticdata" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.staticdata_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
+        <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
     </inbound>
 </policies>
 XML
@@ -480,6 +485,7 @@ resource "azurerm_api_management_api_policy" "aiagent" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.aiagent_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
+        <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
     </inbound>
 </policies>
 XML
