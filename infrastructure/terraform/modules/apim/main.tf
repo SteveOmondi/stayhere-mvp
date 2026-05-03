@@ -28,11 +28,6 @@ resource "azurerm_api_management_api_operation" "auth_login" {
   display_name        = "Login"
   method              = "POST"
   url_template        = "/api/auth/login"
-  template_parameter {
-    name     = "auth"
-    type     = "string"
-    required = false
-  }
 }
 
 resource "azurerm_api_management_api_operation" "auth_signup" {
