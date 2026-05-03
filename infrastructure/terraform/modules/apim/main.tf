@@ -16,7 +16,7 @@ resource "azurerm_api_management_api" "auth" {
   display_name        = "Auth API"
   path                = "auth"
   protocols           = ["https"]
-  service_url         = "https://${var.auth_function_host}"
+  service_url         = "https://${var.auth_function_host}/api/auth"
   subscription_required = false
 }
 
@@ -40,7 +40,7 @@ resource "azurerm_api_management_api" "customer" {
   display_name        = "Customer API"
   path                = "customers"
   protocols           = ["https"]
-  service_url         = "https://${var.customer_function_host}"
+  service_url         = "https://${var.customer_function_host}/api/customers"
   subscription_required = false
 }
 
@@ -52,7 +52,7 @@ resource "azurerm_api_management_api" "propertyowner" {
   display_name        = "Property Owner API"
   path                = "propertyowner"
   protocols           = ["https"]
-  service_url         = "https://${var.propertyowner_function_host}"
+  service_url         = "https://${var.propertyowner_function_host}/api"
   subscription_required = false
 }
 
@@ -64,7 +64,7 @@ resource "azurerm_api_management_api" "staticdata" {
   display_name        = "Static Data API"
   path                = "staticdata"
   protocols           = ["https"]
-  service_url         = "https://${var.staticdata_function_host}"
+  service_url         = "https://${var.staticdata_function_host}/api"
   subscription_required = false
 }
 
@@ -76,7 +76,7 @@ resource "azurerm_api_management_api" "aiagent" {
   display_name        = "AI Agent API"
   path                = "aiagent"
   protocols           = ["https"]
-  service_url         = "https://${var.aiagent_function_host}"
+  service_url         = "https://${var.aiagent_function_host}/api"
   subscription_required = false
 }
 
@@ -403,7 +403,6 @@ resource "azurerm_api_management_api_policy" "auth" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.auth_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
-        <rewrite-uri template="/api/auth{request.url.path}" />
     </inbound>
 </policies>
 XML
@@ -419,7 +418,6 @@ resource "azurerm_api_management_api_policy" "property" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.property_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
-        <rewrite-uri template="/api{request.url.path}" />
     </inbound>
 </policies>
 XML
@@ -435,7 +433,6 @@ resource "azurerm_api_management_api_policy" "customer" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.customer_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
-        <rewrite-uri template="/api/customers{request.url.path}" />
     </inbound>
 </policies>
 XML
@@ -451,7 +448,6 @@ resource "azurerm_api_management_api_policy" "propertyowner" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.propertyowner_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
-        <rewrite-uri template="/api{request.url.path}" />
     </inbound>
 </policies>
 XML
@@ -467,7 +463,6 @@ resource "azurerm_api_management_api_policy" "staticdata" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.staticdata_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
-        <rewrite-uri template="/api{request.url.path}" />
     </inbound>
 </policies>
 XML
@@ -483,7 +478,6 @@ resource "azurerm_api_management_api_policy" "aiagent" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.aiagent_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
-        <rewrite-uri template="/api{request.url.path}" />
     </inbound>
 </policies>
 XML
