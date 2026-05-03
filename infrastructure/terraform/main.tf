@@ -1,3 +1,5 @@
+data "azurerm_client_config" "current" {}
+
 # Root level App Registration to break dependency cycles
 resource "azuread_application" "main" {
   display_name = "StayHere-EntraID-${var.environment}"
@@ -11,7 +13,7 @@ resource "azuread_application" "main" {
 }
 
 resource "azuread_service_principal" "main" {
-  application_id = azuread_application.main.application_id
+  client_id = azuread_application.main.client_id
 }
 
 resource "azuread_application_password" "main" {
@@ -87,7 +89,7 @@ module "compute" {
   suffix      = random_id.suffix.hex
 
   # Entra ID details
-  entra_client_id          = azuread_application.main.application_id
+  entra_client_id          = azuread_application.main.client_id
   entra_tenant_id          = data.azurerm_client_config.current.tenant_id
   entra_client_secret_name = "entra-client-secret"
   key_vault_id             = "" 
