@@ -37,7 +37,7 @@ resource "azurerm_linux_function_app" "auth" {
     "SKIP_AUTH"                      = var.skip_auth
     "ENTRA_CLIENT_ID"                = var.entra_client_id
     "ENTRA_TENANT_ID"                = var.entra_tenant_id
-    "ENTRA_CLIENT_SECRET"            = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/${var.entra_client_secret_name}/)"
+    "ENTRA_CLIENT_SECRET"            = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/${var.entra_client_secret_name})"
   }
 
   identity {

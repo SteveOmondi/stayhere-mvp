@@ -16,7 +16,7 @@ resource "azurerm_api_management_api" "auth" {
   display_name        = "Auth API"
   path                = "auth"
   protocols           = ["https"]
-  service_url         = "https://${var.auth_function_host}"
+  service_url         = "https://${var.auth_function_host}/api/auth"
   subscription_required = false
 }
 
@@ -40,7 +40,7 @@ resource "azurerm_api_management_api" "customer" {
   display_name        = "Customer API"
   path                = "customers"
   protocols           = ["https"]
-  service_url         = "https://${var.customer_function_host}"
+  service_url         = "https://${var.customer_function_host}/api/customers"
   subscription_required = false
 }
 
@@ -403,7 +403,6 @@ resource "azurerm_api_management_api_policy" "auth" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.auth_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
-        <rewrite-uri template="/api/auth{request.url.path}" />
     </inbound>
 </policies>
 XML
@@ -434,7 +433,6 @@ resource "azurerm_api_management_api_policy" "customer" {
         <base />
         <set-header name="Host" exists-action="override"><value>${var.customer_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
-        <rewrite-uri template="/api/customers{request.url.path}" />
     </inbound>
 </policies>
 XML
