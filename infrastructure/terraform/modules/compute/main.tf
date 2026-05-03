@@ -37,6 +37,7 @@ resource "azurerm_linux_function_app" "auth" {
     "SKIP_AUTH"                      = var.skip_auth
     "ENTRA_CLIENT_ID"                = var.entra_client_id
     "ENTRA_TENANT_ID"                = var.entra_tenant_id
+    "ENTRA_CLIENT_SECRET"            = "@Microsoft.KeyVault(SecretUri=https://${split("/", var.key_vault_id)[8]}.vault.azure.net/secrets/${var.entra_client_secret_name}/)"
   }
 
   identity {
@@ -46,6 +47,12 @@ resource "azurerm_linux_function_app" "auth" {
   tags = {
     Service = "AuthService"
   }
+}
+
+resource "azurerm_role_assignment" "auth_kv" {
+  scope                = var.key_vault_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_linux_function_app.auth.identity[0].principal_id
 }
 
 resource "azurerm_linux_function_app" "property" {
@@ -322,6 +329,14 @@ variable "entra_client_id" {
 variable "entra_tenant_id" {
   type    = string
   default = ""
+}
+
+variable "key_vault_id" {
+  type = string
+}
+
+variable "entra_client_secret_name" {
+  type = string
 }
 
 variable "openrouter_api_key" {

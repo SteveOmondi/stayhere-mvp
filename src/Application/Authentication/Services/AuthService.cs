@@ -59,6 +59,18 @@ public class AuthService : IAuthService
 
     public async Task<bool> RequestOtpAsync(OtpRequest request)
     {
+        if (request.Type == OtpTypeDto.Sms)
+        {
+            var user = await _userRepository.GetByPhoneNumberAsync(request.Target);
+            if (user != null)
+            {
+                // Existing user - trigger OTP via Entra ID as requested
+                await _identityService.TriggerEntraPhoneOtpAsync(request.Target);
+                return true;
+            }
+        }
+
+        // New user or Email OTP - use local OTP service
         var otp = await _otpService.GenerateOtpAsync(request.Target, MapOtpType(request.Type));
         await _otpService.SendOtpAsync(request.Target, otp, MapOtpType(request.Type));
         return true;

@@ -56,12 +56,12 @@ module "security" {
 
 # Compute Module
 module "compute" {
-  source      = "./modules/compute"
-  rg_name     = azurerm_resource_group.main.name
-  location    = azurerm_resource_group.main.location
-  environment = var.environment
-  suffix      = random_id.suffix.hex
+  source = "./modules/compute"
 
+  rg_name                   = azurerm_resource_group.main.name
+  location                  = azurerm_resource_group.main.location
+  environment               = var.environment
+  suffix                    = random_id.suffix.hex
   psql_host                 = module.database.psql_host
   psql_admin_login          = module.database.psql_admin_login
   psql_admin_password       = module.database.psql_admin_password
@@ -70,6 +70,8 @@ module "compute" {
   redis_connection_string   = module.cache.redis_connection_string
   entra_client_id           = module.security.entra_client_id
   entra_tenant_id           = module.security.entra_tenant_id
+  key_vault_id              = module.security.key_vault_id
+  entra_client_secret_name  = module.security.entra_client_secret_name
 
   openrouter_api_key         = var.openrouter_api_key
   openrouter_model           = var.openrouter_model

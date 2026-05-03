@@ -180,6 +180,201 @@ resource "azurerm_api_management_api_operation_policy" "property_listings_alias"
 XML
 }
 
+resource "azurerm_api_management_api_operation" "property_get_by_id" {
+  operation_id        = "get-property-by-id"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Property By ID"
+  method              = "GET"
+  url_template        = "/properties/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "property_create" {
+  operation_id        = "create-property"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Create Property"
+  method              = "POST"
+  url_template        = "/properties"
+}
+
+resource "azurerm_api_management_api_operation" "listing_list" {
+  operation_id        = "get-listings"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get All Listings"
+  method              = "GET"
+  url_template        = "/listings"
+}
+
+resource "azurerm_api_management_api_operation" "listing_search" {
+  operation_id        = "search-listings"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Search Listings"
+  method              = "POST"
+  url_template        = "/listings/search"
+}
+
+resource "azurerm_api_management_api_operation" "listing_by_location" {
+  operation_id        = "get-listings-by-location"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Listings By Location"
+  method              = "GET"
+  url_template        = "/listings/by-location"
+}
+
+resource "azurerm_api_management_api_operation" "listing_featured" {
+  operation_id        = "get-featured-listings"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Featured Listings"
+  method              = "GET"
+  url_template        = "/listings/featured"
+}
+
+resource "azurerm_api_management_api_operation" "listing_by_code" {
+  operation_id        = "get-listing-by-code"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Listing By Code"
+  method              = "GET"
+  url_template        = "/listings/code/{code}"
+  template_parameter {
+    name     = "code"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "listing_availability" {
+  operation_id        = "update-listing-availability"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Update Listing Availability"
+  method              = "PATCH"
+  url_template        = "/listings/{id}/availability"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "listing_rating" {
+  operation_id        = "update-listing-rating"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Update Listing Rating"
+  method              = "PATCH"
+  url_template        = "/listings/{id}/rating"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "listing_view" {
+  operation_id        = "increment-listing-views"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Increment Listing Views"
+  method              = "POST"
+  url_template        = "/listings/{id}/view"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "listing_by_city" {
+  operation_id        = "get-listings-by-city"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Listings By City"
+  method              = "GET"
+  url_template        = "/listings/city/{city}"
+  template_parameter {
+    name     = "city"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "listing_available" {
+  operation_id        = "get-available-listings"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Available Listings"
+  method              = "GET"
+  url_template        = "/listings/available"
+}
+
+resource "azurerm_api_management_api_operation" "listing_by_owner" {
+  operation_id        = "get-listings-by-owner"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Listings By Owner"
+  method              = "GET"
+  url_template        = "/listings/owner/{ownerId}"
+  template_parameter {
+    name     = "ownerId"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "listing_by_county" {
+  operation_id        = "get-listings-by-county"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Listings By County"
+  method              = "GET"
+  url_template        = "/listings/county/{county}"
+  template_parameter {
+    name     = "county"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "listing_by_type" {
+  operation_id        = "get-listings-by-type"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Listings By Property Type"
+  method              = "GET"
+  url_template        = "/listings/type/{propertyType}"
+  template_parameter {
+    name     = "propertyType"
+    type     = "string"
+    required = true
+  }
+}
+
 
 # --- STATIC DATA OPERATIONS ---
 resource "azurerm_api_management_api_operation" "static_categories" {
@@ -220,6 +415,46 @@ resource "azurerm_api_management_api_operation" "static_user_roles" {
   display_name        = "Get User Roles"
   method              = "GET"
   url_template        = "/user-roles"
+}
+
+resource "azurerm_api_management_api_operation" "static_category_by_id" {
+  operation_id        = "get-category-by-id"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Category By ID"
+  method              = "GET"
+  url_template        = "/categories/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "static_category_by_city" {
+  operation_id        = "get-category-by-city"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Categories By City"
+  method              = "GET"
+  url_template        = "/categories/city/{city}"
+  template_parameter {
+    name     = "city"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "static_create_category" {
+  operation_id        = "create-category"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Create Category"
+  method              = "POST"
+  url_template        = "/categories"
 }
 
 # --- AI AGENT OPERATIONS ---
@@ -263,6 +498,16 @@ resource "azurerm_api_management_api_operation" "aiagent_listings" {
   url_template        = "/listings"
 }
 
+resource "azurerm_api_management_api_operation" "propertyowner_create" {
+  operation_id        = "create-owner"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Create Property Owner"
+  method              = "POST"
+  url_template        = "/owners"
+}
+
 resource "azurerm_api_management_api_operation" "propertyowner_list" {
   operation_id        = "get-owners"
   api_name            = azurerm_api_management_api.propertyowner.name
@@ -273,7 +518,62 @@ resource "azurerm_api_management_api_operation" "propertyowner_list" {
   url_template        = "/owners"
 }
 
+resource "azurerm_api_management_api_operation" "propertyowner_get_by_id" {
+  operation_id        = "get-owner-by-id"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Owner By ID"
+  method              = "GET"
+  url_template        = "/owners/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_wallet" {
+  operation_id        = "get-owner-wallet"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Owner Wallet"
+  method              = "GET"
+  url_template        = "/owners/{ownerId}/wallet"
+  template_parameter {
+    name     = "ownerId"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_agents" {
+  operation_id        = "get-owner-agents"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Owner Agents"
+  method              = "GET"
+  url_template        = "/owners/{ownerId}/agents"
+  template_parameter {
+    name     = "ownerId"
+    type     = "string"
+    required = true
+  }
+}
+
 # --- CUSTOMER OPERATIONS ---
+resource "azurerm_api_management_api_operation" "customer_create" {
+  operation_id        = "create-customer"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Create Customer"
+  method              = "POST"
+  url_template        = "/customers"
+}
+
 resource "azurerm_api_management_api_operation" "customer_list" {
   operation_id        = "get-customers"
   api_name            = azurerm_api_management_api.customer.name
@@ -281,23 +581,37 @@ resource "azurerm_api_management_api_operation" "customer_list" {
   resource_group_name = var.rg_name
   display_name        = "Get Customers"
   method              = "GET"
-  url_template        = "/list"
+  url_template        = "/customers/list"
 }
 
-resource "azurerm_api_management_api_operation_policy" "customer_list" {
-  api_name            = azurerm_api_management_api_operation.customer_list.api_name
-  operation_id        = azurerm_api_management_api_operation.customer_list.operation_id
+resource "azurerm_api_management_api_operation" "customer_get_by_id" {
+  operation_id        = "get-customer-by-id"
+  api_name            = azurerm_api_management_api.customer.name
   api_management_name = azurerm_api_management.main.name
   resource_group_name = var.rg_name
+  display_name        = "Get Customer By ID"
+  method              = "GET"
+  url_template        = "/customers/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
 
-  xml_content = <<XML
-<policies>
-    <inbound>
-        <base />
-        <rewrite-uri template="/customers" />
-    </inbound>
-</policies>
-XML
+resource "azurerm_api_management_api_operation" "customer_by_listing" {
+  operation_id        = "get-customers-by-listing"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Customers By Listing"
+  method              = "GET"
+  url_template        = "/listings/{listingId}/customers"
+  template_parameter {
+    name     = "listingId"
+    type     = "string"
+    required = true
+  }
 }
 
 # --- PROPERTY OWNER OPERATIONS ---

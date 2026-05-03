@@ -107,4 +107,14 @@ public class IdentityService : IIdentityService
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return Task.FromResult(tokenHandler.WriteToken(token));
     }
+    
+    public Task TriggerEntraPhoneOtpAsync(string phoneNumber)
+    {
+        // In a real implementation, this would use Microsoft Graph API to trigger an OTP
+        // e.g. POST /users/{id}/authentication/phoneMethods/{id}/triggerSmsCode
+        // Or using Entra External ID (CIAM) custom authentication extensions.
+        
+        Console.WriteLine($"[EntraID] Triggering OTP for {phoneNumber}");
+        return Task.CompletedTask;
+    }
 }
