@@ -49,14 +49,17 @@ resource "azurerm_linux_function_app" "auth" {
   }
 }
 
-resource "azurerm_key_vault_access_policy" "auth_app" {
-  key_vault_id = var.key_vault_id
-  tenant_id    = azurerm_linux_function_app.auth.identity[0].tenant_id
-  object_id    = azurerm_linux_function_app.auth.identity[0].principal_id
+# Grant the Auth App access to Key Vault via CLI to avoid Terraform state conflicts
+# with the inline policies in the security module.
+resource "null_resource" "auth_kv_permission" {
+  triggers = {
+    principal_id = azurerm_linux_function_app.auth.identity[0].principal_id
+    key_vault_id = var.key_vault_id
+  }
 
-  secret_permissions = [
-    "Get"
-  ]
+  provisioner "local-exec" {
+    command = "az keyvault set-policy --name ${split("/", var.key_vault_id)[8]} --object-id ${azurerm_linux_function_app.auth.identity[0].principal_id} --secret-permissions get"
+  }
 }
 
 resource "azurerm_linux_function_app" "property" {
