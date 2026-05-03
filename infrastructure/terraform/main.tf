@@ -1,9 +1,3 @@
-provider "azurerm" {
-  features {}
-}
-
-provider "azuread" {}
-
 # Root level App Registration to break dependency cycles
 resource "azuread_application" "main" {
   display_name = "StayHere-EntraID-${var.environment}"
