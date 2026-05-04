@@ -398,7 +398,13 @@ stages:
 
 - stage: PublishDocs
   displayName: 'Update Documentation'
-  dependsOn: Deploy
+  dependsOn: 
+  - Deploy_AuthService
+  - Deploy_PropertyService
+  - Deploy_CustomerService
+  - Deploy_PropertyOwnerService
+  - Deploy_StaticDataService
+  - Deploy_AiAgentService
   jobs:
   - job: PublishToApiCenter
     displayName: 'Sync API Center'
