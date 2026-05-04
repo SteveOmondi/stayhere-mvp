@@ -42,6 +42,7 @@ resource "azurerm_linux_function_app" "auth" {
     "OnFonSms__ApiKey"               = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/onfon-api-key)"
     "OnFonSms__BaseUrl"              = var.onfon_base_url
     "OnFonSms__SenderId"             = var.onfon_sender_id
+    "AzureWebJobs.Http.RoutePrefix"  = ""
   }
 
   identity {
@@ -91,6 +92,7 @@ resource "azurerm_linux_function_app" "property" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "AzureWebJobs.Http.RoutePrefix"  = ""
   }
 
   identity {
@@ -127,6 +129,7 @@ resource "azurerm_linux_function_app" "customer" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "AzureWebJobs.Http.RoutePrefix"  = ""
   }
 
   identity {
@@ -167,6 +170,7 @@ resource "azurerm_linux_function_app" "propertyowner" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "AzureWebJobs.Http.RoutePrefix"  = ""
   }
 
   identity {
@@ -209,6 +213,7 @@ resource "azurerm_linux_function_app" "staticdata" {
     "SKIP_AUTH"                      = var.skip_auth
     "ENTRA_CLIENT_ID"                = var.entra_client_id != "" ? var.entra_client_id : "REPLACE_ME"
     "ENTRA_TENANT_ID"                = var.entra_tenant_id != "" ? var.entra_tenant_id : "REPLACE_ME"
+    "AzureWebJobs.Http.RoutePrefix"  = ""
   }
 
   identity {
@@ -257,6 +262,7 @@ resource "azurerm_linux_function_app" "aiagent" {
     "OpenRouter__RecommendNarrationMaxTokens"  = "280"
     "OpenRouter__RecommendLlmTimeoutSeconds"   = "40"
     "ListingPortalBaseUrl"                     = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
+    "AzureWebJobs.Http.RoutePrefix"            = ""
   }
 
   identity {
