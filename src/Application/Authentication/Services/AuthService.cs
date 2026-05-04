@@ -61,8 +61,7 @@ public class AuthService : IAuthService
     {
         // Use local OTP service for all users (MVP Standard)
         var otp = await _otpService.GenerateOtpAsync(request.Target, MapOtpType(request.Type));
-        await _otpService.SendOtpAsync(request.Target, otp, MapOtpType(request.Type));
-        return true;
+        return await _otpService.SendOtpAsync(request.Target, otp, MapOtpType(request.Type));
     }
 
     public async Task<AuthResponse> VerifyOtpAndLoginAsync(OtpVerificationRequest request)

@@ -418,4 +418,4 @@ stages:
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
         scriptPath: 'scripts/publish-to-apicenter.ps1'
-        arguments: '-ResourceGroupName "rg-stayhere-dev-5c27bcf3" -ServiceContext "apim-dev-5c27bcf3-apic" -Workspace "default"'
+        arguments: '-ResourceGroupName "rg-stayhere-dev-5c27bcf3" -ServiceContext "apim-dev-5c27bcf3-apic"'

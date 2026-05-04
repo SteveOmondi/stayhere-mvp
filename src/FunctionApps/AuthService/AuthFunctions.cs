@@ -77,14 +77,18 @@ public class AuthFunctions
             
             if (!string.IsNullOrEmpty(loginRequest.Email))
             {
-                await _authService.RequestOtpAsync(new OtpRequest(loginRequest.Email, OtpTypeDto.Email));
-                return req.CreateResponse(HttpStatusCode.OK);
+                var success = await _authService.RequestOtpAsync(new OtpRequest(loginRequest.Email, OtpTypeDto.Email));
+                var res = req.CreateResponse(success ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
+                await res.WriteAsJsonAsync(new { succeeded = success, message = success ? "Verification code sent to your email." : "Failed to send verification code. Please check your email address." });
+                return res;
             }
 
             if (!string.IsNullOrEmpty(loginRequest.PhoneNumber))
             {
-                await _authService.RequestOtpAsync(new OtpRequest(loginRequest.PhoneNumber, OtpTypeDto.Sms));
-                return req.CreateResponse(HttpStatusCode.OK);
+                var success = await _authService.RequestOtpAsync(new OtpRequest(loginRequest.PhoneNumber, OtpTypeDto.Sms));
+                var res = req.CreateResponse(success ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
+                await res.WriteAsJsonAsync(new { succeeded = success, message = success ? "Verification code sent to your phone via SMS." : "Failed to deliver SMS. Please ensure your phone number is correct and try again." });
+                return res;
             }
 
             return req.CreateResponse(HttpStatusCode.BadRequest);

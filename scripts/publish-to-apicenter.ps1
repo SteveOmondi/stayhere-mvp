@@ -24,18 +24,18 @@ foreach ($api in $apis) {
     
     # Ensure the API exists
     Write-Host "  Registering API..."
-    az apic api create --resource-group $ResourceGroupName --service-name $ServiceContext --workspace-name $Workspace --api-id $($api.name) --title $($api.title) --type rest
+    az apic api create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --title $($api.title) --type rest
     
     # Create or update the version
     Write-Host "  Defining Version v1..."
-    az apic api version create --resource-group $ResourceGroupName --service-name $ServiceContext --workspace-name $Workspace --api-id $($api.name) --version-id "v1" --title "Version 1" --lifecycle production
+    az apic api version create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --version-id "v1" --title "Version 1" --lifecycle production
     
     # Create or update the definition
     Write-Host "  Importing OpenAPI Specification from URL..."
-    az apic api definition create --resource-group $ResourceGroupName --service-name $ServiceContext --workspace-name $Workspace --api-id $($api.name) --version-id "v1" --definition-id "openapi" --title "OpenAPI Definition"
+    az apic api definition create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --version-id "v1" --definition-id "openapi" --title "OpenAPI Definition"
     
     # Import the specification from the URL
-    az apic api definition import-specification --resource-group $ResourceGroupName --service-name $ServiceContext --workspace-name $Workspace --api-id $($api.name) --version-id "v1" --definition-id "openapi" --format link --value $($api.url)
+    az apic api definition import-specification --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --version-id "v1" --definition-id "openapi" --format link --value $($api.url) --specification '{\"name\":\"openapi\",\"version\":\"3.0.1\"}'
 }
 
 Write-Host "----------------------------------------------------"

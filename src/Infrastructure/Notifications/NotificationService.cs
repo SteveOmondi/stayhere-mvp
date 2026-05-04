@@ -32,15 +32,16 @@ public class NotificationService : INotificationService
         return Task.CompletedTask;
     }
 
-    public async Task SendSmsAsync(string to, string message)
+    public async Task<bool> SendSmsAsync(string to, string message)
     {
-        _logger.LogInformation("Sending SMS via OnFon to {to}", to);
+        var formattedNumber = FormatPhoneNumber(to);
+        _logger.LogInformation("Sending SMS via OnFon to {to} (Formatted: {formatted})", to, formattedNumber);
 
         try
         {
             var payload = new OnFonSmsRequest(
                 _options.SenderId,
-                new List<OnFonMessageParameter> { new(to, message) },
+                new List<OnFonMessageParameter> { new(formattedNumber, message) },
                 _options.ApiKey,
                 _options.ClientId
             );
@@ -53,26 +54,51 @@ public class NotificationService : INotificationService
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("OnFon SMS failed. Status: {Status}, Body: {Body}", response.StatusCode, responseBody);
-                return;
+                _logger.LogError("OnFon SMS HTTP failure. Status: {Status}, Body: {Body}", response.StatusCode, responseBody);
+                return false;
             }
 
             var apiResponse = JsonSerializer.Deserialize<OnFonApiResponse>(responseBody, JsonOptions);
             
             if (apiResponse != null && apiResponse.ErrorCode != 0)
             {
-                _logger.LogWarning("OnFon API returned error: {Desc} ({Code})", apiResponse.ErrorDescription, apiResponse.ErrorCode);
+                _logger.LogError("OnFon API returned error: {Desc} ({Code}). Body: {Body}", 
+                    apiResponse.ErrorDescription, apiResponse.ErrorCode, responseBody);
+                return false;
             }
-            else
-            {
-                var msgId = apiResponse?.Data?.FirstOrDefault()?.MessageId;
-                _logger.LogInformation("SMS sent successfully to {to}. MessageId: {MsgId}", to, msgId);
-            }
+            
+            var msgId = apiResponse?.Data?.FirstOrDefault()?.MessageId;
+            _logger.LogInformation("SMS sent successfully to {to}. MessageId: {MsgId}", formattedNumber, msgId);
+            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending SMS via OnFon to {to}", to);
+            _logger.LogError(ex, "Exception sending SMS via OnFon to {to}", to);
+            return false;
         }
+    }
+
+    private string FormatPhoneNumber(string number)
+    {
+        if (string.IsNullOrWhiteSpace(number)) return number;
+
+        // Remove all non-digits
+        var clean = new string(number.Where(char.IsDigit).ToArray());
+
+        // Handle Kenya numbers starting with 07 or 01
+        if (clean.StartsWith("0") && clean.Length == 10)
+        {
+            return "254" + clean.Substring(1);
+        }
+
+        // Already starts with 254
+        if (clean.StartsWith("254") && clean.Length == 12)
+        {
+            return clean;
+        }
+
+        // If it starts with +, remove it and return (assuming it's already international)
+        return clean;
     }
 
     public Task SendWhatsAppAsync(string to, string message)

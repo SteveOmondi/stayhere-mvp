@@ -57,7 +57,7 @@ public class OtpService : IOtpService
         return true;
     }
 
-    public async Task SendOtpAsync(string target, string code, OtpType type)
+    public async Task<bool> SendOtpAsync(string target, string code, OtpType type)
     {
         var message = $"Your StayHere verification code is: {code}";
         
@@ -65,13 +65,14 @@ public class OtpService : IOtpService
         {
             case OtpType.Email:
                 await _notificationService.SendEmailAsync(target, "Verification Code", message);
-                break;
+                return true; // Assume success for email mock
             case OtpType.Sms:
-                await _notificationService.SendSmsAsync(target, message);
-                break;
+                return await _notificationService.SendSmsAsync(target, message);
             case OtpType.WhatsApp:
                 await _notificationService.SendWhatsAppAsync(target, message);
-                break;
+                return true; // Assume success for WhatsApp mock
+            default:
+                return false;
         }
     }
 }
