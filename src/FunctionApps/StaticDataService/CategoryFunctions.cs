@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using StayHere.Application.Categories.Models;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Domain.Entities;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.OpenApi.Models;
 
 namespace StayHere.StaticDataService.Functions;
 
@@ -28,6 +30,8 @@ public class CategoryFunctions
     }
 
     [Function("GetCategories")]
+    [OpenApiOperation(operationId: "GetCategories", tags: new[] { "Categories" }, Summary = "Get active categories", Description = "Retrieves all active property categories.")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CategoryDto>))]
     public async Task<HttpResponseData> GetCategories(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "categories")] HttpRequestData req)
     {
@@ -46,6 +50,8 @@ public class CategoryFunctions
     }
 
     [Function("GetUserTypes")]
+    [OpenApiOperation(operationId: "GetUserTypes", tags: new[] { "StaticData" }, Summary = "Get user types", Description = "Retrieves all possible user types.")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]))]
     public async Task<HttpResponseData> GetUserTypes(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user-types")] HttpRequestData req)
     {
@@ -55,6 +61,8 @@ public class CategoryFunctions
     }
 
     [Function("GetUserRoles")]
+    [OpenApiOperation(operationId: "GetUserRoles", tags: new[] { "StaticData" }, Summary = "Get user roles", Description = "Retrieves all possible user roles.")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]))]
     public async Task<HttpResponseData> GetUserRoles(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user-roles")] HttpRequestData req)
     {
@@ -64,6 +72,9 @@ public class CategoryFunctions
     }
 
     [Function("GetAllCategories")]
+    [OpenApiOperation(operationId: "GetAllCategories", tags: new[] { "Categories" }, Summary = "Get all categories", Description = "Retrieves all categories including inactive ones. Requires admin authorization.")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CategoryDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> GetAllCategories(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "categories/all")] HttpRequestData req)
     {
@@ -85,6 +96,10 @@ public class CategoryFunctions
     }
 
     [Function("GetCategoryById")]
+    [OpenApiOperation(operationId: "GetCategoryById", tags: new[] { "Categories" }, Summary = "Get category by ID")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(CategoryDto))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> GetCategoryById(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "categories/{id:guid}")] HttpRequestData req,
         Guid id)
@@ -107,6 +122,9 @@ public class CategoryFunctions
     }
 
     [Function("GetCategoriesByCity")]
+    [OpenApiOperation(operationId: "GetCategoriesByCity", tags: new[] { "Categories" }, Summary = "Get categories by city")]
+    [OpenApiParameter(name: "city", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CategoryDto>))]
     public async Task<HttpResponseData> GetCategoriesByCity(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "categories/city/{city}")] HttpRequestData req,
         string city)
@@ -126,6 +144,9 @@ public class CategoryFunctions
     }
 
     [Function("GetCategoriesByCountry")]
+    [OpenApiOperation(operationId: "GetCategoriesByCountry", tags: new[] { "Categories" }, Summary = "Get categories by country")]
+    [OpenApiParameter(name: "country", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CategoryDto>))]
     public async Task<HttpResponseData> GetCategoriesByCountry(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "categories/country/{country}")] HttpRequestData req,
         string country)
@@ -145,6 +166,10 @@ public class CategoryFunctions
     }
 
     [Function("CreateCategory")]
+    [OpenApiOperation(operationId: "CreateCategory", tags: new[] { "Categories" }, Summary = "Create category", Description = "Creates a new category. Requires admin authorization.")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateCategoryRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(CategoryDto))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> CreateCategory(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "categories")] HttpRequestData req)
     {
@@ -185,6 +210,11 @@ public class CategoryFunctions
     }
 
     [Function("UpdateCategory")]
+    [OpenApiOperation(operationId: "UpdateCategory", tags: new[] { "Categories" }, Summary = "Update category")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateCategoryRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(CategoryDto))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> UpdateCategory(
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "categories/{id:guid}")] HttpRequestData req,
         Guid id)
@@ -220,6 +250,10 @@ public class CategoryFunctions
     }
 
     [Function("DeleteCategory")]
+    [OpenApiOperation(operationId: "DeleteCategory", tags: new[] { "Categories" }, Summary = "Delete category")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.NoContent)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> DeleteCategory(
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "categories/{id:guid}")] HttpRequestData req,
         Guid id)

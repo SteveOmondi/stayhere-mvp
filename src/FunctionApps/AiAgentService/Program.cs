@@ -9,6 +9,10 @@ using StayHere.Infrastructure.Caching;
 using StayHere.Infrastructure.Persistence;
 using StayHere.Shared.Middleware;
 
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Configurations;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Abstractions;
+using Microsoft.OpenApi.Models;
+
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication(worker => 
     {
@@ -41,6 +45,21 @@ var host = new HostBuilder()
 
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
+
+        services.AddSingleton<IOpenApiConfigurationOptions>(_ =>
+        {
+            var options = new OpenApiConfigurationOptions()
+            {
+                Info = new OpenApiInfo()
+                {
+                    Version = "1.0.0",
+                    Title = "AI Agent Service API",
+                    Description = "API for AI-powered property assistance",
+                }
+            };
+
+            return options;
+        });
     })
     .Build();
 

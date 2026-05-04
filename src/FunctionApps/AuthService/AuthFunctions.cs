@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using StayHere.Application.Authentication.Models;
 using StayHere.Application.Common.Interfaces;
 using System.Text.Json;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.OpenApi.Models;
 
 namespace StayHere.AuthService.Functions;
 
@@ -22,6 +24,10 @@ public class AuthFunctions
     }
 
     [Function("Signup")]
+    [OpenApiOperation(operationId: "Signup", tags: new[] { "Auth" }, Summary = "Register a new user", Description = "Creates a new user account.")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(RegisterRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserDto), Description = "The registered user details.")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "text/plain", bodyType: typeof(string))]
     public async Task<HttpResponseData> Signup(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/signup")] HttpRequestData req)
     {
@@ -47,6 +53,10 @@ public class AuthFunctions
     }
 
     [Function("Login")]
+    [OpenApiOperation(operationId: "Login", tags: new[] { "Auth" }, Summary = "Login or Request OTP", Description = "Handles Entra ID login or requests a local OTP.")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(LoginRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AuthResponse), Description = "Login successful.")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "text/plain", bodyType: typeof(string))]
     public async Task<HttpResponseData> Login(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/login")] HttpRequestData req)
     {
@@ -89,6 +99,10 @@ public class AuthFunctions
     }
 
     [Function("VerifyOtp")]
+    [OpenApiOperation(operationId: "VerifyOtp", tags: new[] { "Auth" }, Summary = "Verify OTP and Login", Description = "Verifies the provided OTP and returns an authentication token.")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(OtpVerificationRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AuthResponse))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "text/plain", bodyType: typeof(string))]
     public async Task<HttpResponseData> VerifyOtp(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/verifyotp")] HttpRequestData req)
     {
@@ -114,6 +128,9 @@ public class AuthFunctions
     }
 
     [Function("GetProfiles")]
+    [OpenApiOperation(operationId: "GetProfiles", tags: new[] { "Auth" }, Summary = "Get User Profiles", Description = "Retrieves all profiles associated with a user.")]
+    [OpenApiParameter(name: "userId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<UserProfileDto>))]
     public async Task<HttpResponseData> GetProfiles(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "auth/profiles/{userId:guid}")] HttpRequestData req,
         Guid userId)

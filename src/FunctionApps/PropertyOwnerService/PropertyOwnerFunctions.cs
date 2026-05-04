@@ -6,6 +6,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.PropertyOwners.Models;
+using StayHere.Application.Properties.Models;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.OpenApi.Models;
 
 namespace StayHere.PropertyOwnerService.Functions;
 
@@ -27,6 +30,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("CreatePropertyOwner")]
+    [OpenApiOperation(operationId: "CreatePropertyOwner", tags: new[] { "Owners" }, Summary = "Create property owner")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreatePropertyOwnerRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(PropertyOwnerDto))]
     public async Task<HttpResponseData> CreatePropertyOwner(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "owners")] HttpRequestData req)
     {
@@ -52,6 +58,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetPropertyOwnerById")]
+    [OpenApiOperation(operationId: "GetPropertyOwnerById", tags: new[] { "Owners" }, Summary = "Get owner by ID")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyOwnerDto))]
     public async Task<HttpResponseData> GetPropertyOwnerById(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/{id:guid}")] HttpRequestData req,
         Guid id)
@@ -71,6 +80,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetPropertyOwnerByUserId")]
+    [OpenApiOperation(operationId: "GetPropertyOwnerByUserId", tags: new[] { "Owners" }, Summary = "Get owner by user ID")]
+    [OpenApiParameter(name: "userId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyOwnerDto))]
     public async Task<HttpResponseData> GetPropertyOwnerByUserId(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/user/{userId:guid}")] HttpRequestData req,
         Guid userId)
@@ -90,6 +102,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetPropertyOwnerByEmail")]
+    [OpenApiOperation(operationId: "GetPropertyOwnerByEmail", tags: new[] { "Owners" }, Summary = "Get owner by email")]
+    [OpenApiParameter(name: "email", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyOwnerDto))]
     public async Task<HttpResponseData> GetPropertyOwnerByEmail(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/email/{email}")] HttpRequestData req,
         string email)
@@ -109,6 +124,10 @@ public class PropertyOwnerFunctions
     }
 
     [Function("UpdatePropertyOwner")]
+    [OpenApiOperation(operationId: "UpdatePropertyOwner", tags: new[] { "Owners" }, Summary = "Update owner")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdatePropertyOwnerRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyOwnerDto))]
     public async Task<HttpResponseData> UpdatePropertyOwner(
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "owners/{id:guid}")] HttpRequestData req,
         Guid id)
@@ -133,6 +152,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerWallet")]
+    [OpenApiOperation(operationId: "GetOwnerWallet", tags: new[] { "Owners" }, Summary = "Get owner wallet")]
+    [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(WalletDto))]
     public async Task<HttpResponseData> GetOwnerWallet(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/{ownerId:guid}/wallet")] HttpRequestData req,
         Guid ownerId)
@@ -152,6 +174,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerProperties")]
+    [OpenApiOperation(operationId: "GetOwnerProperties", tags: new[] { "Owners" }, Summary = "Get owner properties")]
+    [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<PropertyListDto>))]
     public async Task<HttpResponseData> GetOwnerProperties(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/{ownerId:guid}/properties")] HttpRequestData req,
         Guid ownerId)
@@ -169,6 +194,11 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerListings")]
+    [OpenApiOperation(operationId: "GetOwnerListings", tags: new[] { "Owners" }, Summary = "Get owner listings")]
+    [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
     public async Task<HttpResponseData> GetOwnerListings(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/{ownerId:guid}/listings")] HttpRequestData req,
         Guid ownerId)
@@ -187,6 +217,10 @@ public class PropertyOwnerFunctions
     }
 
     [Function("CreateAgent")]
+    [OpenApiOperation(operationId: "CreateAgent", tags: new[] { "Agents" }, Summary = "Create agent for owner")]
+    [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateAgentRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(AgentDto))]
     public async Task<HttpResponseData> CreateAgent(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "owners/{ownerId:guid}/agents")] HttpRequestData req,
         Guid ownerId)
@@ -215,6 +249,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetAgentById")]
+    [OpenApiOperation(operationId: "GetAgentById", tags: new[] { "Agents" }, Summary = "Get agent by ID")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AgentDto))]
     public async Task<HttpResponseData> GetAgentById(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "agents/{id:guid}")] HttpRequestData req,
         Guid id)
@@ -234,6 +271,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerAgents")]
+    [OpenApiOperation(operationId: "GetOwnerAgents", tags: new[] { "Agents" }, Summary = "Get owner agents")]
+    [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<AgentDto>))]
     public async Task<HttpResponseData> GetOwnerAgents(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/{ownerId:guid}/agents")] HttpRequestData req,
         Guid ownerId)
@@ -251,6 +291,10 @@ public class PropertyOwnerFunctions
     }
 
     [Function("CreateCaretaker")]
+    [OpenApiOperation(operationId: "CreateCaretaker", tags: new[] { "Caretakers" }, Summary = "Create caretaker for owner")]
+    [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateCaretakerRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(CaretakerDto))]
     public async Task<HttpResponseData> CreateCaretaker(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "owners/{ownerId:guid}/caretakers")] HttpRequestData req,
         Guid ownerId)
@@ -279,6 +323,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetCaretakerById")]
+    [OpenApiOperation(operationId: "GetCaretakerById", tags: new[] { "Caretakers" }, Summary = "Get caretaker by ID")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(CaretakerDto))]
     public async Task<HttpResponseData> GetCaretakerById(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "caretakers/{id:guid}")] HttpRequestData req,
         Guid id)
@@ -298,6 +345,9 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerCaretakers")]
+    [OpenApiOperation(operationId: "GetOwnerCaretakers", tags: new[] { "Caretakers" }, Summary = "Get owner caretakers")]
+    [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CaretakerDto>))]
     public async Task<HttpResponseData> GetOwnerCaretakers(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/{ownerId:guid}/caretakers")] HttpRequestData req,
         Guid ownerId)
@@ -316,6 +366,9 @@ public class PropertyOwnerFunctions
 
     /// <summary>Flat list of property owners for management portal pickers (cap via <c>max</c>, default 500).</summary>
     [Function("GetOwnersPortalDirectory")]
+    [OpenApiOperation(operationId: "GetOwnersPortalDirectory", tags: new[] { "Owners" }, Summary = "Get portal owner directory")]
+    [OpenApiParameter(name: "max", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<PropertyOwnerDirectoryEntryDto>))]
     public async Task<HttpResponseData> GetOwnersPortalDirectory(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners/portal-directory")] HttpRequestData req)
     {
@@ -337,6 +390,10 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwners")]
+    [OpenApiOperation(operationId: "GetOwners", tags: new[] { "Owners" }, Summary = "Get all owners paginated")]
+    [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<PropertyOwnerDto>))]
     public async Task<HttpResponseData> GetOwners(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "owners")] HttpRequestData req)
     {

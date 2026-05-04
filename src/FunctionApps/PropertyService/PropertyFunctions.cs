@@ -7,6 +7,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Properties.Models;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.OpenApi.Models;
 
 namespace StayHere.PropertyService.Functions;
 
@@ -25,6 +27,9 @@ public class PropertyFunctions
     }
 
     [Function("CreateProperty")]
+    [OpenApiOperation(operationId: "CreateProperty", tags: new[] { "Properties" }, Summary = "Create property")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreatePropertyRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(PropertyDto))]
     public async Task<HttpResponseData> CreateProperty(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "properties")] HttpRequestData req)
     {
@@ -50,6 +55,10 @@ public class PropertyFunctions
     }
 
     [Function("GetPropertyById")]
+    [OpenApiOperation(operationId: "GetPropertyById", tags: new[] { "Properties" }, Summary = "Get property by ID")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyDto))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> GetPropertyById(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "properties/{id:guid}")] HttpRequestData req,
         Guid id)
@@ -69,6 +78,10 @@ public class PropertyFunctions
     }
 
     [Function("GetPropertyByCode")]
+    [OpenApiOperation(operationId: "GetPropertyByCode", tags: new[] { "Properties" }, Summary = "Get property by code")]
+    [OpenApiParameter(name: "code", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyDto))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> GetPropertyByCode(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "properties/code/{code}")] HttpRequestData req,
         string code)
@@ -88,6 +101,10 @@ public class PropertyFunctions
     }
 
     [Function("GetAllProperties")]
+    [OpenApiOperation(operationId: "GetAllProperties", tags: new[] { "Properties" }, Summary = "Get all properties paginated")]
+    [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<PropertyListDto>))]
     public async Task<HttpResponseData> GetAllProperties(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "properties")] HttpRequestData req)
     {
@@ -106,6 +123,11 @@ public class PropertyFunctions
     }
 
     [Function("GetPropertiesByOwner")]
+    [OpenApiOperation(operationId: "GetPropertiesByOwner", tags: new[] { "Properties" }, Summary = "Get properties by owner")]
+    [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<PropertyListDto>))]
     public async Task<HttpResponseData> GetPropertiesByOwner(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "properties/owner/{ownerId:guid}")] HttpRequestData req,
         Guid ownerId)
@@ -125,6 +147,11 @@ public class PropertyFunctions
     }
 
     [Function("UpdateProperty")]
+    [OpenApiOperation(operationId: "UpdateProperty", tags: new[] { "Properties" }, Summary = "Update property")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdatePropertyRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyDto))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> UpdateProperty(
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "properties/{id:guid}")] HttpRequestData req,
         Guid id)
@@ -157,6 +184,10 @@ public class PropertyFunctions
     }
 
     [Function("DeleteProperty")]
+    [OpenApiOperation(operationId: "DeleteProperty", tags: new[] { "Properties" }, Summary = "Delete property")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.NoContent)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> DeleteProperty(
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "properties/{id:guid}")] HttpRequestData req,
         Guid id)

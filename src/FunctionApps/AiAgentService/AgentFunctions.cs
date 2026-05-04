@@ -5,6 +5,8 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.AiAgent.Models;
 using StayHere.Application.Common.Interfaces;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.OpenApi.Models;
 
 namespace StayHere.FunctionApps.AiAgentService;
 
@@ -22,6 +24,9 @@ public class AgentFunctions
     }
 
     [Function("AgentChat")]
+    [OpenApiOperation(operationId: "AgentChat", tags: new[] { "AI Agent" }, Summary = "Chat with AI agent")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(AgentChatRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AgentChatResponse))]
     public async Task<HttpResponseData> Chat(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "chat")] HttpRequestData req)
     {
@@ -45,6 +50,9 @@ public class AgentFunctions
     }
 
     [Function("AgentRespondAndRecommend")]
+    [OpenApiOperation(operationId: "AgentRespondAndRecommend", tags: new[] { "AI Agent" }, Summary = "Get response and recommendations")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(AgentRecommendRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AgentRecommendResponse))]
     public async Task<HttpResponseData> RespondAndRecommend(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "respondandrecommend")] HttpRequestData req)
     {
@@ -68,6 +76,8 @@ public class AgentFunctions
     }
 
     [Function("AgentKnowledgeStatus")]
+    [OpenApiOperation(operationId: "AgentKnowledgeStatus", tags: new[] { "AI Agent" }, Summary = "Get knowledge base status")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IReadOnlyDictionary<string, object>))]
     public async Task<HttpResponseData> KnowledgeStatus(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "knowledge/status")] HttpRequestData req)
     {
@@ -84,6 +94,12 @@ public class AgentFunctions
     }
 
     [Function("AgentSearchListings")]
+    [OpenApiOperation(operationId: "AgentSearchListings", tags: new[] { "AI Agent" }, Summary = "Search listings via AI agent logic")]
+    [OpenApiParameter(name: "listing_id", In = ParameterLocation.Query, Required = false, Type = typeof(string))]
+    [OpenApiParameter(name: "listing_code", In = ParameterLocation.Query, Required = false, Type = typeof(string))]
+    [OpenApiParameter(name: "location", In = ParameterLocation.Query, Required = false, Type = typeof(string))]
+    [OpenApiParameter(name: "amenity", In = ParameterLocation.Query, Required = false, Type = typeof(string))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AgentListingSearchResponse))]
     public async Task<HttpResponseData> SearchListings(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings")] HttpRequestData req)
     {
@@ -107,6 +123,8 @@ public class AgentFunctions
     }
 
     [Function("AgentHealth")]
+    [OpenApiOperation(operationId: "AgentHealth", tags: new[] { "AI Agent" }, Summary = "Get service health status")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> Health(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "health")] HttpRequestData req)
     {

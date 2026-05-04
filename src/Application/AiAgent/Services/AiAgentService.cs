@@ -137,7 +137,7 @@ public class AiAgentService : IAiAgentService
             x.Listing.Title,
             x.Listing.Description,
             x.Listing.PropertyType.ToString(),
-            FormatListingLocation(x.Listing.Location),
+            x.Listing.Location != null ? FormatListingLocation(x.Listing.Location) : "Unknown",
             x.Listing.Price,
             x.Listing.PriceCurrency,
             x.Listing.Bedrooms,
@@ -212,7 +212,7 @@ public class AiAgentService : IAiAgentService
                 l.ListingCode,
                 l.Title,
                 l.PropertyType.ToString(),
-                FormatListingLocation(l.Location),
+                l.Location != null ? FormatListingLocation(l.Location) : "Unknown",
                 l.Price,
                 l.Amenities.Take(10).ToList()))
             .ToList();
@@ -500,11 +500,9 @@ public class AiAgentService : IAiAgentService
         AgentExtractedIntent extracted,
         IReadOnlyList<(Listing Listing, double Sim)> top)
     {
-        var suburb = top.Select(t => t.Listing.Location.Suburb)
+        var suburb = top.Select(t => t.Listing.Location?.Suburb)
             .FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
-        var city = top.First().Listing.Location.City;
-        if (string.IsNullOrWhiteSpace(city))
-            city = "Nairobi";
+        var city = top.First().Listing.Location?.City ?? "Nairobi";
 
         var place = !string.IsNullOrWhiteSpace(suburb) ? $"{suburb}, {city}" : city;
         var areaNote = ResolveSuburbRenterNote(suburb, city);
@@ -741,8 +739,9 @@ public class AiAgentService : IAiAgentService
         return q.ToList();
     }
 
-    private static string FormatListingLocation(PropertyLocation location)
+    private static string FormatListingLocation(PropertyLocation? location)
     {
+        if (location == null) return "Unknown";
         var suburb = string.IsNullOrWhiteSpace(location.Suburb) ? null : location.Suburb;
         return suburb is null ? location.City : $"{suburb}, {location.City}";
     }
@@ -824,9 +823,9 @@ Be helpful, context-aware, conversational — and always StayHere-first.";
         var queryWords = Regex.Matches(queryLower, @"\b\w+\b").Select(m => m.Value).ToHashSet();
 
         var likelyLocation = listings
-            .Select(l => l.Location.Suburb)
+            .Select(l => l.Location?.Suburb)
             .Where(s => !string.IsNullOrEmpty(s))
-            .FirstOrDefault(s => queryLower.Contains(s.ToLowerInvariant()))?
+            .FirstOrDefault(s => queryLower.Contains(s!.ToLowerInvariant()))?
             .ToLowerInvariant();
 
         var propertyTypes = new[] { "apartment", "bedsitter", "studio", "house", "maisonette" };
@@ -841,7 +840,7 @@ Be helpful, context-aware, conversational — and always StayHere-first.";
                 listing.Description ?? "",
                 listing.PropertyType,
                 listing.ListingType,
-                listing.Location.Suburb ?? "",
+                listing.Location?.Suburb ?? "",
                 string.Join(" ", listing.Amenities)).ToLowerInvariant();
 
             var propWords = Regex.Matches(propText, @"\b\w+\b").Select(m => m.Value).ToHashSet();
@@ -849,7 +848,7 @@ Be helpful, context-aware, conversational — and always StayHere-first.";
             var union = queryWords.Union(propWords).Count();
             var textSimilarity = union > 0 ? (double)intersection / union : 0;
 
-            var suburb = listing.Location.Suburb?.ToLowerInvariant() ?? "";
+            var suburb = listing.Location?.Suburb?.ToLowerInvariant() ?? "";
             var locationBonus = likelyLocation != null && suburb == likelyLocation ? 0.4 : 0;
             var typeBonus = likelyType != null && listing.PropertyType.ToString().ToLowerInvariant().Contains(likelyType) ? 0.3 : 0;
             var locationPenalty = likelyLocation != null && suburb != likelyLocation ? -0.3 : 0;
