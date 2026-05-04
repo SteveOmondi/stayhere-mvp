@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Application\StayHere.Application.csproj" />
     <ProjectReference Include="..\..\Infrastructure\StayHere.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\StayHere.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
