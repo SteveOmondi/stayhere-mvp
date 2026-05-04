@@ -42,7 +42,7 @@ function Test-Endpoint {
 Write-Host "`n--- StayHere MVP API Verification ---" -ForegroundColor Cyan
 Write-Host "Base URL: $BaseUrl`n"
 
-$suffix = $BaseUrl.Split('-')[-1].Split('.')[0]
+$suffix = if ($BaseUrl -match "apim-$($BaseUrl.Split('-')[1])-([a-f0-9]+)\.") { $Matches[1] } else { $BaseUrl.Split('-')[-1].Split('.')[0] }
 $dummyId = "00000000-0000-0000-0000-000000000001"
 
 # --- Endpoints Mapping ---
@@ -50,11 +50,11 @@ $dummyId = "00000000-0000-0000-0000-000000000001"
 $Tests = @(
     @{ Name = "Static: Get User Types";     Method = "GET";  Path = "/staticdata/user-types"; BackendApi = "/user-types"; Svc = "staticdata"; Body = $null }
     @{ Name = "Static: Get User Roles";     Method = "GET";  Path = "/staticdata/user-roles"; BackendApi = "/user-roles"; Svc = "staticdata"; Body = $null }
-    @{ Name = "Auth: Signup (New User)";    Method = "POST"; Path = "/auth/signup";    BackendApi = "/signup";    Svc = "auth"; Body = @{ email = "newuser@example.com"; fullName = "Test User"; userType = "Individual" } }
-    @{ Name = "Auth: Request OTP (Email)"; Method = "POST"; Path = "/auth/login";     BackendApi = "/login";     Svc = "auth"; Body = @{ email = "admin@stayhere.com" } }
-    @{ Name = "Auth: Verify OTP (Mock)";    Method = "POST"; Path = "/auth/verifyotp"; BackendApi = "/verifyotp"; Svc = "auth"; Body = @{ target = "admin@stayhere.com"; code = "123456" } }
-    @{ Name = "Auth: Get Profiles";         Method = "GET";  Path = "/auth/profiles/66666666-6666-6666-6666-666666666666"; BackendApi = "/profiles/66666666-6666-6666-6666-666666666666"; Svc = "auth"; Body = $null }
-    @{ Name = "Auth: Onboard Tenant";       Method = "POST"; Path = "/auth/onboard";   BackendApi = "/onboard";   Svc = "auth"; Body = @{ userId = "66666666-6666-6666-6666-666666666666"; role = "Tenant"; fullName = "Admin Tenant"; email = "admin@stayhere.com" } }
+    @{ Name = "Auth: Signup (New User)";    Method = "POST"; Path = "/auth/signup";    BackendApi = "/auth/signup";    Svc = "auth"; Body = @{ email = "newuser@example.com"; fullName = "Test User"; userType = "Individual" } }
+    @{ Name = "Auth: Request OTP (Email)"; Method = "POST"; Path = "/auth/login";     BackendApi = "/auth/login";     Svc = "auth"; Body = @{ email = "admin@stayhere.com" } }
+    @{ Name = "Auth: Verify OTP (Mock)";    Method = "POST"; Path = "/auth/verifyotp"; BackendApi = "/auth/verifyotp"; Svc = "auth"; Body = @{ target = "admin@stayhere.com"; code = "123456" } }
+    @{ Name = "Auth: Get Profiles";         Method = "GET";  Path = "/auth/profiles/66666666-6666-6666-6666-666666666666"; BackendApi = "/auth/profiles/66666666-6666-6666-6666-666666666666"; Svc = "auth"; Body = $null }
+    @{ Name = "Auth: Onboard Tenant";       Method = "POST"; Path = "/auth/onboard";   BackendApi = "/auth/onboard";   Svc = "auth"; Body = @{ userId = "66666666-6666-6666-6666-666666666666"; role = "Tenant"; fullName = "Admin Tenant"; email = "admin@stayhere.com" } }
 )
 
 foreach ($test in $Tests) {

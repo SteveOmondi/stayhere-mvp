@@ -35,3 +35,4 @@ Secrets.ps1
 secrets.json
 appsettings.json
 local.settings.json
+publish-test/

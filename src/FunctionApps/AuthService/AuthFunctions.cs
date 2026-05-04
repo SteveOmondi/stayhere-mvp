@@ -29,7 +29,7 @@ public class AuthFunctions
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserDto), Description = "The registered user details.")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "text/plain", bodyType: typeof(string))]
     public async Task<HttpResponseData> Signup(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/signup")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "signup")] HttpRequestData req)
     {
         _logger.LogInformation("Processing Signup request.");
 
@@ -58,7 +58,7 @@ public class AuthFunctions
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AuthResponse), Description = "Login successful.")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "text/plain", bodyType: typeof(string))]
     public async Task<HttpResponseData> Login(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/login")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "login")] HttpRequestData req)
     {
         _logger.LogInformation("Processing Login request.");
 
@@ -104,7 +104,7 @@ public class AuthFunctions
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AuthResponse))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "text/plain", bodyType: typeof(string))]
     public async Task<HttpResponseData> VerifyOtp(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/verifyotp")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "verifyotp")] HttpRequestData req)
     {
         _logger.LogInformation("Processing VerifyOtp request.");
 
@@ -132,7 +132,7 @@ public class AuthFunctions
     [OpenApiParameter(name: "userId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<UserProfileDto>))]
     public async Task<HttpResponseData> GetProfiles(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "auth/profiles/{userId:guid}")] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "profiles/{userId:guid}")] HttpRequestData req,
         Guid userId)
     {
         _logger.LogInformation("Processing GetProfiles request.");

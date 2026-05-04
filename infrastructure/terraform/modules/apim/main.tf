@@ -27,7 +27,7 @@ resource "azurerm_api_management_api_operation" "auth_login" {
   api_management_name = azurerm_api_management.main.name
   display_name        = "Login"
   method              = "POST"
-  url_template        = "/auth/login"
+  url_template        = "/login"
 }
 
 resource "azurerm_api_management_api_operation" "auth_signup" {
@@ -37,7 +37,7 @@ resource "azurerm_api_management_api_operation" "auth_signup" {
   api_management_name = azurerm_api_management.main.name
   display_name        = "Signup"
   method              = "POST"
-  url_template        = "/auth/signup"
+  url_template        = "/signup"
 }
 
 resource "azurerm_api_management_api" "property" {
@@ -100,6 +100,57 @@ resource "azurerm_api_management_api" "aiagent" {
   subscription_required = false
 }
 
+# --- PROPERTY OPERATIONS ---
+resource "azurerm_api_management_api_operation" "property_get_all" {
+  operation_id        = "get-properties"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get All Properties"
+  method              = "GET"
+  url_template        = "/properties"
+}
+
+resource "azurerm_api_management_api_operation" "property_get_by_id" {
+  operation_id        = "get-property-by-id"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Property By ID"
+  method              = "GET"
+  url_template        = "/properties/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "listing_search" {
+  operation_id        = "search-listings"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Search Listings"
+  method              = "POST"
+  url_template        = "/listings/search"
+}
+
+resource "azurerm_api_management_api_operation" "listing_get_by_id" {
+  operation_id        = "get-listing-by-id"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Listing By ID"
+  method              = "GET"
+  url_template        = "/listings/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
 # --- AUTH OPERATIONS (CLEANED) ---
 
 
@@ -110,7 +161,7 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
   method              = "POST"
-  url_template        = "/auth/verifyotp"
+  url_template        = "/verifyotp"
 }
 
 resource "azurerm_api_management_api_operation" "auth_onboard" {
@@ -120,7 +171,7 @@ resource "azurerm_api_management_api_operation" "auth_onboard" {
   resource_group_name = var.rg_name
   display_name        = "Onboard User"
   method              = "POST"
-  url_template        = "/auth/onboard"
+  url_template        = "/onboard"
 }
 
 resource "azurerm_api_management_api_operation" "auth_profiles" {
@@ -130,7 +181,7 @@ resource "azurerm_api_management_api_operation" "auth_profiles" {
   resource_group_name = var.rg_name
   display_name        = "Get User Profiles"
   method              = "GET"
-  url_template        = "/auth/profiles/{userId}"
+  url_template        = "/profiles/{userId}"
   
   template_parameter {
     name     = "userId"
