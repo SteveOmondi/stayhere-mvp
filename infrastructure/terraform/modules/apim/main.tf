@@ -425,6 +425,11 @@ resource "azurerm_api_management_api_policy" "property" {
 <policies>
     <inbound>
         <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+        </validate-jwt>
         <set-header name="Host" exists-action="override"><value>${var.property_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
         <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
@@ -441,6 +446,11 @@ resource "azurerm_api_management_api_policy" "customer" {
 <policies>
     <inbound>
         <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+        </validate-jwt>
         <set-header name="Host" exists-action="override"><value>${var.customer_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
         <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
@@ -457,6 +467,11 @@ resource "azurerm_api_management_api_policy" "propertyowner" {
 <policies>
     <inbound>
         <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+        </validate-jwt>
         <set-header name="Host" exists-action="override"><value>${var.propertyowner_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
         <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
@@ -473,6 +488,11 @@ resource "azurerm_api_management_api_policy" "staticdata" {
 <policies>
     <inbound>
         <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+        </validate-jwt>
         <set-header name="Host" exists-action="override"><value>${var.staticdata_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
         <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
@@ -489,6 +509,11 @@ resource "azurerm_api_management_api_policy" "aiagent" {
 <policies>
     <inbound>
         <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+        </validate-jwt>
         <set-header name="Host" exists-action="override"><value>${var.aiagent_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
         <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
@@ -505,7 +530,14 @@ resource "azurerm_api_management_named_value" "entra_client_id" {
   value               = var.entra_client_id != "" ? var.entra_client_id : "REPLACE_ME"
 }
 
-
+resource "azurerm_api_management_named_value" "jwt_secret" {
+  name                = "jwt-secret"
+  resource_group_name = var.rg_name
+  api_management_name = azurerm_api_management.main.name
+  display_name        = "jwt-secret"
+  value               = "stayhere-mvp-super-secret-key-that-is-long-enough-for-hs256" # Should be synced with IdentityService
+  secret              = true
+}
 
 resource "azurerm_api_management_named_value" "entra_tenant_id" {
   name                = "entra-tenant-id"
