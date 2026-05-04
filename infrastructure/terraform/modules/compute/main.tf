@@ -38,6 +38,10 @@ resource "azurerm_linux_function_app" "auth" {
     "ENTRA_CLIENT_ID"                = var.entra_client_id
     "ENTRA_TENANT_ID"                = var.entra_tenant_id
     "ENTRA_CLIENT_SECRET"            = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/${var.entra_client_secret_name})"
+    "OnFonSms__ClientId"             = var.onfon_client_id
+    "OnFonSms__ApiKey"               = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/onfon-api-key)"
+    "OnFonSms__BaseUrl"              = var.onfon_base_url
+    "OnFonSms__SenderId"             = var.onfon_sender_id
   }
 
   identity {
@@ -351,6 +355,18 @@ variable "openrouter_model" {
 variable "openrouter_embedding_model" {
   type    = string
   default = "nvidia/llama-nemotron-embed-vl-1b-v2:free"
+}
+
+variable "onfon_client_id" {
+  type = string
+}
+
+variable "onfon_base_url" {
+  type = string
+}
+
+variable "onfon_sender_id" {
+  type = string
 }
 
 output "auth_function_name" {

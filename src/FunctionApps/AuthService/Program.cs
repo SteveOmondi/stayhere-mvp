@@ -26,6 +26,8 @@ var host = new HostBuilder()
 
         services.AddStayHereDbContext(connectionString);
 
+        services.Configure<OnFonSmsOptions>(config.GetSection(OnFonSmsOptions.SectionName));
+
         // Application Services
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IOtpService, OtpService>();
@@ -33,7 +35,7 @@ var host = new HostBuilder()
 
         // Infrastructure Services
         services.AddScoped<IIdentityService, IdentityService>();
-        services.AddScoped<INotificationService, NotificationService>();
+        services.AddHttpClient<INotificationService, NotificationService>();
         services.AddScoped<IUserRepository, EfUserRepository>();
         services.AddScoped<IOtpRepository, EfOtpRepository>();
         services.AddScoped<IPropertyOwnerRepository, EfPropertyOwnerRepository>();

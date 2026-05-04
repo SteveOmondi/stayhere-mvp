@@ -68,3 +68,27 @@ variable "openrouter_embedding_model" {
   description = "OpenRouter Embedding Model to use"
   default     = "nvidia/llama-nemotron-embed-vl-1b-v2:free"
 }
+
+variable "onfon_client_id" {
+  type        = string
+  description = "OnFon SMS Client ID"
+  default     = "dailat"
+}
+
+variable "onfon_api_key" {
+  type        = string
+  description = "OnFon SMS API Key"
+  sensitive   = true
+}
+
+variable "onfon_base_url" {
+  type        = string
+  description = "OnFon SMS API Base URL"
+  default     = "https://api.onfonmedia.co.ke"
+}
+
+variable "onfon_sender_id" {
+  type        = string
+  description = "OnFon SMS Sender ID"
+  default     = "STAYHERE"
+}

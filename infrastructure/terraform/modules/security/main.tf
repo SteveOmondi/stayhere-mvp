@@ -30,10 +30,15 @@ resource "azurerm_key_vault" "main" {
   }
 }
 
-# --- SECURE STORAGE ---
 resource "azurerm_key_vault_secret" "entra_client_secret" {
   name         = "entra-client-secret"
   value        = var.entra_client_secret_value
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+resource "azurerm_key_vault_secret" "onfon_api_key" {
+  name         = "onfon-api-key"
+  value        = var.onfon_api_key_value
   key_vault_id = azurerm_key_vault.main.id
 }
 
@@ -47,6 +52,11 @@ variable "auth_app_principal_id" {
   default = null
 }
 variable "entra_client_secret_value" {
+  type      = string
+  sensitive = true
+}
+
+variable "onfon_api_key_value" {
   type      = string
   sensitive = true
 }

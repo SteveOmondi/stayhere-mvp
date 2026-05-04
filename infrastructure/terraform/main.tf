@@ -90,6 +90,10 @@ module "compute" {
   openrouter_api_key         = var.openrouter_api_key
   openrouter_model           = var.openrouter_model
   openrouter_embedding_model = var.openrouter_embedding_model
+
+  onfon_client_id  = var.onfon_client_id
+  onfon_base_url   = var.onfon_base_url
+  onfon_sender_id  = var.onfon_sender_id
 }
 
 # --- SECURITY MODULE ---
@@ -103,6 +107,7 @@ module "security" {
   # Entra ID credentials from root
   entra_client_secret_value = azuread_application_password.main.value
   auth_app_principal_id     = module.compute.auth_principal_id
+  onfon_api_key_value       = var.onfon_api_key
 }
 
 # --- APIM MODULE ---
@@ -122,4 +127,7 @@ module "apim" {
 
   entra_client_id             = azuread_application.main.client_id
   entra_tenant_id             = data.azurerm_client_config.current.tenant_id
+
+  onfon_client_id             = var.onfon_client_id
+  onfon_sender_id             = var.onfon_sender_id
 }

@@ -38,3 +38,11 @@ variable "aiagent_function_host" {
 
 variable "entra_client_id" { type = string }
 variable "entra_tenant_id" { type = string }
+
+variable "onfon_client_id" {
+  type = string
+}
+
+variable "onfon_sender_id" {
+  type = string
+}
