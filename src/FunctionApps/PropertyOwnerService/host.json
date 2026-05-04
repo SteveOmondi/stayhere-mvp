@@ -15,6 +15,7 @@
   },
   "extensions": {
     "http": {
+      "routePrefix": ""
     }
   }
 }
