@@ -26,7 +26,7 @@ public class IdentityService : IIdentityService
         _entraTenantId = configuration["ENTRA_TENANT_ID"] ?? "REPLACE_ME";
         
         // In production, this should come from KeyVault.
-        _jwtSecret = configuration["JWT_SECRET"] ?? "stayhere-mvp-super-secret-key-that-is-long-enough-for-hs256";
+        _jwtSecret = configuration["JWT_SECRET"] ?? "U3RheUhlcmVNdHBTZWN1cmVKV1RLZXkyMDI2IVNlY3JldA==";
 
         var authority = $"https://login.microsoftonline.com/{_entraTenantId}/v2.0";
         var wellKnownEndpoint = $"{authority}/.well-known/openid-configuration";
@@ -82,7 +82,18 @@ public class IdentityService : IIdentityService
     public Task<string> GenerateJwtAsync(Guid userId, string email, List<string> roles)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(_jwtSecret);
+        
+        // Decode the Base64 secret (Standard for APIM compatibility)
+        byte[] key;
+        try 
+        {
+            key = Convert.FromBase64String(_jwtSecret);
+        }
+        catch 
+        {
+            // Fallback for local dev if not base64
+            key = Encoding.ASCII.GetBytes(_jwtSecret);
+        }
 
         var claims = new List<Claim>
         {
@@ -99,6 +110,8 @@ public class IdentityService : IIdentityService
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddDays(7),
+            Issuer = "stayhere-auth-service",
+            Audience = "stayhere-mvp",
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(key),
                 SecurityAlgorithms.HmacSha256Signature)

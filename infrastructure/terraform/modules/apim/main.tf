@@ -510,7 +510,7 @@ resource "azurerm_api_management_named_value" "jwt_secret" {
   resource_group_name = var.rg_name
   api_management_name = azurerm_api_management.main.name
   display_name        = "jwt-secret"
-  value               = "stayhere-mvp-super-secret-key-that-is-long-enough-for-hs256" # Should be synced with IdentityService
+  value               = "U3RheUhlcmVNdHBTZWN1cmVKV1RLZXkyMDI2IVNlY3JldA==" # Base64 of StayHereMvpSecureJWTKey2026!Secret
   secret              = true
 }
 
