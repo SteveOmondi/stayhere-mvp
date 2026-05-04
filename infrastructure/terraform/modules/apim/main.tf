@@ -8,18 +8,21 @@ resource "azurerm_api_management" "main" {
   sku_name = "Consumption_0"
 }
 
-resource "azurerm_api_management_api" "auth" {
+resource "azurerm_api_management_api" "auth_api" {
   name                = "auth-api"
   resource_group_name = var.rg_name
   api_management_name = azurerm_api_management.main.name
   revision            = "1"
+  display_name        = "Auth API"
+  path                = "auth"
+  protocols           = ["https"]
   service_url         = "https://${var.auth_function_host}"
   subscription_required = false
 }
 
 resource "azurerm_api_management_api_operation" "auth_login" {
   operation_id        = "auth-login"
-  api_name            = azurerm_api_management_api.auth.name
+  api_name            = azurerm_api_management_api.auth_api.name
   resource_group_name = var.rg_name
   api_management_name = azurerm_api_management.main.name
   display_name        = "Login"
@@ -29,7 +32,7 @@ resource "azurerm_api_management_api_operation" "auth_login" {
 
 resource "azurerm_api_management_api_operation" "auth_signup" {
   operation_id        = "auth-signup"
-  api_name            = azurerm_api_management_api.auth.name
+  api_name            = azurerm_api_management_api.auth_api.name
   resource_group_name = var.rg_name
   api_management_name = azurerm_api_management.main.name
   display_name        = "Signup"
@@ -102,7 +105,7 @@ resource "azurerm_api_management_api" "aiagent" {
 
 resource "azurerm_api_management_api_operation" "auth_verify" {
   operation_id        = "verify-otp"
-  api_name            = azurerm_api_management_api.auth.name
+  api_name            = azurerm_api_management_api.auth_api.name
   api_management_name = azurerm_api_management.main.name
   resource_group_name = var.rg_name
   display_name        = "Verify OTP"
@@ -112,7 +115,7 @@ resource "azurerm_api_management_api_operation" "auth_verify" {
 
 resource "azurerm_api_management_api_operation" "auth_onboard" {
   operation_id        = "onboard"
-  api_name            = azurerm_api_management_api.auth.name
+  api_name            = azurerm_api_management_api.auth_api.name
   api_management_name = azurerm_api_management.main.name
   resource_group_name = var.rg_name
   display_name        = "Onboard User"
@@ -122,7 +125,7 @@ resource "azurerm_api_management_api_operation" "auth_onboard" {
 
 resource "azurerm_api_management_api_operation" "auth_profiles" {
   operation_id        = "profiles"
-  api_name            = azurerm_api_management_api.auth.name
+  api_name            = azurerm_api_management_api.auth_api.name
   api_management_name = azurerm_api_management.main.name
   resource_group_name = var.rg_name
   display_name        = "Get User Profiles"
@@ -393,7 +396,7 @@ resource "azurerm_api_management_api_operation" "owner_properties" {
 
 # --- GLOBAL FORWARDING POLICIES (Host Header Override) ---
 resource "azurerm_api_management_api_policy" "auth" {
-  api_name            = azurerm_api_management_api.auth.name
+  api_name            = azurerm_api_management_api.auth_api.name
   api_management_name = azurerm_api_management.main.name
   resource_group_name = var.rg_name
   xml_content = <<XML
