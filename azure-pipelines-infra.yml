@@ -31,14 +31,13 @@ stages:
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'terraform.tfstate'
 
-    - task: AzurePowerShell@5
+    - task: AzureCLI@2
       displayName: 'Temporary: Reconcile APIM State'
       inputs:
         azureSubscription: 'Azure-StayHere-Conn'
-        ScriptType: 'FilePath'
-        ScriptPath: '$(System.DefaultWorkingDirectory)/scripts/import-apim.ps1'
-        azurePowerShellVersion: 'LatestVersion'
-        pwsh: true
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: '$(System.DefaultWorkingDirectory)/scripts/import-apim.ps1'
         workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
 
     - task: TerraformTask@5
