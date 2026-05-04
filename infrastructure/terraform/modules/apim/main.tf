@@ -100,56 +100,11 @@ resource "azurerm_api_management_api" "aiagent" {
   subscription_required = false
 }
 
-# --- PROPERTY OPERATIONS ---
-resource "azurerm_api_management_api_operation" "property_get_all" {
-  operation_id        = "get-properties"
-  api_name            = azurerm_api_management_api.property.name
-  api_management_name = azurerm_api_management.main.name
-  resource_group_name = var.rg_name
-  display_name        = "Get All Properties"
-  method              = "GET"
-  url_template        = "/properties"
-}
 
-resource "azurerm_api_management_api_operation" "property_get_by_id" {
-  operation_id        = "get-property-by-id"
-  api_name            = azurerm_api_management_api.property.name
-  api_management_name = azurerm_api_management.main.name
-  resource_group_name = var.rg_name
-  display_name        = "Get Property By ID"
-  method              = "GET"
-  url_template        = "/properties/{id}"
-  template_parameter {
-    name     = "id"
-    type     = "string"
-    required = true
-  }
-}
+# Note: Property operations are now managed in specialized files:
+# - property_apim_operations.tf
+# - property_listing_apim_operations.tf
 
-resource "azurerm_api_management_api_operation" "listing_search" {
-  operation_id        = "search-listings"
-  api_name            = azurerm_api_management_api.property.name
-  api_management_name = azurerm_api_management.main.name
-  resource_group_name = var.rg_name
-  display_name        = "Search Listings"
-  method              = "POST"
-  url_template        = "/listings/search"
-}
-
-resource "azurerm_api_management_api_operation" "listing_get_by_id" {
-  operation_id        = "get-listing-by-id"
-  api_name            = azurerm_api_management_api.property.name
-  api_management_name = azurerm_api_management.main.name
-  resource_group_name = var.rg_name
-  display_name        = "Get Listing By ID"
-  method              = "GET"
-  url_template        = "/listings/{id}"
-  template_parameter {
-    name     = "id"
-    type     = "string"
-    required = true
-  }
-}
 
 # --- AUTH OPERATIONS (CLEANED) ---
 
