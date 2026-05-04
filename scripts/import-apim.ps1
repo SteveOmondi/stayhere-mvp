@@ -20,11 +20,21 @@ Import-Operation "auth_verify" "auth-api" "verify-otp"
 Import-Operation "auth_onboard" "auth-api" "onboard"
 Import-Operation "auth_profiles" "auth-api" "profiles"
 
-# --- Property API Operations (Main) ---
-# Note: These might already be in state if you used the specialized files, 
-# but if you get "AlreadyExists" for these, uncomment them.
-# Import-Operation "property_get_all" "property-api" "get-properties"
-# Import-Operation "property_get_by_id" "property-api" "get-property-by-id"
+# --- Property API Operations ---
+Import-Operation "create_property" "property-api" "create-property"
+Import-Operation "get_property_by_id" "property-api" "get-property-by-id"
+Import-Operation "get_property_by_code" "property-api" "get-property-by-code"
+Import-Operation "get_all_properties" "property-api" "get-all-properties"
+Import-Operation "get_properties_by_owner" "property-api" "get-properties-by-owner"
+Import-Operation "update_property" "property-api" "update-property"
+Import-Operation "delete_property" "property-api" "delete-property"
+
+# --- Listing API Operations ---
+Import-Operation "create_listing" "property-api" "create-listing"
+Import-Operation "get_listing_by_id" "property-api" "get-listing-by-id"
+Import-Operation "get_all_listings" "property-api" "get-all-listings"
+Import-Operation "search_listings" "property-api" "search-listings"
+Import-Operation "update_listing" "property-api" "update-listing"
 
 # --- Customer API Operations ---
 Import-Operation "customer_create" "customer-api" "create-customer"
