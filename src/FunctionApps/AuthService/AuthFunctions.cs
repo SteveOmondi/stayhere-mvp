@@ -137,7 +137,8 @@ public class AuthFunctions
     private async Task<HttpResponseData> CreateJsonResponse<T>(HttpRequestData req, T content)
     {
         var response = req.CreateResponse(HttpStatusCode.OK);
-        await response.WriteAsJsonAsync(content, JsonOptions);
+        response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+        await response.WriteStringAsync(JsonSerializer.Serialize(content, JsonOptions));
         return response;
     }
 }

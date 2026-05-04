@@ -36,7 +36,8 @@ public class OnboardingFunctions
 
             var response = await _onboardingService.OnboardUserAsync(request);
             var res = req.CreateResponse(HttpStatusCode.OK);
-            await res.WriteAsJsonAsync(response, JsonOptions);
+            res.Headers.Add("Content-Type", "application/json; charset=utf-8");
+            await res.WriteStringAsync(JsonSerializer.Serialize(response, JsonOptions));
             return res;
         }
         catch (Exception ex)
