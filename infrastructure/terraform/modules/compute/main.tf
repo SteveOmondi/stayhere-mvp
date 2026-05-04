@@ -43,6 +43,7 @@ resource "azurerm_linux_function_app" "auth" {
     "OnFonSms__BaseUrl"              = var.onfon_base_url
     "OnFonSms__SenderId"             = var.onfon_sender_id
     "AzureWebJobs.Http.RoutePrefix"  = ""
+    "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
 
   identity {
@@ -93,6 +94,7 @@ resource "azurerm_linux_function_app" "property" {
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
     "AzureWebJobs.Http.RoutePrefix"  = ""
+    "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
 
   identity {
@@ -130,6 +132,7 @@ resource "azurerm_linux_function_app" "customer" {
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
     "AzureWebJobs.Http.RoutePrefix"  = ""
+    "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
 
   identity {
@@ -171,6 +174,7 @@ resource "azurerm_linux_function_app" "propertyowner" {
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
     "AzureWebJobs.Http.RoutePrefix"  = ""
+    "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
 
   identity {
@@ -214,6 +218,7 @@ resource "azurerm_linux_function_app" "staticdata" {
     "ENTRA_CLIENT_ID"                = var.entra_client_id != "" ? var.entra_client_id : "REPLACE_ME"
     "ENTRA_TENANT_ID"                = var.entra_tenant_id != "" ? var.entra_tenant_id : "REPLACE_ME"
     "AzureWebJobs.Http.RoutePrefix"  = ""
+    "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
 
   identity {
@@ -263,6 +268,7 @@ resource "azurerm_linux_function_app" "aiagent" {
     "OpenRouter__RecommendLlmTimeoutSeconds"   = "40"
     "ListingPortalBaseUrl"                     = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
     "AzureWebJobs.Http.RoutePrefix"            = ""
+    "WEBSITE_RUN_FROM_PACKAGE"                 = "1"
   }
 
   identity {

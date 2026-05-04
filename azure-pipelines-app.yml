@@ -42,17 +42,8 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/AuthService/StayHere.AuthService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.BinariesDirectory)/AuthService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/AuthService'
         zipAfterPublish: false
-
-    - task: ArchiveFiles@2
-      displayName: 'Zip AuthService'
-      inputs:
-        rootFolderOrFile: '$(Build.BinariesDirectory)/AuthService'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/AuthService.zip'
-        replaceExistingArchive: true
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish PropertyService'
@@ -60,17 +51,8 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/PropertyService/StayHere.PropertyService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.BinariesDirectory)/PropertyService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/PropertyService'
         zipAfterPublish: false
-
-    - task: ArchiveFiles@2
-      displayName: 'Zip PropertyService'
-      inputs:
-        rootFolderOrFile: '$(Build.BinariesDirectory)/PropertyService'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/PropertyService.zip'
-        replaceExistingArchive: true
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish CustomerService'
@@ -78,17 +60,8 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/CustomerService/StayHere.CustomerService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.BinariesDirectory)/CustomerService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/CustomerService'
         zipAfterPublish: false
-
-    - task: ArchiveFiles@2
-      displayName: 'Zip CustomerService'
-      inputs:
-        rootFolderOrFile: '$(Build.BinariesDirectory)/CustomerService'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/CustomerService.zip'
-        replaceExistingArchive: true
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish PropertyOwnerService'
@@ -96,17 +69,8 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/PropertyOwnerService/StayHere.PropertyOwnerService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.BinariesDirectory)/PropertyOwnerService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/PropertyOwnerService'
         zipAfterPublish: false
-
-    - task: ArchiveFiles@2
-      displayName: 'Zip PropertyOwnerService'
-      inputs:
-        rootFolderOrFile: '$(Build.BinariesDirectory)/PropertyOwnerService'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/PropertyOwnerService.zip'
-        replaceExistingArchive: true
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish StaticDataService'
@@ -114,17 +78,8 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/StaticDataService/StayHere.StaticDataService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.BinariesDirectory)/StaticDataService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/StaticDataService'
         zipAfterPublish: false
-
-    - task: ArchiveFiles@2
-      displayName: 'Zip StaticDataService'
-      inputs:
-        rootFolderOrFile: '$(Build.BinariesDirectory)/StaticDataService'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/StaticDataService.zip'
-        replaceExistingArchive: true
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish AiAgentService'
@@ -132,29 +87,20 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: 'src/FunctionApps/AiAgentService/StayHere.AiAgentService.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.BinariesDirectory)/AiAgentService'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/AiAgentService'
         zipAfterPublish: false
 
-    - task: ArchiveFiles@2
-      displayName: 'Zip AiAgentService'
-      inputs:
-        rootFolderOrFile: '$(Build.BinariesDirectory)/AiAgentService'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/AiAgentService.zip'
-        replaceExistingArchive: true
-
-    - publish: $(Build.ArtifactStagingDirectory)/AuthService.zip
+    - publish: $(Build.ArtifactStagingDirectory)/AuthService
       artifact: AuthService_Pkg
-    - publish: $(Build.ArtifactStagingDirectory)/PropertyService.zip
+    - publish: $(Build.ArtifactStagingDirectory)/PropertyService
       artifact: PropertyService_Pkg
-    - publish: $(Build.ArtifactStagingDirectory)/CustomerService.zip
+    - publish: $(Build.ArtifactStagingDirectory)/CustomerService
       artifact: CustomerService_Pkg
-    - publish: $(Build.ArtifactStagingDirectory)/PropertyOwnerService.zip
+    - publish: $(Build.ArtifactStagingDirectory)/PropertyOwnerService
       artifact: PropertyOwnerService_Pkg
-    - publish: $(Build.ArtifactStagingDirectory)/StaticDataService.zip
+    - publish: $(Build.ArtifactStagingDirectory)/StaticDataService
       artifact: StaticDataService_Pkg
-    - publish: $(Build.ArtifactStagingDirectory)/AiAgentService.zip
+    - publish: $(Build.ArtifactStagingDirectory)/AiAgentService
       artifact: AiAgentService_Pkg
 
 - stage: Migrate_Database
@@ -283,7 +229,7 @@ stages:
         azureSubscription: $(azureSubscription)
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
-        package: '$(Pipeline.Workspace)/AuthService_Pkg/AuthService.zip'
+        package: '$(Pipeline.Workspace)/AuthService_Pkg/AuthService'
 
 - stage: Deploy_PropertyService
   displayName: 'Deploy Property'
@@ -316,7 +262,7 @@ stages:
         azureSubscription: $(azureSubscription)
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
-        package: '$(Pipeline.Workspace)/PropertyService_Pkg/PropertyService.zip'
+        package: '$(Pipeline.Workspace)/PropertyService_Pkg/PropertyService'
 
 - stage: Deploy_CustomerService
   displayName: 'Deploy Customer'
@@ -349,7 +295,7 @@ stages:
         azureSubscription: $(azureSubscription)
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
-        package: '$(Pipeline.Workspace)/CustomerService_Pkg/CustomerService.zip'
+        package: '$(Pipeline.Workspace)/CustomerService_Pkg/CustomerService'
 
 - stage: Deploy_PropertyOwnerService
   displayName: 'Deploy PropertyOwner'
@@ -382,7 +328,7 @@ stages:
         azureSubscription: $(azureSubscription)
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
-        package: '$(Pipeline.Workspace)/PropertyOwnerService_Pkg/PropertyOwnerService.zip'
+        package: '$(Pipeline.Workspace)/PropertyOwnerService_Pkg/PropertyOwnerService'
 
 - stage: Deploy_StaticDataService
   displayName: 'Deploy StaticData'
@@ -415,7 +361,7 @@ stages:
         azureSubscription: $(azureSubscription)
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
-        package: '$(Pipeline.Workspace)/StaticDataService_Pkg/StaticDataService.zip'
+        package: '$(Pipeline.Workspace)/StaticDataService_Pkg/StaticDataService'
 
 - stage: Deploy_AiAgentService
   displayName: 'Deploy AiAgent'
@@ -448,4 +394,4 @@ stages:
         azureSubscription: $(azureSubscription)
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
-        package: '$(Pipeline.Workspace)/AiAgentService_Pkg/AiAgentService.zip'
+        package: '$(Pipeline.Workspace)/AiAgentService_Pkg/AiAgentService'
