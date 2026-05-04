@@ -15,7 +15,7 @@ public class CategoryFunctions
     private readonly ICategoryService _categoryService;
     private readonly ILogger<CategoryFunctions> _logger;
     private readonly IConfiguration _configuration;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public CategoryFunctions(
         ICategoryService categoryService,

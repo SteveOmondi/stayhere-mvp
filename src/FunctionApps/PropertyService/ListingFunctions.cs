@@ -17,7 +17,7 @@ public class ListingFunctions
     private readonly ICacheService _cacheService;
     private readonly ILogger<ListingFunctions> _logger;
     private readonly IConfiguration _configuration;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public ListingFunctions(
         IListingService listingService,

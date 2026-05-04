@@ -15,7 +15,7 @@ public class PropertyFunctions
     private readonly IPropertyService _propertyService;
     private readonly ILogger<PropertyFunctions> _logger;
     private readonly IConfiguration _configuration;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public PropertyFunctions(IPropertyService propertyService, ILogger<PropertyFunctions> logger, IConfiguration configuration)
     {

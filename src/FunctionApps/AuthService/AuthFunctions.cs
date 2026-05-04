@@ -13,6 +13,8 @@ public class AuthFunctions
     private readonly IAuthService _authService;
     private readonly ILogger<AuthFunctions> _logger;
 
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     public AuthFunctions(IAuthService authService, ILogger<AuthFunctions> logger)
     {
         _authService = authService;
@@ -25,13 +27,13 @@ public class AuthFunctions
     {
         _logger.LogInformation("Processing Signup request.");
 
-        var body = await new StreamReader(req.Body).ReadToEndAsync();
-        var registerRequest = JsonSerializer.Deserialize<RegisterRequest>(body, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-
-        if (registerRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
-
         try
         {
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var registerRequest = JsonSerializer.Deserialize<RegisterRequest>(body, JsonOptions);
+
+            if (registerRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
+
             var user = await _authService.RegisterAsync(registerRequest);
             return await CreateJsonResponse(req, user);
         }
@@ -50,13 +52,13 @@ public class AuthFunctions
     {
         _logger.LogInformation("Processing Login request.");
 
-        var body = await new StreamReader(req.Body).ReadToEndAsync();
-        var loginRequest = JsonSerializer.Deserialize<LoginRequest>(body, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-
-        if (loginRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
-
         try
         {
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var loginRequest = JsonSerializer.Deserialize<LoginRequest>(body, JsonOptions);
+
+            if (loginRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
+
             if (!string.IsNullOrEmpty(loginRequest.EntraToken))
             {
                 var response = await _authService.LoginWithEntraAsync(loginRequest.EntraToken);
@@ -92,13 +94,13 @@ public class AuthFunctions
     {
         _logger.LogInformation("Processing VerifyOtp request.");
 
-        var body = await new StreamReader(req.Body).ReadToEndAsync();
-        var verificationRequest = JsonSerializer.Deserialize<OtpVerificationRequest>(body, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-
-        if (verificationRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
-
         try
         {
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var verificationRequest = JsonSerializer.Deserialize<OtpVerificationRequest>(body, JsonOptions);
+
+            if (verificationRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
+
             var response = await _authService.VerifyOtpAndLoginAsync(verificationRequest);
             return await CreateJsonResponse(req, response);
         }
@@ -135,7 +137,7 @@ public class AuthFunctions
     private async Task<HttpResponseData> CreateJsonResponse<T>(HttpRequestData req, T content)
     {
         var response = req.CreateResponse(HttpStatusCode.OK);
-        await response.WriteAsJsonAsync(content);
+        await response.WriteAsJsonAsync(content, JsonOptions);
         return response;
     }
 }

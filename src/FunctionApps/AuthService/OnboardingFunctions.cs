@@ -13,6 +13,8 @@ public class OnboardingFunctions
     private readonly IOnboardingService _onboardingService;
     private readonly ILogger<OnboardingFunctions> _logger;
 
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     public OnboardingFunctions(IOnboardingService onboardingService, ILogger<OnboardingFunctions> logger)
     {
         _onboardingService = onboardingService;
@@ -25,16 +27,16 @@ public class OnboardingFunctions
     {
         _logger.LogInformation("Processing Onboarding request.");
 
-        var body = await new StreamReader(req.Body).ReadToEndAsync();
-        var request = JsonSerializer.Deserialize<OnboardUserRequest>(body, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-
-        if (request == null) return req.CreateResponse(HttpStatusCode.BadRequest);
-
         try
         {
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var request = JsonSerializer.Deserialize<OnboardUserRequest>(body, JsonOptions);
+
+            if (request == null) return req.CreateResponse(HttpStatusCode.BadRequest);
+
             var response = await _onboardingService.OnboardUserAsync(request);
             var res = req.CreateResponse(HttpStatusCode.OK);
-            await res.WriteAsJsonAsync(response);
+            await res.WriteAsJsonAsync(response, JsonOptions);
             return res;
         }
         catch (Exception ex)

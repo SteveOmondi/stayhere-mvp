@@ -14,7 +14,7 @@ public class PropertyOwnerFunctions
     private readonly IPropertyOwnerService _ownerService;
     private readonly ILogger<PropertyOwnerFunctions> _logger;
     private readonly IConfiguration _configuration;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public PropertyOwnerFunctions(
         IPropertyOwnerService ownerService,

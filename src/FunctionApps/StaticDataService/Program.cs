@@ -5,9 +5,13 @@ using StayHere.Application.Categories.Services;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Domain.Repositories;
 using StayHere.Infrastructure.Persistence;
+using StayHere.Shared.Middleware;
 
 var host = new HostBuilder()
-    .ConfigureFunctionsWebApplication()
+    .ConfigureFunctionsWebApplication(worker => 
+    {
+        worker.UseMiddleware<GlobalExceptionMiddleware>();
+    })
     .ConfigureServices((context, services) =>
     {
         var config = context.Configuration;
