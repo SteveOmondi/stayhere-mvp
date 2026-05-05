@@ -32,4 +32,21 @@ public class EfOtpRepository : IOtpRepository
         _context.OtpVerifications.Update(otp);
         await _context.SaveChangesAsync();
     }
+
+    public async Task InvalidatePreviousOtpsAsync(string target)
+    {
+        var previousOtps = await _context.OtpVerifications
+            .Where(o => o.Target == target && !o.IsUsed && o.Expiry > DateTime.UtcNow)
+            .ToListAsync();
+
+        foreach (var otp in previousOtps)
+        {
+            otp.IsUsed = true;
+        }
+
+        if (previousOtps.Any())
+        {
+            await _context.SaveChangesAsync();
+        }
+    }
 }

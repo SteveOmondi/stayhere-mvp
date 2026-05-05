@@ -1,6 +1,8 @@
 using StayHere.Application.Common.Interfaces;
 using StayHere.Domain.Entities;
 using StayHere.Domain.Repositories;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace StayHere.Application.Authentication.Services;
 
@@ -17,12 +19,17 @@ public class OtpService : IOtpService
 
     public async Task<string> GenerateOtpAsync(string target, OtpType type)
     {
+        // Invalidate previous active OTPs for this target
+        await _otpRepository.InvalidatePreviousOtpsAsync(target);
+
         var code = new Random().Next(100000, 999999).ToString();
+        var hashedCode = HashCode(code);
+
         var otp = new OtpVerification
         {
             Id = Guid.NewGuid(),
             Target = target,
-            Code = code,
+            Code = hashedCode,
             Expiry = DateTime.UtcNow.AddMinutes(5),
             Type = type,
             IsUsed = false,
@@ -35,14 +42,10 @@ public class OtpService : IOtpService
 
     public async Task<bool> VerifyOtpAsync(string target, string code)
     {
-        if (target == "admin@stayhere.com" && code == "123456")
-        {
-            return true;
-        }
-
         var otp = await _otpRepository.GetLatestActiveOtpAsync(target);
+        var hashedInput = HashCode(code);
         
-        if (otp == null || otp.IsUsed || otp.Expiry < DateTime.UtcNow || otp.Code != code)
+        if (otp == null || otp.IsUsed || otp.Expiry < DateTime.UtcNow || otp.Code != hashedInput)
         {
             if (otp != null)
             {
@@ -55,6 +58,13 @@ public class OtpService : IOtpService
         otp.IsUsed = true;
         await _otpRepository.UpdateAsync(otp);
         return true;
+    }
+
+    private string HashCode(string code)
+    {
+        using var sha256 = SHA256.Create();
+        var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(code));
+        return Convert.ToBase64String(bytes);
     }
 
     public async Task<bool> SendOtpAsync(string target, string code, OtpType type)

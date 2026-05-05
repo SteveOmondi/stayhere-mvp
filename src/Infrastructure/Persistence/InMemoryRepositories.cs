@@ -53,4 +53,14 @@ public class InMemoryOtpRepository : IOtpRepository
         }
         return Task.CompletedTask;
     }
+
+    public Task InvalidatePreviousOtpsAsync(string target)
+    {
+        var activeOtps = _otps.Where(o => o.Target == target && !o.IsUsed && o.Expiry > DateTime.UtcNow).ToList();
+        foreach (var otp in activeOtps)
+        {
+            otp.IsUsed = true;
+        }
+        return Task.CompletedTask;
+    }
 }
