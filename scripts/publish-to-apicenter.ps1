@@ -56,23 +56,37 @@ foreach ($api in $apiMap) {
     Write-Host "  Preparing OpenAPI Definition..."
     az apic api definition create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --definition-id "openapi" --title "OpenAPI Definition"
     
-    # Download the JSON to a local file first
-    $swaggerPath = Join-Path $PSScriptRoot "$($api.id)-swagger.json"
-    $candidatePaths = @("/api/swagger.json", "/swagger.json")
-    $success = $false
+        # Download the JSON to a local file first
+        $swaggerPath = Join-Path $PSScriptRoot "$($api.id)-swagger.json"
+        $candidatePaths = @("/api/swagger.json", "/swagger.json")
+        $success = $false
 
-    foreach ($path in $candidatePaths) {
-        $url = "https://$hostName$path"
-        Write-Host "  Trying: $url..."
-        try {
-            Invoke-WebRequest -Uri $url -OutFile $swaggerPath -ErrorAction Stop
-            Write-Host "  SUCCESS: Found swagger at $url" -ForegroundColor Green
-            $success = $true
-            break
-        } catch {
-            Write-Host "  Not found at $url..." -ForegroundColor Gray
+        foreach ($path in $candidatePaths) {
+            $url = "https://$hostName$path"
+            Write-Host "  Trying: $url..."
+            try {
+                # Fetch JSON
+                $json = Invoke-RestMethod -Uri $url -ErrorAction Stop
+                
+                # SANITIZATION: Fix the "//" issue by ensuring server URLs don't end in a slash
+                if ($json.servers) {
+                    foreach ($server in $json.servers) {
+                        if ($server.url.EndsWith("/")) {
+                            $server.url = $server.url.TrimEnd("/")
+                        }
+                    }
+                }
+
+                # Save sanitized JSON
+                $json | ConvertTo-Json -Depth 10 | Out-File -FilePath $swaggerPath -Encoding ascii
+                
+                Write-Host "  SUCCESS: Found and sanitized swagger at $url" -ForegroundColor Green
+                $success = $true
+                break
+            } catch {
+                Write-Host "  Not found at $url..." -ForegroundColor Gray
+            }
         }
-    }
 
     if ($success) {
         try {
