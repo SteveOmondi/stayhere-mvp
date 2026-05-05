@@ -8,15 +8,26 @@ param(
 )
 
 $apiMap = @(
-    @{ id = "auth-api"; title = "Auth Service"; tag = "AuthService" },
-    @{ id = "property-api"; title = "Property Service"; tag = "PropertyService" },
-    @{ id = "customer-api"; title = "Customer Service"; tag = "CustomerService" },
-    @{ id = "propertyowner-api"; title = "Property Owner Service"; tag = "PropertyOwnerService" },
-    @{ id = "staticdata-api"; title = "Static Data Service"; tag = "StaticDataService" },
-    @{ id = "aiagent-api"; title = "AI Agent Service"; tag = "AiAgentService" }
+    @{ id = "auth-service"; title = "Auth Service"; tag = "AuthService" },
+    @{ id = "property-service"; title = "Property Service"; tag = "PropertyService" },
+    @{ id = "customer-service"; title = "Customer Service"; tag = "CustomerService" },
+    @{ id = "propertyowner-service"; title = "Property Owner Service"; tag = "PropertyOwnerService" },
+    @{ id = "staticdata-service"; title = "Static Data Service"; tag = "StaticDataService" },
+    @{ id = "aiagent-service"; title = "AI Agent Service"; tag = "AiAgentService" }
 )
 
-Write-Host "Starting API Center registration for $ServiceContext..." -ForegroundColor Cyan
+Write-Host "----------------------------------------------------"
+Write-Host "CLEANUP: Removing existing APIs from $ServiceContext..." -ForegroundColor Cyan
+
+# List all existing APIs and delete them to avoid duplication
+$existingApis = az apic api list --resource-group $ResourceGroupName --service-name $ServiceContext -o json | ConvertFrom-Json
+foreach ($existing in $existingApis) {
+    Write-Host "  Deleting existing API: $($existing.name)..." -ForegroundColor Gray
+    az apic api delete --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($existing.name) --yes
+}
+
+Write-Host "Cleanup complete. Starting fresh registration..." -ForegroundColor Green
+Write-Host "----------------------------------------------------"
 
 foreach ($api in $apiMap) {
     Write-Host "----------------------------------------------------"
