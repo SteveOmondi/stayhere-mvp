@@ -1,5 +1,6 @@
 using StayHere.Application.Authentication.Models;
 using StayHere.Application.Common.Interfaces;
+using Microsoft.Extensions.Logging;
 using StayHere.Domain.Entities;
 using StayHere.Domain.Repositories;
 
@@ -12,19 +13,22 @@ public class AuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IPropertyOwnerRepository _propertyOwnerRepository;
     private readonly ICustomerRepository _customerRepository;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IIdentityService identityService,
         IOtpService otpService,
         IUserRepository userRepository,
         IPropertyOwnerRepository propertyOwnerRepository,
-        ICustomerRepository customerRepository)
+        ICustomerRepository customerRepository,
+        ILogger<AuthService> logger)
     {
         _identityService = identityService;
         _otpService = otpService;
         _userRepository = userRepository;
         _propertyOwnerRepository = propertyOwnerRepository;
         _customerRepository = customerRepository;
+        _logger = logger;
     }
 
     public async Task<AuthResponse> LoginWithEntraAsync(string entraToken)
