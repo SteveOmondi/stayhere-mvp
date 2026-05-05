@@ -7,7 +7,22 @@ public record OtpRequest(string Target, OtpTypeDto Type);
 
 public record OtpVerificationRequest(string Target, string Code);
 
-public record AuthResponse(string Token, UserDto User);
+public record UpdateProfileRequest(Guid UserId, string? PhoneNumber, string? FullName, string? Role);
+
+public class AuthResponse
+{
+    public bool Succeeded { get; set; } = true;
+    public string Message { get; set; } = "Success";
+    public string Token { get; set; } = string.Empty;
+    public UserDto? User { get; set; }
+}
+
+public class ProfilesResponse
+{
+    public bool Succeeded { get; set; } = true;
+    public string Message { get; set; } = "Profiles retrieved";
+    public List<UserProfileDto> Profiles { get; set; } = new();
+}
 
 public record UserDto(
     Guid Id, 

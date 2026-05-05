@@ -9,4 +9,5 @@ public interface IAuthService
     Task<AuthResponse> VerifyOtpAndLoginAsync(OtpVerificationRequest request);
     Task<UserDto> RegisterAsync(RegisterRequest request);
     Task<List<UserProfileDto>> GetProfilesAsync(Guid userId);
+    Task<bool> UpdateProfileAsync(UpdateProfileRequest request);
 }

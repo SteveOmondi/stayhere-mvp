@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using StayHere.Application.Common.Interfaces;
+using StayHere.Domain.Entities;
 
 namespace StayHere.Infrastructure.Identity;
 
@@ -79,7 +80,7 @@ public class IdentityService : IIdentityService
         }
     }
 
-    public Task<string> GenerateJwtAsync(Guid userId, string email, List<string> roles)
+    public Task<string> GenerateJwtAsync(User user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         
@@ -97,13 +98,13 @@ public class IdentityService : IIdentityService
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            new Claim(ClaimTypes.Email, email)
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email)
         };
 
-        foreach (var role in roles)
+        foreach (var role in user.Roles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim(ClaimTypes.Role, role.ToString()));
         }
 
         var tokenDescriptor = new SecurityTokenDescriptor

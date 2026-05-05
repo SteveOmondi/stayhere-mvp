@@ -38,7 +38,12 @@ public class AuthFunctions
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             var registerRequest = JsonSerializer.Deserialize<RegisterRequest>(body, JsonOptions);
 
-            if (registerRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
+            if (registerRequest == null) 
+            {
+                var badRes = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Invalid request body." });
+                return badRes;
+            }
 
             var user = await _authService.RegisterAsync(registerRequest);
             return await CreateJsonResponse(req, user);
@@ -47,7 +52,7 @@ public class AuthFunctions
         {
             _logger.LogError(ex, "Error during Signup");
             var res = req.CreateResponse(HttpStatusCode.BadRequest);
-            await res.WriteStringAsync(ex.Message);
+            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
             return res;
         }
     }
@@ -67,7 +72,12 @@ public class AuthFunctions
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             var loginRequest = JsonSerializer.Deserialize<LoginRequest>(body, JsonOptions);
 
-            if (loginRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
+            if (loginRequest == null)
+            {
+                var badRes = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Invalid request body." });
+                return badRes;
+            }
 
             if (!string.IsNullOrEmpty(loginRequest.EntraToken))
             {
@@ -91,13 +101,15 @@ public class AuthFunctions
                 return res;
             }
 
-            return req.CreateResponse(HttpStatusCode.BadRequest);
+            var errorRes = req.CreateResponse(HttpStatusCode.BadRequest);
+            await errorRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Please provide Email, Phone Number, or Entra Token." });
+            return errorRes;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during Login");
             var res = req.CreateResponse(HttpStatusCode.Unauthorized);
-            await res.WriteStringAsync(ex.Message);
+            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
             return res;
         }
     }
@@ -117,7 +129,12 @@ public class AuthFunctions
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             var verificationRequest = JsonSerializer.Deserialize<OtpVerificationRequest>(body, JsonOptions);
 
-            if (verificationRequest == null) return req.CreateResponse(HttpStatusCode.BadRequest);
+            if (verificationRequest == null)
+            {
+                var badRes = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Invalid request body." });
+                return badRes;
+            }
 
             var response = await _authService.VerifyOtpAndLoginAsync(verificationRequest);
             return await CreateJsonResponse(req, response);
@@ -126,7 +143,7 @@ public class AuthFunctions
         {
             _logger.LogError(ex, "Error during VerifyOtp");
             var res = req.CreateResponse(HttpStatusCode.Unauthorized);
-            await res.WriteStringAsync(ex.Message);
+            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
             return res;
         }
     }
@@ -144,13 +161,54 @@ public class AuthFunctions
         try
         {
             var profiles = await _authService.GetProfilesAsync(userId);
-            return await CreateJsonResponse(req, profiles);
+            return await CreateJsonResponse(req, new ProfilesResponse
+            {
+                Succeeded = true,
+                Message = "Profiles retrieved successfully.",
+                Profiles = profiles
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during GetProfiles");
             var res = req.CreateResponse(HttpStatusCode.BadRequest);
-            await res.WriteStringAsync(ex.Message);
+            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
+            return res;
+        }
+    }
+
+    [Function("UpdateProfile")]
+    [OpenApiOperation(operationId: "UpdateProfile", tags: new[] { "Auth" }, Summary = "Update User Profile", Description = "Updates user profile details like phone number and full name.")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateProfileRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object))]
+    public async Task<HttpResponseData> UpdateProfile(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "patch", Route = "profile/update")] HttpRequestData req)
+    {
+        _logger.LogInformation("Processing UpdateProfile request.");
+
+        try
+        {
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var updateRequest = JsonSerializer.Deserialize<UpdateProfileRequest>(body, JsonOptions);
+
+            if (updateRequest == null)
+            {
+                var badRes = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Invalid request body." });
+                return badRes;
+            }
+
+            var success = await _authService.UpdateProfileAsync(updateRequest);
+            
+            var res = req.CreateResponse(success ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
+            await res.WriteAsJsonAsync(new { Succeeded = success, Message = success ? "Profile updated successfully." : "Failed to update profile." });
+            return res;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during UpdateProfile");
+            var res = req.CreateResponse(HttpStatusCode.BadRequest);
+            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
             return res;
         }
     }
