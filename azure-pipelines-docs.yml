@@ -1,0 +1,32 @@
+trigger:
+  branches:
+    include: [main]
+  paths:
+    include:
+    - scripts/publish-to-apicenter.ps1
+    - azure-pipelines-docs.yml
+
+variables:
+- name: vmImageName
+  value: 'ubuntu-latest'
+- name: azureSubscription
+  value: 'Azure-StayHere-Conn'
+- group: StayHere-Variables
+
+stages:
+- stage: SyncDocs
+  displayName: 'Sync API Center'
+  jobs:
+  - job: PublishToApiCenter
+    displayName: 'Register APIs'
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Publish to API Center'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: 'scripts/publish-to-apicenter.ps1'
+        arguments: '-ResourceGroupName "rg-stayhere-dev-5c27bcf3" -ServiceContext "apim-dev-5c27bcf3-apic"'

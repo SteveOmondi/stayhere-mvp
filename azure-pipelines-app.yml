@@ -395,27 +395,3 @@ stages:
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
         package: '$(Pipeline.Workspace)/AiAgentService_Pkg/AiAgentService'
-
-- stage: PublishDocs
-  displayName: 'Update Documentation'
-  dependsOn: 
-  - Deploy_AuthService
-  - Deploy_PropertyService
-  - Deploy_CustomerService
-  - Deploy_PropertyOwnerService
-  - Deploy_StaticDataService
-  - Deploy_AiAgentService
-  jobs:
-  - job: PublishToApiCenter
-    displayName: 'Sync API Center'
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: AzureCLI@2
-      displayName: 'Publish to API Center'
-      inputs:
-        azureSubscription: $(azureSubscription)
-        scriptType: 'pscore'
-        scriptLocation: 'scriptPath'
-        scriptPath: 'scripts/publish-to-apicenter.ps1'
-        arguments: '-ResourceGroupName "rg-stayhere-dev-5c27bcf3" -ServiceContext "apim-dev-5c27bcf3-apic"'

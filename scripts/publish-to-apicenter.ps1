@@ -35,8 +35,13 @@ foreach ($api in $apis) {
     az apic api definition create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --version-id "v1-0-0" --definition-id "openapi" --title "OpenAPI Definition"
     
     # Import the specification from the URL
-    $specJson = '{"name":"openapi","version":"3.0.1"}'
-    az apic api definition import-specification --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --version-id "v1-0-0" --definition-id "openapi" --format link --value $($api.url) --specification $specJson
+    # Using a temporary file to avoid PowerShell quoting issues with JSON
+    $specPath = Join-Path $PSScriptRoot "spec.json"
+    '{"name":"openapi","version":"3.0.1"}' | Out-File -FilePath $specPath -Encoding ascii
+    
+    az apic api definition import-specification --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --version-id "v1-0-0" --definition-id "openapi" --format link --value $($api.url) --specification "@$specPath"
+    
+    Remove-Item -Path $specPath -ErrorAction SilentlyContinue
 }
 
 Write-Host "----------------------------------------------------"
