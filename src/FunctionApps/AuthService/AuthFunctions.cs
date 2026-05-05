@@ -141,7 +141,7 @@ public class AuthFunctions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during VerifyOtp");
+            _logger.LogError(ex, "Error during VerifyOtp code");
             var res = req.CreateResponse(HttpStatusCode.Unauthorized);
             await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
             return res;
