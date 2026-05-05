@@ -14,6 +14,11 @@ public class StayHereDbContext : DbContext
     {
     }
 
+    private static readonly ValueConverter<string?, string> NullablePhoneConverter = new(
+        v => (v ?? string.Empty).Replace("+", ""), 
+        v => v ?? string.Empty
+    );
+
     private static readonly ValueConverter<string, string> PhoneConverter = new(
         v => (v ?? string.Empty).Replace("+", ""), 
         v => v ?? string.Empty
@@ -186,7 +191,7 @@ public class StayHereDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
-            entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20).HasConversion(PhoneConverter);
+            entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20).HasConversion(NullablePhoneConverter);
             entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(255);
             entity.Property(e => e.EntraObjectId).HasColumnName("entra_object_id").HasMaxLength(255);
             entity.Property(e => e.Roles).HasColumnName("roles")
@@ -223,7 +228,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.TaxId).HasColumnName("tax_id").HasMaxLength(100);
             entity.Property(e => e.Website).HasColumnName("website").HasMaxLength(255);
             entity.Property(e => e.Address).HasColumnName("address");
-            entity.Property(e => e.ContactPhone).HasColumnName("contact_phone").HasMaxLength(20).HasConversion(PhoneConverter);
+            entity.Property(e => e.ContactPhone).HasColumnName("contact_phone").HasMaxLength(20).HasConversion(NullablePhoneConverter);
             entity.Property(e => e.ContactEmail).HasColumnName("contact_email").HasMaxLength(255);
             entity.Property(e => e.Type).HasColumnName("org_type").HasConversion<string>();
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
@@ -377,7 +382,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.LastName).HasColumnName("last_name").HasMaxLength(100);
             entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(150);
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
-            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).HasConversion(PhoneConverter);
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).HasConversion(NullablePhoneConverter);
             entity.Property(e => e.CountryId).HasColumnName("country_id");
             entity.Property(e => e.CityId).HasColumnName("city_id");
             entity.Property(e => e.AddressLine).HasColumnName("address_line").HasMaxLength(255);
