@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace StayHere.Application.Authentication.Models;
 
 public record LoginRequest(string? Email, string? PhoneNumber, string? EntraToken);
@@ -5,7 +6,9 @@ public record RegisterRequest(string Email, string? PhoneNumber, string FullName
 
 public record OtpRequest(string Target, OtpTypeDto Type);
 
-public record OtpVerificationRequest(string Target, string Code);
+public record OtpVerificationRequest(
+    [property: JsonPropertyName("PhoneNumber")] string Target, 
+    [property: JsonPropertyName("otp")] string Code);
 
 public record UpdateProfileRequest(Guid UserId, string? PhoneNumber, string? FullName, string? Role);
 

@@ -16,12 +16,62 @@ variables:
 - group: StayHere-Variables
 
 stages:
+- stage: CheckChanges
+  displayName: 'Detect Changed Services'
+  jobs:
+  - job: Detect
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - checkout: self
+      fetchDepth: 0
+    - script: |
+        # Get list of changed files between current commit and previous commit
+        # For the very first run or if HEAD~1 doesn't exist, we assume all changed
+        if git rev-parse HEAD~1 >/dev/null 2>&1; then
+          CHANGED_FILES=$(git diff --name-only HEAD HEAD~1)
+        else
+          CHANGED_FILES="FORCE_ALL"
+        fi
+        
+        echo "Detected Changes:"
+        echo "$CHANGED_FILES"
+
+        # Check for global changes that require full redeploy
+        GLOBAL_CHANGE=false
+        if [[ "$CHANGED_FILES" == "FORCE_ALL" ]] || echo "$CHANGED_FILES" | grep -E "^(src/Application/|src/Domain/|src/Infrastructure/|StayHere.sln|azure-pipelines-app.yml)"; then
+          GLOBAL_CHANGE=true
+          echo "Global change detected (Shared project or Pipeline config changed)."
+        fi
+        echo "##vso[task.setvariable variable=globalChange;isOutput=true]$GLOBAL_CHANGE"
+
+        # Service-specific checks
+        SERVICES=("AuthService" "PropertyService" "CustomerService" "PropertyOwnerService" "StaticDataService" "AiAgentService")
+        for SERVICE in "${SERVICES[@]}"; do
+          HAS_CHANGE=false
+          if [ "$GLOBAL_CHANGE" = true ] || echo "$CHANGED_FILES" | grep -E "^src/FunctionApps/$SERVICE/"; then
+            HAS_CHANGE=true
+            echo "Changes detected for $SERVICE."
+          fi
+          echo "##vso[task.setvariable variable=change_$SERVICE;isOutput=true]$HAS_CHANGE"
+        done
+      name: DetectionStep
+      displayName: 'Analyze Git Diffs'
+
 - stage: Build
   displayName: 'Build and Package'
+  dependsOn: CheckChanges
   jobs:
   - job: Build
     pool:
       vmImage: $(vmImageName)
+    variables:
+      isAuth: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AuthService'] ]
+      isProperty: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyService'] ]
+      isCustomer: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_CustomerService'] ]
+      isOwner: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyOwnerService'] ]
+      isStatic: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StaticDataService'] ]
+      isAi: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'] ]
     steps:
     - task: UseDotNet@2
       inputs:
@@ -38,6 +88,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish AuthService'
+      condition: and(succeeded(), eq(variables.isAuth, 'true'))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -47,6 +98,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish PropertyService'
+      condition: and(succeeded(), eq(variables.isProperty, 'true'))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -56,6 +108,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish CustomerService'
+      condition: and(succeeded(), eq(variables.isCustomer, 'true'))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -65,6 +118,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish PropertyOwnerService'
+      condition: and(succeeded(), eq(variables.isOwner, 'true'))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -74,6 +128,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish StaticDataService'
+      condition: and(succeeded(), eq(variables.isStatic, 'true'))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -83,6 +138,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish AiAgentService'
+      condition: and(succeeded(), eq(variables.isAi, 'true'))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -92,16 +148,22 @@ stages:
 
     - publish: $(Build.ArtifactStagingDirectory)/AuthService
       artifact: AuthService_Pkg
+      condition: and(succeeded(), eq(variables.isAuth, 'true'))
     - publish: $(Build.ArtifactStagingDirectory)/PropertyService
       artifact: PropertyService_Pkg
+      condition: and(succeeded(), eq(variables.isProperty, 'true'))
     - publish: $(Build.ArtifactStagingDirectory)/CustomerService
       artifact: CustomerService_Pkg
+      condition: and(succeeded(), eq(variables.isCustomer, 'true'))
     - publish: $(Build.ArtifactStagingDirectory)/PropertyOwnerService
       artifact: PropertyOwnerService_Pkg
+      condition: and(succeeded(), eq(variables.isOwner, 'true'))
     - publish: $(Build.ArtifactStagingDirectory)/StaticDataService
       artifact: StaticDataService_Pkg
+      condition: and(succeeded(), eq(variables.isStatic, 'true'))
     - publish: $(Build.ArtifactStagingDirectory)/AiAgentService
       artifact: AiAgentService_Pkg
+      condition: and(succeeded(), eq(variables.isAi, 'true'))
 
 - stage: Migrate_Database
   displayName: 'Migrate Database'
@@ -186,8 +248,8 @@ stages:
 
 - stage: Deploy_AuthService
   displayName: 'Deploy Auth'
-  dependsOn: Migrate_Database
-  condition: succeeded()
+  dependsOn: [CheckChanges, Migrate_Database]
+  condition: and(succeeded(), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AuthService'], 'true'))
   jobs:
   - job: Deploy
     pool:
@@ -233,8 +295,8 @@ stages:
 
 - stage: Deploy_PropertyService
   displayName: 'Deploy Property'
-  dependsOn: Migrate_Database
-  condition: succeeded()
+  dependsOn: [CheckChanges, Migrate_Database]
+  condition: and(succeeded(), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyService'], 'true'))
   jobs:
   - job: Deploy
     pool:
@@ -266,8 +328,8 @@ stages:
 
 - stage: Deploy_CustomerService
   displayName: 'Deploy Customer'
-  dependsOn: Migrate_Database
-  condition: succeeded()
+  dependsOn: [CheckChanges, Migrate_Database]
+  condition: and(succeeded(), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_CustomerService'], 'true'))
   jobs:
   - job: Deploy
     pool:
@@ -299,8 +361,8 @@ stages:
 
 - stage: Deploy_PropertyOwnerService
   displayName: 'Deploy PropertyOwner'
-  dependsOn: Migrate_Database
-  condition: succeeded()
+  dependsOn: [CheckChanges, Migrate_Database]
+  condition: and(succeeded(), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyOwnerService'], 'true'))
   jobs:
   - job: Deploy
     pool:
@@ -332,8 +394,8 @@ stages:
 
 - stage: Deploy_StaticDataService
   displayName: 'Deploy StaticData'
-  dependsOn: Migrate_Database
-  condition: succeeded()
+  dependsOn: [CheckChanges, Migrate_Database]
+  condition: and(succeeded(), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StaticDataService'], 'true'))
   jobs:
   - job: Deploy
     pool:
@@ -365,8 +427,8 @@ stages:
 
 - stage: Deploy_AiAgentService
   displayName: 'Deploy AiAgent'
-  dependsOn: Migrate_Database
-  condition: succeeded()
+  dependsOn: [CheckChanges, Migrate_Database]
+  condition: and(succeeded(), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'], 'true'))
   jobs:
   - job: Deploy
     pool:
