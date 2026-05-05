@@ -91,7 +91,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish AuthService'
-      condition: and(succeeded(), or(eq(variables['isAuth'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAuth'], 'true'), eq(variables['globalChange'], 'true')))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -101,7 +101,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish PropertyService'
-      condition: and(succeeded(), or(eq(variables['isProperty'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isProperty'], 'true'), eq(variables['globalChange'], 'true')))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -111,7 +111,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish CustomerService'
-      condition: and(succeeded(), or(eq(variables['isCustomer'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isCustomer'], 'true'), eq(variables['globalChange'], 'true')))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -121,7 +121,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish PropertyOwnerService'
-      condition: and(succeeded(), or(eq(variables['isOwner'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isOwner'], 'true'), eq(variables['globalChange'], 'true')))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -131,7 +131,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish StaticDataService'
-      condition: and(succeeded(), or(eq(variables['isStatic'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isStatic'], 'true'), eq(variables['globalChange'], 'true')))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -141,7 +141,7 @@ stages:
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish AiAgentService'
-      condition: and(succeeded(), or(eq(variables['isAi'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAi'], 'true'), eq(variables['globalChange'], 'true')))
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -151,22 +151,22 @@ stages:
 
     - publish: $(Build.ArtifactStagingDirectory)/AuthService
       artifact: AuthService_Pkg
-      condition: and(succeeded(), or(eq(variables['isAuth'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAuth'], 'true'), eq(variables['globalChange'], 'true')))
     - publish: $(Build.ArtifactStagingDirectory)/PropertyService
       artifact: PropertyService_Pkg
-      condition: and(succeeded(), or(eq(variables['isProperty'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isProperty'], 'true'), eq(variables['globalChange'], 'true')))
     - publish: $(Build.ArtifactStagingDirectory)/CustomerService
       artifact: CustomerService_Pkg
-      condition: and(succeeded(), or(eq(variables['isCustomer'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isCustomer'], 'true'), eq(variables['globalChange'], 'true')))
     - publish: $(Build.ArtifactStagingDirectory)/PropertyOwnerService
       artifact: PropertyOwnerService_Pkg
-      condition: and(succeeded(), or(eq(variables['isOwner'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isOwner'], 'true'), eq(variables['globalChange'], 'true')))
     - publish: $(Build.ArtifactStagingDirectory)/StaticDataService
       artifact: StaticDataService_Pkg
-      condition: and(succeeded(), or(eq(variables['isStatic'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isStatic'], 'true'), eq(variables['globalChange'], 'true')))
     - publish: $(Build.ArtifactStagingDirectory)/AiAgentService
       artifact: AiAgentService_Pkg
-      condition: and(succeeded(), or(eq(variables['isAi'], 'true'), eq(variables['globalChange'], 'true')))
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAi'], 'true'), eq(variables['globalChange'], 'true')))
 
 - stage: Migrate_Database
   displayName: 'Migrate Database'
@@ -252,7 +252,17 @@ stages:
 - stage: Deploy_AuthService
   displayName: 'Deploy Auth'
   dependsOn: [CheckChanges, Migrate_Database]
-  condition: and(succeeded(), or(eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AuthService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  condition: |
+    or(
+      eq(variables['Build.Reason'], 'Manual'),
+      and(
+        succeeded(),
+        or(
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AuthService'], 'true'),
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
+        )
+      )
+    )
   jobs:
   - job: Deploy
     pool:
@@ -299,7 +309,17 @@ stages:
 - stage: Deploy_PropertyService
   displayName: 'Deploy Property'
   dependsOn: [CheckChanges, Migrate_Database]
-  condition: and(succeeded(), or(eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  condition: |
+    or(
+      eq(variables['Build.Reason'], 'Manual'),
+      and(
+        succeeded(),
+        or(
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyService'], 'true'),
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
+        )
+      )
+    )
   jobs:
   - job: Deploy
     pool:
@@ -332,7 +352,17 @@ stages:
 - stage: Deploy_CustomerService
   displayName: 'Deploy Customer'
   dependsOn: [CheckChanges, Migrate_Database]
-  condition: and(succeeded(), or(eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_CustomerService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  condition: |
+    or(
+      eq(variables['Build.Reason'], 'Manual'),
+      and(
+        succeeded(),
+        or(
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_CustomerService'], 'true'),
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
+        )
+      )
+    )
   jobs:
   - job: Deploy
     pool:
@@ -365,7 +395,17 @@ stages:
 - stage: Deploy_PropertyOwnerService
   displayName: 'Deploy PropertyOwner'
   dependsOn: [CheckChanges, Migrate_Database]
-  condition: and(succeeded(), or(eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyOwnerService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  condition: |
+    or(
+      eq(variables['Build.Reason'], 'Manual'),
+      and(
+        succeeded(),
+        or(
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyOwnerService'], 'true'),
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
+        )
+      )
+    )
   jobs:
   - job: Deploy
     pool:
@@ -398,7 +438,17 @@ stages:
 - stage: Deploy_StaticDataService
   displayName: 'Deploy StaticData'
   dependsOn: [CheckChanges, Migrate_Database]
-  condition: and(succeeded(), or(eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StaticDataService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  condition: |
+    or(
+      eq(variables['Build.Reason'], 'Manual'),
+      and(
+        succeeded(),
+        or(
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StaticDataService'], 'true'),
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
+        )
+      )
+    )
   jobs:
   - job: Deploy
     pool:
@@ -431,7 +481,17 @@ stages:
 - stage: Deploy_AiAgentService
   displayName: 'Deploy AiAgent'
   dependsOn: [CheckChanges, Migrate_Database]
-  condition: and(succeeded(), or(eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  condition: |
+    or(
+      eq(variables['Build.Reason'], 'Manual'),
+      and(
+        succeeded(),
+        or(
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'], 'true'),
+          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
+        )
+      )
+    )
   jobs:
   - job: Deploy
     pool:
