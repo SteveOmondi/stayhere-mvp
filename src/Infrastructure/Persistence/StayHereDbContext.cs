@@ -14,9 +14,9 @@ public class StayHereDbContext : DbContext
     {
     }
 
-    private static readonly ValueConverter<string?, string> NullablePhoneConverter = new(
-        v => (v ?? string.Empty).Replace("+", ""), 
-        v => v ?? string.Empty
+    private static readonly ValueConverter<string?, string?> NullablePhoneConverter = new(
+        v => v == null ? null : v.Replace("+", ""), 
+        v => v
     );
 
     private static readonly ValueConverter<string, string> PhoneConverter = new(
@@ -527,7 +527,7 @@ public class StayHereDbContext : DbContext
             entity.ToTable("otp_verifications");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Target).HasColumnName("target").HasMaxLength(255).HasConversion(PhoneConverter);
+            entity.Property(e => e.Target).HasColumnName("target").HasMaxLength(255);
             entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(10);
             entity.Property(e => e.Expiry).HasColumnName("expiry");
             entity.Property(e => e.IsUsed).HasColumnName("is_used");

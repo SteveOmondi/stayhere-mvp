@@ -73,7 +73,9 @@ public class AuthService : IAuthService
     public async Task<OtpResponse> RequestOtpAsync(OtpRequest request)
     {
         var appMode = Environment.GetEnvironmentVariable("APP_MODE") ?? "live";
-        var target = request.Target.Trim().ToLower().Replace("+", "");
+        var target = request.Target.Trim().ToLower();
+        if (!target.Contains("@")) target = target.Replace("+", "");
+        
         _logger.LogInformation("Requesting OTP for {Target} (Mode: {Mode})", target, appMode);
 
         // Generate the OTP
@@ -103,7 +105,9 @@ public class AuthService : IAuthService
         if (string.IsNullOrEmpty(request.Target)) throw new Exception("Target (Email/Phone) is required.");
         if (string.IsNullOrEmpty(request.Code)) throw new Exception("OTP code is required.");
 
-        var target = request.Target.Trim().ToLower().Replace("+", "");
+        var target = request.Target.Trim().ToLower();
+        if (!target.Contains("@")) target = target.Replace("+", "");
+
         _logger.LogInformation("Verifying OTP for {Target} with code {Code}", target, request.Code);
 
         var isValid = await _otpService.VerifyOtpAsync(target, request.Code);
