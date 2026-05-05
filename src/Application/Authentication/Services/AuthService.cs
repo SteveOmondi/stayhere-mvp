@@ -73,10 +73,11 @@ public class AuthService : IAuthService
     public async Task<OtpResponse> RequestOtpAsync(OtpRequest request)
     {
         var appMode = Environment.GetEnvironmentVariable("APP_MODE") ?? "live";
-        _logger.LogInformation("Requesting OTP for {Target} (Mode: {Mode})", request.Target, appMode);
+        var target = request.Target.Trim().ToLower().Replace("+", "");
+        _logger.LogInformation("Requesting OTP for {Target} (Mode: {Mode})", target, appMode);
 
         // Generate the OTP
-        var otp = await _otpService.GenerateOtpAsync(request.Target, MapOtpType(request.Type));
+        var otp = await _otpService.GenerateOtpAsync(target, MapOtpType(request.Type));
         
         // Send the OTP (Skip if in Test Mode)
         var success = true;
@@ -99,7 +100,10 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> VerifyOtpAndLoginAsync(OtpVerificationRequest request)
     {
-        var target = request.Target.Trim().ToLower();
+        if (string.IsNullOrEmpty(request.Target)) throw new Exception("Target (Email/Phone) is required.");
+        if (string.IsNullOrEmpty(request.Code)) throw new Exception("OTP code is required.");
+
+        var target = request.Target.Trim().ToLower().Replace("+", "");
         _logger.LogInformation("Verifying OTP for {Target} with code {Code}", target, request.Code);
 
         var isValid = await _otpService.VerifyOtpAsync(target, request.Code);
@@ -114,8 +118,19 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
-            _logger.LogWarning("User not found for verified target {Target}", target);
-            throw new Exception("User account not found.");
+            _logger.LogInformation("Auto-registering new user for verified target {Target}", target);
+            
+            var isEmail = target.Contains("@");
+            user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = isEmail ? target : $"{target}@stayhere.com", // Placeholder email for phone users
+                PhoneNumber = isEmail ? null : target,
+                Roles = new List<UserRole>(), // No initial role until onboarded
+                Type = UserType.Individual,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _userRepository.CreateAsync(user);
         }
 
         var token = await _identityService.GenerateJwtAsync(user);
@@ -138,7 +153,7 @@ public class AuthService : IAuthService
         {
             Id = Guid.NewGuid(),
             Email = request.Email,
-            PhoneNumber = request.PhoneNumber,
+            PhoneNumber = request.PhoneNumber?.Replace("+", ""),
             FullName = request.FullName,
             Roles = new List<UserRole>(), // No default role
             Type = Enum.TryParse<UserType>(request.UserType, true, out var type) ? type : UserType.Individual,
@@ -153,7 +168,7 @@ public class AuthService : IAuthService
     {
         var profiles = new List<UserProfileDto>();
         var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null) return profiles;
+        if (user == null || user.Roles == null) return profiles;
 
         if (user.Roles.Contains(UserRole.PropertyOwner))
         {
@@ -182,13 +197,31 @@ public class AuthService : IAuthService
 
         if (!string.IsNullOrEmpty(request.PhoneNumber))
         {
+            var sanitizedPhone = request.PhoneNumber.Replace("+", "");
             // Check if phone number is already taken by another user
-            var existing = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber);
+            var existing = await _userRepository.GetByPhoneNumberAsync(sanitizedPhone);
+            
             if (existing != null && existing.Id != user.Id)
             {
-                throw new Exception("Phone number is already in use by another account.");
+                // ACCOUNT MERGE LOGIC: 
+                // If the existing user is just a 'stray' OTP account (no Entra ID and no Roles), we can merge/transfer.
+                if (string.IsNullOrEmpty(existing.EntraObjectId) && (existing.Roles == null || existing.Roles.Count == 0))
+                {
+                    _logger.LogInformation("Merging stray OTP account {StrayId} into primary account {PrimaryId}", existing.Id, user.Id);
+                    
+                    // 1. Remove phone from stray account to avoid unique constraint issues
+                    existing.PhoneNumber = null;
+                    await _userRepository.UpdateAsync(existing);
+                    
+                    // 2. We could potentially transfer other data here (e.g. Bookings) if they existed.
+                    // For now, we'll just allow the primary user to take the phone number.
+                }
+                else
+                {
+                    throw new Exception("This phone number is already linked to another verified account. Please contact support for merging.");
+                }
             }
-            user.PhoneNumber = request.PhoneNumber;
+            user.PhoneNumber = sanitizedPhone;
         }
 
         if (!string.IsNullOrEmpty(request.FullName))
@@ -295,11 +328,11 @@ public class AuthService : IAuthService
             user.Id, 
             user.Email, 
             user.FullName, 
-            user.Roles.Select(r => r.ToString()).ToList(),
+            (user.Roles ?? new List<UserRole>()).Select(r => r.ToString()).ToList(),
             user.Type.ToString(),
             user.OrganizationId,
             user.Organization?.Name,
-            user.Roles.Any());
+            user.Roles?.Any() ?? false);
 
     private OtpType MapOtpType(OtpTypeDto type) => type switch
     {
