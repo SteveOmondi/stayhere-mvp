@@ -57,11 +57,23 @@ public class AuthService : IAuthService
         return new AuthResponse(token, MapToDto(user));
     }
 
-    public async Task<bool> RequestOtpAsync(OtpRequest request)
+    public async Task<OtpResponse> RequestOtpAsync(OtpRequest request)
     {
-        // Use local OTP service for all users (MVP Standard)
+        var appMode = Environment.GetEnvironmentVariable("APP_MODE") ?? "live";
+        _logger.LogInformation("Requesting OTP for {Target} (Mode: {Mode})", request.Target, appMode);
+
+        // Generate the OTP
         var otp = await _otpService.GenerateOtpAsync(request.Target, MapOtpType(request.Type));
-        return await _otpService.SendOtpAsync(request.Target, otp, MapOtpType(request.Type));
+        
+        // Send the OTP
+        var success = await _otpService.SendOtpAsync(request.Target, otp, MapOtpType(request.Type));
+
+        return new OtpResponse
+        {
+            Succeeded = success,
+            Message = success ? "Verification code sent." : "Failed to deliver verification code.",
+            Otp = appMode.Equals("test", StringComparison.OrdinalIgnoreCase) ? otp : null
+        };
     }
 
     public async Task<AuthResponse> VerifyOtpAndLoginAsync(OtpVerificationRequest request)

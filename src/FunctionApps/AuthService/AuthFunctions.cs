@@ -77,17 +77,17 @@ public class AuthFunctions
             
             if (!string.IsNullOrEmpty(loginRequest.Email))
             {
-                var success = await _authService.RequestOtpAsync(new OtpRequest(loginRequest.Email, OtpTypeDto.Email));
-                var res = req.CreateResponse(success ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
-                await res.WriteAsJsonAsync(new { succeeded = success, message = success ? "Verification code sent to your email." : "Failed to send verification code. Please check your email address." });
+                var otpRes = await _authService.RequestOtpAsync(new OtpRequest(loginRequest.Email, OtpTypeDto.Email));
+                var res = req.CreateResponse(otpRes.Succeeded ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
+                await res.WriteAsJsonAsync(otpRes);
                 return res;
             }
 
             if (!string.IsNullOrEmpty(loginRequest.PhoneNumber))
             {
-                var success = await _authService.RequestOtpAsync(new OtpRequest(loginRequest.PhoneNumber, OtpTypeDto.Sms));
-                var res = req.CreateResponse(success ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
-                await res.WriteAsJsonAsync(new { succeeded = success, message = success ? "Verification code sent to your phone via SMS." : "Failed to deliver SMS. Please ensure your phone number is correct and try again." });
+                var otpRes = await _authService.RequestOtpAsync(new OtpRequest(loginRequest.PhoneNumber, OtpTypeDto.Sms));
+                var res = req.CreateResponse(otpRes.Succeeded ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
+                await res.WriteAsJsonAsync(otpRes);
                 return res;
             }
 

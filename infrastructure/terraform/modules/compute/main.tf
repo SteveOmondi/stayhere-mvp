@@ -44,6 +44,7 @@ resource "azurerm_linux_function_app" "auth" {
     "OnFonSms__SenderId"             = var.onfon_sender_id
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
+    "APP_MODE"                       = "test" # Set to 'live' for production to hide OTPs
   }
 
   identity {
