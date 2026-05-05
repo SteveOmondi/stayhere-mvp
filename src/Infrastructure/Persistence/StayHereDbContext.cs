@@ -14,6 +14,11 @@ public class StayHereDbContext : DbContext
     {
     }
 
+    private static readonly ValueConverter<string, string> PhoneConverter = new(
+        v => (v ?? string.Empty).Replace("+", ""), 
+        v => v ?? string.Empty
+    );
+
     public DbSet<User> Users => Set<User>();
     public DbSet<Property> Properties => Set<Property>();
     public DbSet<Listing> Listings => Set<Listing>();
@@ -181,7 +186,7 @@ public class StayHereDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
-            entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20);
+            entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20).HasConversion(PhoneConverter);
             entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(255);
             entity.Property(e => e.EntraObjectId).HasColumnName("entra_object_id").HasMaxLength(255);
             entity.Property(e => e.Roles).HasColumnName("roles")
@@ -218,7 +223,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.TaxId).HasColumnName("tax_id").HasMaxLength(100);
             entity.Property(e => e.Website).HasColumnName("website").HasMaxLength(255);
             entity.Property(e => e.Address).HasColumnName("address");
-            entity.Property(e => e.ContactPhone).HasColumnName("contact_phone").HasMaxLength(20);
+            entity.Property(e => e.ContactPhone).HasColumnName("contact_phone").HasMaxLength(20).HasConversion(PhoneConverter);
             entity.Property(e => e.ContactEmail).HasColumnName("contact_email").HasMaxLength(255);
             entity.Property(e => e.Type).HasColumnName("org_type").HasConversion<string>();
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
@@ -338,13 +343,13 @@ public class StayHereDbContext : DbContext
             entity.OwnsOne(e => e.Owner, owner =>
             {
                 owner.Property(o => o.Name).HasColumnName("owner_name").HasMaxLength(255).IsRequired();
-                owner.Property(o => o.Phone).HasColumnName("owner_phone").HasMaxLength(20).IsRequired();
+                owner.Property(o => o.Phone).HasColumnName("owner_phone").HasMaxLength(20).IsRequired().HasConversion(PhoneConverter);
                 owner.Property(o => o.Email).HasColumnName("owner_email").HasMaxLength(255);
             });
             entity.OwnsOne(e => e.Agent, agent =>
             {
                 agent.Property(a => a.Name).HasColumnName("agent_name").HasMaxLength(255);
-                agent.Property(a => a.Phone).HasColumnName("agent_phone").HasMaxLength(20);
+                agent.Property(a => a.Phone).HasColumnName("agent_phone").HasMaxLength(20).HasConversion(PhoneConverter);
                 agent.Property(a => a.Email).HasColumnName("agent_email").HasMaxLength(255);
             });
 
@@ -372,7 +377,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.LastName).HasColumnName("last_name").HasMaxLength(100);
             entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(150);
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
-            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20);
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).HasConversion(PhoneConverter);
             entity.Property(e => e.CountryId).HasColumnName("country_id");
             entity.Property(e => e.CityId).HasColumnName("city_id");
             entity.Property(e => e.AddressLine).HasColumnName("address_line").HasMaxLength(255);
@@ -451,7 +456,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(255).IsRequired();
-            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).IsRequired().HasConversion(PhoneConverter);
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
             entity.Property(e => e.WalletId).HasColumnName("wallet_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
@@ -487,7 +492,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.PropertyOwnerId).HasColumnName("property_owner_id");
             entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(255).IsRequired();
-            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).IsRequired().HasConversion(PhoneConverter);
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.PropertyOwnerId);
@@ -503,7 +508,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.PropertyOwnerId).HasColumnName("property_owner_id");
             entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(255).IsRequired();
-            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).IsRequired().HasConversion(PhoneConverter);
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.PropertyOwnerId);
@@ -517,7 +522,7 @@ public class StayHereDbContext : DbContext
             entity.ToTable("otp_verifications");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Target).HasColumnName("target").HasMaxLength(255);
+            entity.Property(e => e.Target).HasColumnName("target").HasMaxLength(255).HasConversion(PhoneConverter);
             entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(10);
             entity.Property(e => e.Expiry).HasColumnName("expiry");
             entity.Property(e => e.IsUsed).HasColumnName("is_used");
