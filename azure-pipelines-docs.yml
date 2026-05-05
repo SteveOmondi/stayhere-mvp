@@ -3,6 +3,7 @@ trigger:
     include: [main]
   paths:
     include:
+    - src/**
     - scripts/publish-to-apicenter.ps1
     - azure-pipelines-docs.yml
 

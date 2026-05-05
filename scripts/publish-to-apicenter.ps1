@@ -3,108 +3,114 @@
 
 param(
     [string]$ResourceGroupName = "rg-stayhere-dev-5c27bcf3",
-    [string]$ServiceContext = "apim-dev-5c27bcf3-apic",
-    [string]$Workspace = "default"
+    [string]$ServiceContext = "apim-dev-5c27bcf3-apic"
 )
 
 $apiMap = @(
-    @{ id = "auth-service"; title = "Auth Service"; tag = "AuthService" },
-    @{ id = "property-service"; title = "Property Service"; tag = "PropertyService" },
-    @{ id = "customer-service"; title = "Customer Service"; tag = "CustomerService" },
-    @{ id = "propertyowner-service"; title = "Property Owner Service"; tag = "PropertyOwnerService" },
-    @{ id = "staticdata-service"; title = "Static Data Service"; tag = "StaticDataService" },
-    @{ id = "aiagent-service"; title = "AI Agent Service"; tag = "AiAgentService" }
+    @{ id = "auth-service"; title = "Auth Service"; tag = "AuthService"; path = "auth" },
+    @{ id = "property-service"; title = "Property Service"; tag = "PropertyService"; path = "property" },
+    @{ id = "customer-service"; title = "Customer Service"; tag = "CustomerService"; path = "customers" },
+    @{ id = "propertyowner-service"; title = "Property Owner Service"; tag = "PropertyOwnerService"; path = "propertyowner" },
+    @{ id = "staticdata-service"; title = "Static Data Service"; tag = "StaticDataService"; path = "staticdata" },
+    @{ id = "aiagent-service"; title = "AI Agent Service"; tag = "AiAgentService"; path = "aiagent" }
 )
 
 Write-Host "----------------------------------------------------"
-Write-Host "CLEANUP: Removing existing APIs from $ServiceContext..." -ForegroundColor Cyan
+Write-Host "Discovering APIM Gateway in $ResourceGroupName..." -ForegroundColor Cyan
 
-# List all existing APIs and delete them to avoid duplication
+# Find APIM name (it starts with 'apim-' and is in the same RG)
+$apimName = az apimanagement list --resource-group $ResourceGroupName --query "[?contains(name, 'apim-') && !contains(name, '-apic')].name" -o tsv | Select-Object -First 1
+if ([string]::IsNullOrWhiteSpace($apimName)) {
+    Write-Host "  ERROR: Could not find APIM instance. Defaulting to ServiceContext prefix..." -ForegroundColor Yellow
+    $apimName = $ServiceContext.Replace("-apic", "")
+}
+
+$apimUrl = "https://$apimName.azure-api.net"
+Write-Host "  APIM Gateway: $apimUrl" -ForegroundColor Green
+Write-Host "----------------------------------------------------"
+
+Write-Host "CLEANUP: Removing all existing assets from $ServiceContext..." -ForegroundColor Cyan
+
+# 1. Delete all existing APIs
 $existingApis = az apic api list --resource-group $ResourceGroupName --service-name $ServiceContext -o json | ConvertFrom-Json
 foreach ($existing in $existingApis) {
-    Write-Host "  Deleting existing API: $($existing.name)..." -ForegroundColor Gray
+    Write-Host "  Deleting API Asset: $($existing.name)..." -ForegroundColor Gray
     az apic api delete --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($existing.name) --yes
 }
 
-Write-Host "Cleanup complete. Starting fresh registration..." -ForegroundColor Green
+# 2. Delete all existing Environments
+$existingEnvs = az apic environment list --resource-group $ResourceGroupName --service-name $ServiceContext -o json | ConvertFrom-Json
+foreach ($env in $existingEnvs) {
+    Write-Host "  Deleting Environment: $($env.name)..." -ForegroundColor Gray
+    az apic environment delete --resource-group $ResourceGroupName --service-name $ServiceContext --environment-id $($env.name) --yes
+}
+
+Write-Host "Cleanup complete. Recreating all assets..." -ForegroundColor Green
 Write-Host "----------------------------------------------------"
 
 foreach ($api in $apiMap) {
     Write-Host "----------------------------------------------------"
     Write-Host "Processing: $($api.title) ($($api.id))" -ForegroundColor Yellow
 
-    # Discover the Function App URL dynamically using Tags
-    Write-Host "  Discovering Function App for $($api.tag)..."
+    # Discover the Function App URL
     $query = "[?tags.Service=='$($api.tag)'].defaultHostName"
     $hostName = az functionapp list --resource-group $ResourceGroupName --query $query -o tsv
     
     if ([string]::IsNullOrWhiteSpace($hostName)) {
-        Write-Host "  WARNING: Could not find Function App with tag Service=$($api.tag) in $ResourceGroupName" -ForegroundColor Red
+        Write-Host "  WARNING: Could not find Function App with tag Service=$($api.tag)" -ForegroundColor Red
         continue
     }
 
-    
-    # Ensure the API exists
-    Write-Host "  Registering API..."
+    # Register API
+    Write-Host "  Creating API metadata..."
     az apic api create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --title $($api.title) --type rest
     
-    # Create or update the version
-    Write-Host "  Defining Version v1-0-0..."
     az apic api version create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --title "Version 1.0.0" --lifecycle production
     
-    # Create or update the definition
-    Write-Host "  Preparing OpenAPI Definition..."
     az apic api definition create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --definition-id "openapi" --title "OpenAPI Definition"
     
-        # Download the JSON to a local file first
-        $swaggerPath = Join-Path $PSScriptRoot "$($api.id)-swagger.json"
-        $candidatePaths = @("/api/swagger.json", "/swagger.json")
-        $success = $false
+    # Download and REWRITE Swagger
+    $swaggerPath = Join-Path $PSScriptRoot "$($api.id)-swagger.json"
+    $candidatePaths = @("/api/swagger.json", "/swagger.json")
+    $success = $false
 
-        foreach ($path in $candidatePaths) {
-            $url = "https://$hostName$path"
-            Write-Host "  Trying: $url..."
-            try {
-                # Fetch JSON
-                $json = Invoke-RestMethod -Uri $url -ErrorAction Stop
-                
-                # SANITIZATION: Fix the "//" issue by ensuring server URLs don't end in a slash
-                if ($json.servers) {
-                    foreach ($server in $json.servers) {
-                        if ($server.url.EndsWith("/")) {
-                            $server.url = $server.url.TrimEnd("/")
-                        }
-                    }
-                }
+    foreach ($path in $candidatePaths) {
+        $url = "https://$hostName$path"
+        Write-Host "  Downloading spec from: $url..."
+        try {
+            $json = Invoke-RestMethod -Uri $url -ErrorAction Stop
+            
+            # REWRITE: Point the Swagger 'servers' to APIM instead of the direct Function App
+            $gatewayPath = "$apimUrl/$($api.path)"
+            Write-Host "  Rewriting server URL to: $gatewayPath" -ForegroundColor Gray
+            $json.servers = @( @{ url = $gatewayPath; description = "APIM Gateway" } )
 
-                # Save sanitized JSON
-                $json | ConvertTo-Json -Depth 10 | Out-File -FilePath $swaggerPath -Encoding ascii
-                
-                Write-Host "  SUCCESS: Found and sanitized swagger at $url" -ForegroundColor Green
-                $success = $true
-                break
-            } catch {
-                Write-Host "  Not found at $url..." -ForegroundColor Gray
-            }
+            # Save rewritten JSON
+            $json | ConvertTo-Json -Depth 10 | Out-File -FilePath $swaggerPath -Encoding ascii
+            $success = $true
+            break
+        } catch {
+            Write-Host "  Could not download from $url..." -ForegroundColor Gray
         }
+    }
 
     if ($success) {
         try {
-            # Import the specification as INLINE content
-            Write-Host "  Pushing specification to API Center..."
+            Write-Host "  Importing rewritten spec to API Center..."
             $specJson = '{"name":"openapi","version":"3.0.1"}'
             az apic api definition import-specification --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --definition-id "openapi" --format inline --value "@$swaggerPath" --specification $specJson
             
             Remove-Item -Path $swaggerPath -ErrorAction SilentlyContinue
+            Write-Host "  SUCCESS: $($api.id) is now live in API Center." -ForegroundColor Green
         } catch {
             Write-Host "  ERROR: Failed to import specification for $($api.id)." -ForegroundColor Red
         }
     } else {
-        Write-Host "  WARNING: Could not find Swagger JSON at any of the candidate paths for $($api.id)." -ForegroundColor Red
-        Write-Host "  SKIPPING registration." -ForegroundColor Yellow
+        Write-Host "  SKIPPING: Could not find Swagger JSON for $($api.id)." -ForegroundColor Red
     }
 }
 
 Write-Host "----------------------------------------------------"
-Write-Host "API Center registration completed successfully!" -ForegroundColor Green
-Write-Host "Documentation Portal: https://$ServiceContext.portal.eastus.azure-apicenter.ms/"
+Write-Host "API Center refresh completed successfully!" -ForegroundColor Green
+Write-Host "Portal: https://$ServiceContext.portal.eastus.azure-apicenter.ms/"
+
