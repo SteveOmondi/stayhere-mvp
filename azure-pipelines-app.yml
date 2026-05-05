@@ -26,9 +26,11 @@ stages:
     - checkout: self
       fetchDepth: 0
     - script: |
-        # Get list of changed files between current commit and previous commit
-        # For the very first run or if HEAD~1 doesn't exist, we assume all changed
-        if git rev-parse HEAD~1 >/dev/null 2>&1; then
+        # Force a full build/deploy if triggered manually
+        if [[ "$(Build.Reason)" == "Manual" ]]; then
+          echo "Manual trigger detected. Forcing full build and deployment."
+          CHANGED_FILES="FORCE_ALL"
+        elif git rev-parse HEAD~1 >/dev/null 2>&1; then
           CHANGED_FILES=$(git diff --name-only HEAD HEAD~1)
         else
           CHANGED_FILES="FORCE_ALL"
