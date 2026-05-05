@@ -7,41 +7,77 @@ param(
     [string]$Workspace = "default"
 )
 
-$apis = @(
-    @{ name = "auth-api"; title = "Auth Service"; url = "https://func-dev-auth-5c27bcf3.azurewebsites.net/api/swagger.json" },
-    @{ name = "property-api"; title = "Property Service"; url = "https://func-dev-property-5c27bcf3.azurewebsites.net/api/swagger.json" },
-    @{ name = "customer-api"; title = "Customer Service"; url = "https://func-dev-customer-5c27bcf3.azurewebsites.net/api/swagger.json" },
-    @{ name = "propertyowner-api"; title = "Property Owner Service"; url = "https://func-dev-propertyowner-5c27bcf3.azurewebsites.net/api/swagger.json" },
-    @{ name = "staticdata-api"; title = "Static Data Service"; url = "https://func-dev-staticdata-5c27bcf3.azurewebsites.net/api/swagger.json" },
-    @{ name = "aiagent-api"; title = "AI Agent Service"; url = "https://func-dev-aiagent-5c27bcf3.azurewebsites.net/api/swagger.json" }
+$apiMap = @(
+    @{ id = "auth-api"; title = "Auth Service"; tag = "AuthService" },
+    @{ id = "property-api"; title = "Property Service"; tag = "PropertyService" },
+    @{ id = "customer-api"; title = "Customer Service"; tag = "CustomerService" },
+    @{ id = "propertyowner-api"; title = "Property Owner Service"; tag = "PropertyOwnerService" },
+    @{ id = "staticdata-api"; title = "Static Data Service"; tag = "StaticDataService" },
+    @{ id = "aiagent-api"; title = "AI Agent Service"; tag = "AiAgentService" }
 )
 
 Write-Host "Starting API Center registration for $ServiceContext..." -ForegroundColor Cyan
 
-foreach ($api in $apis) {
+foreach ($api in $apiMap) {
     Write-Host "----------------------------------------------------"
-    Write-Host "Processing: $($api.title) ($($api.name))" -ForegroundColor Yellow
+    Write-Host "Processing: $($api.title) ($($api.id))" -ForegroundColor Yellow
+
+    # Discover the Function App URL dynamically using Tags
+    Write-Host "  Discovering Function App for $($api.tag)..."
+    $query = "[?tags.Service=='$($api.tag)'].defaultHostName"
+    $hostName = az functionapp list --resource-group $ResourceGroupName --query $query -o tsv
+    
+    if ([string]::IsNullOrWhiteSpace($hostName)) {
+        Write-Host "  WARNING: Could not find Function App with tag Service=$($api.tag) in $ResourceGroupName" -ForegroundColor Red
+        continue
+    }
+
     
     # Ensure the API exists
     Write-Host "  Registering API..."
-    az apic api create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --title $($api.title) --type rest
+    az apic api create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --title $($api.title) --type rest
     
     # Create or update the version
     Write-Host "  Defining Version v1-0-0..."
-    az apic api version create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --version-id "v1-0-0" --title "Version 1.0.0" --lifecycle production
+    az apic api version create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --title "Version 1.0.0" --lifecycle production
     
     # Create or update the definition
-    Write-Host "  Importing OpenAPI Specification from URL..."
-    az apic api definition create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --version-id "v1-0-0" --definition-id "openapi" --title "OpenAPI Definition"
+    Write-Host "  Preparing OpenAPI Definition..."
+    az apic api definition create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --definition-id "openapi" --title "OpenAPI Definition"
     
-    # Import the specification from the URL
-    # Using a temporary file to avoid PowerShell quoting issues with JSON
-    $specPath = Join-Path $PSScriptRoot "spec.json"
-    '{"name":"openapi","version":"3.0.1"}' | Out-File -FilePath $specPath -Encoding ascii
-    
-    az apic api definition import-specification --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.name) --version-id "v1-0-0" --definition-id "openapi" --format link --value $($api.url) --specification "@$specPath"
-    
-    Remove-Item -Path $specPath -ErrorAction SilentlyContinue
+    # Download the JSON to a local file first
+    $swaggerPath = Join-Path $PSScriptRoot "$($api.id)-swagger.json"
+    $candidatePaths = @("/api/swagger.json", "/swagger.json")
+    $success = $false
+
+    foreach ($path in $candidatePaths) {
+        $url = "https://$hostName$path"
+        Write-Host "  Trying: $url..."
+        try {
+            Invoke-WebRequest -Uri $url -OutFile $swaggerPath -ErrorAction Stop
+            Write-Host "  SUCCESS: Found swagger at $url" -ForegroundColor Green
+            $success = $true
+            break
+        } catch {
+            Write-Host "  Not found at $url..." -ForegroundColor Gray
+        }
+    }
+
+    if ($success) {
+        try {
+            # Import the specification as INLINE content
+            Write-Host "  Pushing specification to API Center..."
+            $specJson = '{"name":"openapi","version":"3.0.1"}'
+            az apic api definition import-specification --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --definition-id "openapi" --format inline --value "@$swaggerPath" --specification $specJson
+            
+            Remove-Item -Path $swaggerPath -ErrorAction SilentlyContinue
+        } catch {
+            Write-Host "  ERROR: Failed to import specification for $($api.id)." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "  WARNING: Could not find Swagger JSON at any of the candidate paths for $($api.id)." -ForegroundColor Red
+        Write-Host "  SKIPPING registration." -ForegroundColor Yellow
+    }
 }
 
 Write-Host "----------------------------------------------------"
