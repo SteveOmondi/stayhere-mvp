@@ -528,7 +528,7 @@ public class StayHereDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Target).HasColumnName("target").HasMaxLength(255);
-            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(10);
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(100);
             entity.Property(e => e.Expiry).HasColumnName("expiry");
             entity.Property(e => e.IsUsed).HasColumnName("is_used");
             entity.Property(e => e.Attempts).HasColumnName("attempts");
