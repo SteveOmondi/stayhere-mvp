@@ -6,6 +6,9 @@ param(
     [string]$ServiceContext = "apim-dev-5c27bcf3-apic"
 )
 
+Write-Host "Ensuring Azure API Center extension is installed..." -ForegroundColor Cyan
+az extension add --name apic-extension --upgrade --yes
+
 $apiMap = @(
     @{ id = "auth-service"; title = "Auth Service"; tag = "AuthService"; path = "auth" },
     @{ id = "property-service"; title = "Property Service"; tag = "PropertyService"; path = "property" },
