@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -790,7 +791,73 @@ public class ListingFunctions
             return Guid.TryParse(s, out var g) ? g : null;
         }
 
+        if (!req.Headers.TryGetValues("Authorization", out var authValues))
+            return null;
+
+        var authHeader = authValues.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(authHeader))
+            return null;
+
+        const string bearerPrefix = "Bearer ";
+        if (!authHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var token = authHeader[bearerPrefix.Length..].Trim();
+        return TryExtractUserIdFromJwt(token);
+    }
+
+    private static Guid? TryExtractUserIdFromJwt(string token)
+    {
+        var parts = token.Split('.');
+        if (parts.Length < 2)
+            return null;
+
+        var payloadJson = TryDecodeBase64Url(parts[1]);
+        if (string.IsNullOrEmpty(payloadJson))
+            return null;
+
+        using var doc = JsonDocument.Parse(payloadJson);
+        var root = doc.RootElement;
+        var candidateClaims = new[] { "nameid", "sub", "oid", "userId", "user_id" };
+        foreach (var claim in candidateClaims)
+        {
+            if (!root.TryGetProperty(claim, out var claimValue) || claimValue.ValueKind != JsonValueKind.String)
+                continue;
+
+            var value = claimValue.GetString();
+            if (Guid.TryParse(value, out var guid))
+                return guid;
+        }
+
         return null;
+    }
+
+    private static string? TryDecodeBase64Url(string input)
+    {
+        var padded = input.Replace('-', '+').Replace('_', '/');
+        switch (padded.Length % 4)
+        {
+            case 2:
+                padded += "==";
+                break;
+            case 3:
+                padded += "=";
+                break;
+            case 0:
+                break;
+            default:
+                return null;
+        }
+
+        try
+        {
+            var bytes = Convert.FromBase64String(padded);
+            return Encoding.UTF8.GetString(bytes);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>Stable, readable Redis segment: lowercased, whitespace to hyphen, length-capped.</summary>
