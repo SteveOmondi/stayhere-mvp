@@ -9,6 +9,7 @@ using StayHere.Application.PropertyOwners.Models;
 using StayHere.Application.Properties.Models;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
+using StayHere.Shared.Attributes;
 
 namespace StayHere.PropertyOwnerService.Functions;
 
@@ -30,6 +31,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("CreatePropertyOwner")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "CreatePropertyOwner", tags: new[] { "Owners" }, Summary = "Create property owner")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreatePropertyOwnerRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(PropertyOwnerDto))]
@@ -58,6 +60,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetPropertyOwnerById")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetPropertyOwnerById", tags: new[] { "Owners" }, Summary = "Get owner by ID")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyOwnerDto))]
@@ -80,6 +83,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetPropertyOwnerByUserId")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetPropertyOwnerByUserId", tags: new[] { "Owners" }, Summary = "Get owner by user ID")]
     [OpenApiParameter(name: "userId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyOwnerDto))]
@@ -102,6 +106,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetPropertyOwnerByEmail")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetPropertyOwnerByEmail", tags: new[] { "Owners" }, Summary = "Get owner by email")]
     [OpenApiParameter(name: "email", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyOwnerDto))]
@@ -124,6 +129,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("UpdatePropertyOwner")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "UpdatePropertyOwner", tags: new[] { "Owners" }, Summary = "Update owner")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdatePropertyOwnerRequest), Required = true)]
@@ -152,6 +158,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerWallet")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetOwnerWallet", tags: new[] { "Owners" }, Summary = "Get owner wallet")]
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(WalletDto))]
@@ -174,6 +181,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerProperties")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetOwnerProperties", tags: new[] { "Owners" }, Summary = "Get owner properties")]
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<PropertyListDto>))]
@@ -194,6 +202,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerListings")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetOwnerListings", tags: new[] { "Owners" }, Summary = "Get owner listings")]
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -217,6 +226,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("CreateAgent")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "CreateAgent", tags: new[] { "Agents" }, Summary = "Create agent for owner")]
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateAgentRequest), Required = true)]
@@ -249,6 +259,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetAgentById")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetAgentById", tags: new[] { "Agents" }, Summary = "Get agent by ID")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AgentDto))]
@@ -271,6 +282,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerAgents")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetOwnerAgents", tags: new[] { "Agents" }, Summary = "Get owner agents")]
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<AgentDto>))]
@@ -291,6 +303,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("CreateCaretaker")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "CreateCaretaker", tags: new[] { "Caretakers" }, Summary = "Create caretaker for owner")]
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateCaretakerRequest), Required = true)]
@@ -323,6 +336,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetCaretakerById")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetCaretakerById", tags: new[] { "Caretakers" }, Summary = "Get caretaker by ID")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(CaretakerDto))]
@@ -345,6 +359,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwnerCaretakers")]
+    [Authorize("PropertyOwner", "Admin")]
     [OpenApiOperation(operationId: "GetOwnerCaretakers", tags: new[] { "Caretakers" }, Summary = "Get owner caretakers")]
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CaretakerDto>))]
@@ -366,6 +381,7 @@ public class PropertyOwnerFunctions
 
     /// <summary>Flat list of property owners for management portal pickers (cap via <c>max</c>, default 500).</summary>
     [Function("GetOwnersPortalDirectory")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "GetOwnersPortalDirectory", tags: new[] { "Owners" }, Summary = "Get portal owner directory")]
     [OpenApiParameter(name: "max", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<PropertyOwnerDirectoryEntryDto>))]
@@ -390,6 +406,7 @@ public class PropertyOwnerFunctions
     }
 
     [Function("GetOwners")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "GetOwners", tags: new[] { "Owners" }, Summary = "Get all owners paginated")]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]

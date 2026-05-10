@@ -15,6 +15,7 @@ var host = new HostBuilder()
     .ConfigureFunctionsWebApplication(worker => 
     {
         worker.UseMiddleware<GlobalExceptionMiddleware>();
+        worker.UseMiddleware<AuthenticationMiddleware>();
     })
     .ConfigureServices((context, services) =>
     {

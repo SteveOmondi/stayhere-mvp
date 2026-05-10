@@ -7,10 +7,12 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Properties.Models;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
+using StayHere.Shared.Attributes;
 
 namespace StayHere.PropertyService.Functions;
 
@@ -35,6 +37,7 @@ public class ListingFunctions
     }
 
     [Function("CreateListing")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "CreateListing", tags: new[] { "Listings" }, Summary = "Create listing")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateListingRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(ListingDto))]
@@ -67,6 +70,7 @@ public class ListingFunctions
     }
 
     [Function("CreateListingFromProperty")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "CreateListingFromProperty", tags: new[] { "Listings" }, Summary = "Create listing from property")]
     [OpenApiParameter(name: "propertyId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateListingFromPropertyRequest), Required = true)]
@@ -105,6 +109,7 @@ public class ListingFunctions
     }
 
     [Function("GetListingById")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetListingById", tags: new[] { "Listings" }, Summary = "Get listing by ID")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(ListingDto))]
@@ -128,6 +133,7 @@ public class ListingFunctions
     }
 
     [Function("GetListingByCode")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetListingByCode", tags: new[] { "Listings" }, Summary = "Get listing by code")]
     [OpenApiParameter(name: "code", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(ListingDto))]
@@ -151,6 +157,7 @@ public class ListingFunctions
     }
 
     [Function("GetAllListings")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetAllListings", tags: new[] { "Listings" }, Summary = "Get all listings paginated")]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -173,6 +180,7 @@ public class ListingFunctions
     }
 
     [Function("GetListingsByProperty")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetListingsByProperty", tags: new[] { "Listings" }, Summary = "Get listings by property ID")]
     [OpenApiParameter(name: "propertyId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -197,6 +205,7 @@ public class ListingFunctions
     }
 
     [Function("GetListingsByOwner")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "GetListingsByOwner", tags: new[] { "Listings" }, Summary = "Get listings by owner ID")]
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -221,6 +230,7 @@ public class ListingFunctions
     }
 
     [Function("GetListingsByCity")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetListingsByCity", tags: new[] { "Listings" }, Summary = "Get listings by city")]
     [OpenApiParameter(name: "city", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -245,6 +255,7 @@ public class ListingFunctions
     }
 
     [Function("GetListingsByCounty")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetListingsByCounty", tags: new[] { "Listings" }, Summary = "Get listings by county")]
     [OpenApiParameter(name: "county", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -273,6 +284,7 @@ public class ListingFunctions
     /// Redis key shape: <c>stayhere:property:listings:loc:{normalized}:p{page}:s{pageSize}</c> (e.g. <c>...loc:westlands:p1:s20</c>).
     /// </summary>
     [Function("GetListingsByLocation")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetListingsByLocation", tags: new[] { "Listings" }, Summary = "Elastic search listings by location")]
     [OpenApiParameter(name: "location", In = ParameterLocation.Query, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -310,6 +322,7 @@ public class ListingFunctions
     }
 
     [Function("GetListingsByType")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetListingsByType", tags: new[] { "Listings" }, Summary = "Get listings by property type")]
     [OpenApiParameter(name: "propertyType", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -334,6 +347,7 @@ public class ListingFunctions
     }
 
     [Function("GetListingsByListingType")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetListingsByListingType", tags: new[] { "Listings" }, Summary = "Get listings by listing type")]
     [OpenApiParameter(name: "listingType", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -358,6 +372,7 @@ public class ListingFunctions
     }
 
     [Function("GetFeaturedListings")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetFeaturedListings", tags: new[] { "Listings" }, Summary = "Get featured listings")]
     [OpenApiParameter(name: "limit", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<ListingListDto>))]
@@ -378,6 +393,7 @@ public class ListingFunctions
     }
 
     [Function("GetAvailableListings")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetAvailableListings", tags: new[] { "Listings" }, Summary = "Get available listings")]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -400,6 +416,7 @@ public class ListingFunctions
     }
 
     [Function("SearchListings")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "SearchListings", tags: new[] { "Listings" }, Summary = "Search listings")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(ListingSearchRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
@@ -422,6 +439,7 @@ public class ListingFunctions
     }
 
     [Function("UpdateListing")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "UpdateListing", tags: new[] { "Listings" }, Summary = "Update listing")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateListingRequest), Required = true)]
@@ -459,6 +477,7 @@ public class ListingFunctions
     }
 
     [Function("RegenerateListingEmbedding")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "RegenerateListingEmbedding", tags: new[] { "Listings" }, Summary = "Regenerate listing embedding")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(ListingDto))]
@@ -489,6 +508,7 @@ public class ListingFunctions
     }
 
     [Function("UpdateListingAvailability")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "UpdateListingAvailability", tags: new[] { "Listings" }, Summary = "Update listing availability")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateAvailabilityRequest), Required = true)]
@@ -525,6 +545,7 @@ public class ListingFunctions
     }
 
     [Function("UpdateListingRating")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "UpdateListingRating", tags: new[] { "Listings" }, Summary = "Update listing rating")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateRatingRequest), Required = true)]
@@ -553,6 +574,7 @@ public class ListingFunctions
     }
 
     [Function("IncrementListingViews")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "IncrementListingViews", tags: new[] { "Listings" }, Summary = "Increment listing views")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object))]
@@ -575,6 +597,7 @@ public class ListingFunctions
     }
 
     [Function("UpdateListingFeatured")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "UpdateListingFeatured", tags: new[] { "Listings" }, Summary = "Update listing featured status")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateFeaturedRequest), Required = true)]
@@ -603,6 +626,7 @@ public class ListingFunctions
     }
 
     [Function("AssignListingAgent")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "AssignListingAgent", tags: new[] { "Listings" }, Summary = "Assign agent to listing")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(AssignAgentRequest), Required = true)]
@@ -639,6 +663,7 @@ public class ListingFunctions
     }
 
     [Function("RemoveListingAgent")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "RemoveListingAgent", tags: new[] { "Listings" }, Summary = "Remove agent from listing")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(ListingDto))]
@@ -669,6 +694,7 @@ public class ListingFunctions
     }
 
     [Function("AssignListingCaretaker")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "AssignListingCaretaker", tags: new[] { "Listings" }, Summary = "Assign caretaker to listing")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(AssignCaretakerRequest), Required = true)]
@@ -705,6 +731,7 @@ public class ListingFunctions
     }
 
     [Function("RemoveListingCaretaker")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "RemoveListingCaretaker", tags: new[] { "Listings" }, Summary = "Remove caretaker from listing")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(ListingDto))]
@@ -735,6 +762,7 @@ public class ListingFunctions
     }
 
     [Function("DeleteListing")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "DeleteListing", tags: new[] { "Listings" }, Summary = "Delete listing")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.NoContent)]
@@ -788,76 +816,17 @@ public class ListingFunctions
             if (!req.Headers.TryGetValues("X-User-Id", out var vals))
                 return null;
             var s = vals.FirstOrDefault();
-            return Guid.TryParse(s, out var g) ? g : null;
+            return Guid.TryParse(s, out var headerGuid) ? headerGuid : null;
         }
 
-        if (!req.Headers.TryGetValues("Authorization", out var authValues))
+        if (!req.FunctionContext.Items.TryGetValue("User", out var principalObj))
             return null;
 
-        var authHeader = authValues.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(authHeader))
+        if (principalObj is not ClaimsPrincipal principal)
             return null;
 
-        const string bearerPrefix = "Bearer ";
-        if (!authHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        var token = authHeader[bearerPrefix.Length..].Trim();
-        return TryExtractUserIdFromJwt(token);
-    }
-
-    private static Guid? TryExtractUserIdFromJwt(string token)
-    {
-        var parts = token.Split('.');
-        if (parts.Length < 2)
-            return null;
-
-        var payloadJson = TryDecodeBase64Url(parts[1]);
-        if (string.IsNullOrEmpty(payloadJson))
-            return null;
-
-        using var doc = JsonDocument.Parse(payloadJson);
-        var root = doc.RootElement;
-        var candidateClaims = new[] { "nameid", "sub", "oid", "userId", "user_id" };
-        foreach (var claim in candidateClaims)
-        {
-            if (!root.TryGetProperty(claim, out var claimValue) || claimValue.ValueKind != JsonValueKind.String)
-                continue;
-
-            var value = claimValue.GetString();
-            if (Guid.TryParse(value, out var guid))
-                return guid;
-        }
-
-        return null;
-    }
-
-    private static string? TryDecodeBase64Url(string input)
-    {
-        var padded = input.Replace('-', '+').Replace('_', '/');
-        switch (padded.Length % 4)
-        {
-            case 2:
-                padded += "==";
-                break;
-            case 3:
-                padded += "=";
-                break;
-            case 0:
-                break;
-            default:
-                return null;
-        }
-
-        try
-        {
-            var bytes = Convert.FromBase64String(padded);
-            return Encoding.UTF8.GetString(bytes);
-        }
-        catch
-        {
-            return null;
-        }
+        var id = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("nameid");
+        return Guid.TryParse(id, out var claimsGuid) ? claimsGuid : null;
     }
 
     /// <summary>Stable, readable Redis segment: lowercased, whitespace to hyphen, length-capped.</summary>

@@ -1,15 +1,16 @@
 using System.Net;
-using System.Text;
 using System.Text.Json;
 using System.Web;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Properties.Models;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
+using StayHere.Shared.Attributes;
 
 namespace StayHere.PropertyService.Functions;
 
@@ -28,6 +29,7 @@ public class PropertyFunctions
     }
 
     [Function("CreateProperty")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "CreateProperty", tags: new[] { "Properties" }, Summary = "Create property")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreatePropertyRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(PropertyDto))]
@@ -56,6 +58,7 @@ public class PropertyFunctions
     }
 
     [Function("GetPropertyById")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetPropertyById", tags: new[] { "Properties" }, Summary = "Get property by ID")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyDto))]
@@ -79,6 +82,7 @@ public class PropertyFunctions
     }
 
     [Function("GetPropertyByCode")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetPropertyByCode", tags: new[] { "Properties" }, Summary = "Get property by code")]
     [OpenApiParameter(name: "code", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PropertyDto))]
@@ -102,6 +106,7 @@ public class PropertyFunctions
     }
 
     [Function("GetAllProperties")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "GetAllProperties", tags: new[] { "Properties" }, Summary = "Get all properties paginated")]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -124,6 +129,7 @@ public class PropertyFunctions
     }
 
     [Function("GetPropertiesByOwner")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "GetPropertiesByOwner", tags: new[] { "Properties" }, Summary = "Get properties by owner")]
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
@@ -148,6 +154,7 @@ public class PropertyFunctions
     }
 
     [Function("UpdateProperty")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "UpdateProperty", tags: new[] { "Properties" }, Summary = "Update property")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdatePropertyRequest), Required = true)]
@@ -185,6 +192,7 @@ public class PropertyFunctions
     }
 
     [Function("DeleteProperty")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "DeleteProperty", tags: new[] { "Properties" }, Summary = "Delete property")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.NoContent)]
@@ -238,76 +246,17 @@ public class PropertyFunctions
             if (!req.Headers.TryGetValues("X-User-Id", out var vals))
                 return null;
             var s = vals.FirstOrDefault();
-            return Guid.TryParse(s, out var g) ? g : null;
+            return Guid.TryParse(s, out var headerGuid) ? headerGuid : null;
         }
 
-        if (!req.Headers.TryGetValues("Authorization", out var authValues))
+        if (!req.FunctionContext.Items.TryGetValue("User", out var principalObj))
             return null;
 
-        var authHeader = authValues.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(authHeader))
+        if (principalObj is not ClaimsPrincipal principal)
             return null;
 
-        const string bearerPrefix = "Bearer ";
-        if (!authHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        var token = authHeader[bearerPrefix.Length..].Trim();
-        return TryExtractUserIdFromJwt(token);
-    }
-
-    private static Guid? TryExtractUserIdFromJwt(string token)
-    {
-        var parts = token.Split('.');
-        if (parts.Length < 2)
-            return null;
-
-        var payloadJson = TryDecodeBase64Url(parts[1]);
-        if (string.IsNullOrEmpty(payloadJson))
-            return null;
-
-        using var doc = JsonDocument.Parse(payloadJson);
-        var root = doc.RootElement;
-        var candidateClaims = new[] { "nameid", "sub", "oid", "userId", "user_id" };
-        foreach (var claim in candidateClaims)
-        {
-            if (!root.TryGetProperty(claim, out var claimValue) || claimValue.ValueKind != JsonValueKind.String)
-                continue;
-
-            var value = claimValue.GetString();
-            if (Guid.TryParse(value, out var guid))
-                return guid;
-        }
-
-        return null;
-    }
-
-    private static string? TryDecodeBase64Url(string input)
-    {
-        var padded = input.Replace('-', '+').Replace('_', '/');
-        switch (padded.Length % 4)
-        {
-            case 2:
-                padded += "==";
-                break;
-            case 3:
-                padded += "=";
-                break;
-            case 0:
-                break;
-            default:
-                return null;
-        }
-
-        try
-        {
-            var bytes = Convert.FromBase64String(padded);
-            return Encoding.UTF8.GetString(bytes);
-        }
-        catch
-        {
-            return null;
-        }
+        var id = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("nameid");
+        return Guid.TryParse(id, out var claimsGuid) ? claimsGuid : null;
     }
 
     private static int GetQueryInt(HttpRequestData req, string name, int defaultValue)

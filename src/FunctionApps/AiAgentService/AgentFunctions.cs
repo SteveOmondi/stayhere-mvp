@@ -7,6 +7,7 @@ using StayHere.Application.AiAgent.Models;
 using StayHere.Application.Common.Interfaces;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
+using StayHere.Shared.Attributes;
 
 namespace StayHere.FunctionApps.AiAgentService;
 
@@ -24,6 +25,7 @@ public class AgentFunctions
     }
 
     [Function("AgentChat")]
+    [Authorize("Tenant", "PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "AgentChat", tags: new[] { "AI Agent" }, Summary = "Chat with AI agent")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(AgentChatRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AgentChatResponse))]
@@ -50,6 +52,7 @@ public class AgentFunctions
     }
 
     [Function("AgentRespondAndRecommend")]
+    [Authorize("Tenant", "PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "AgentRespondAndRecommend", tags: new[] { "AI Agent" }, Summary = "Get response and recommendations")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(AgentRecommendRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AgentRecommendResponse))]
@@ -76,6 +79,7 @@ public class AgentFunctions
     }
 
     [Function("AgentKnowledgeStatus")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "AgentKnowledgeStatus", tags: new[] { "AI Agent" }, Summary = "Get knowledge base status")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IReadOnlyDictionary<string, object>))]
     public async Task<HttpResponseData> KnowledgeStatus(
@@ -94,6 +98,7 @@ public class AgentFunctions
     }
 
     [Function("AgentSearchListings")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "AgentSearchListings", tags: new[] { "AI Agent" }, Summary = "Search listings via AI agent logic")]
     [OpenApiParameter(name: "listing_id", In = ParameterLocation.Query, Required = false, Type = typeof(string))]
     [OpenApiParameter(name: "listing_code", In = ParameterLocation.Query, Required = false, Type = typeof(string))]
@@ -123,6 +128,7 @@ public class AgentFunctions
     }
 
     [Function("AgentHealth")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "AgentHealth", tags: new[] { "AI Agent" }, Summary = "Get service health status")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> Health(

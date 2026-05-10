@@ -7,6 +7,7 @@ using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Customers.Models;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
+using StayHere.Shared.Attributes;
 
 namespace StayHere.FunctionApps.CustomerService;
 
@@ -31,6 +32,7 @@ public class CustomerFunctions
     }
 
     [Function("CreateCustomer")]
+    [Authorize("Tenant", "Admin")]
     [OpenApiOperation(operationId: "CreateCustomer", tags: new[] { "Customers" }, Summary = "Create customer")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateCustomerRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(CustomerDto))]
@@ -53,6 +55,7 @@ public class CustomerFunctions
     }
 
     [Function("GetCustomers")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "GetCustomers", tags: new[] { "Customers" }, Summary = "Get all customers")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CustomerDto>))]
     public async Task<HttpResponseData> GetCustomers(
@@ -63,6 +66,7 @@ public class CustomerFunctions
     }
 
     [Function("GetCustomerById")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "GetCustomerById", tags: new[] { "Customers" }, Summary = "Get customer by ID")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(CustomerDto))]
@@ -81,6 +85,7 @@ public class CustomerFunctions
     }
 
     [Function("GetCustomerByPhone")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "GetCustomerByPhone", tags: new[] { "Customers" }, Summary = "Get customer by phone")]
     [OpenApiParameter(name: "phone", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(CustomerDto))]
@@ -99,6 +104,7 @@ public class CustomerFunctions
     }
 
     [Function("GetCustomersByRegion")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "GetCustomersByRegion", tags: new[] { "Customers" }, Summary = "Get customers by region")]
     [OpenApiParameter(name: "countryId", In = ParameterLocation.Query, Required = false, Type = typeof(Guid))]
     [OpenApiParameter(name: "cityId", In = ParameterLocation.Query, Required = false, Type = typeof(Guid))]
@@ -115,6 +121,7 @@ public class CustomerFunctions
     }
 
     [Function("GetCustomersByListing")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "GetCustomersByListing", tags: new[] { "Customers" }, Summary = "Get customers by listing ID")]
     [OpenApiParameter(name: "listingId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CustomerDto>))]
@@ -127,6 +134,7 @@ public class CustomerFunctions
     }
 
     [Function("UpdateCustomer")]
+    [Authorize("Tenant", "Admin")]
     [OpenApiOperation(operationId: "UpdateCustomer", tags: new[] { "Customers" }, Summary = "Update customer")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateCustomerRequest), Required = true)]
@@ -157,6 +165,7 @@ public class CustomerFunctions
     }
 
     [Function("DeactivateCustomer")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "DeactivateCustomer", tags: new[] { "Customers" }, Summary = "Deactivate customer")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.NoContent)]
@@ -169,6 +178,7 @@ public class CustomerFunctions
     }
 
     [Function("AttachCustomerProperty")]
+    [Authorize("Tenant", "Admin")]
     [OpenApiOperation(operationId: "AttachCustomerProperty", tags: new[] { "Customers" }, Summary = "Attach property to customer")]
     [OpenApiParameter(name: "customerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(AttachCustomerPropertyRequest), Required = true)]
@@ -193,6 +203,7 @@ public class CustomerFunctions
     }
 
     [Function("GetCustomerProperties")]
+    [Authorize("Tenant", "Admin")]
     [OpenApiOperation(operationId: "GetCustomerProperties", tags: new[] { "Customers" }, Summary = "Get customer properties")]
     [OpenApiParameter(name: "customerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CustomerPropertyDto>))]
@@ -205,6 +216,7 @@ public class CustomerFunctions
     }
 
     [Function("AddCustomerDocument")]
+    [Authorize("Tenant", "Admin")]
     [OpenApiOperation(operationId: "AddCustomerDocument", tags: new[] { "Documents" }, Summary = "Add document to customer")]
     [OpenApiParameter(name: "customerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateDocumentRequest), Required = true)]
@@ -232,6 +244,7 @@ public class CustomerFunctions
     }
 
     [Function("GetCustomerDocuments")]
+    [Authorize("Tenant", "Admin")]
     [OpenApiOperation(operationId: "GetCustomerDocuments", tags: new[] { "Documents" }, Summary = "Get customer documents")]
     [OpenApiParameter(name: "customerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<DocumentDto>))]

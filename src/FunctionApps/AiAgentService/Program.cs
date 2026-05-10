@@ -17,6 +17,7 @@ var host = new HostBuilder()
     .ConfigureFunctionsWebApplication(worker => 
     {
         worker.UseMiddleware<GlobalExceptionMiddleware>();
+        worker.UseMiddleware<AuthenticationMiddleware>();
     })
     .ConfigureServices((context, services) =>
     {
@@ -63,4 +64,4 @@ var host = new HostBuilder()
     })
     .Build();
 
-host.Run();
+await host.RunAsync();

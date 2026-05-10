@@ -8,6 +8,7 @@ using StayHere.Application.Onboarding.Services;
 using StayHere.Application.Authentication.Models;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
+using StayHere.Shared.Attributes;
 
 namespace StayHere.AuthService.Functions;
 
@@ -25,6 +26,7 @@ public class OnboardingFunctions
     }
 
     [Function("Onboard")]
+    [Authorize]
     [OpenApiOperation(operationId: "Onboard", tags: new[] { "Onboarding" }, Summary = "Onboard a user", Description = "Completes the onboarding process for a registered user.")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(OnboardUserRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserDto))]

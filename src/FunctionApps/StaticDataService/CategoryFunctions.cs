@@ -9,6 +9,7 @@ using StayHere.Application.Common.Interfaces;
 using StayHere.Domain.Entities;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
+using StayHere.Shared.Attributes;
 
 namespace StayHere.StaticDataService.Functions;
 
@@ -30,6 +31,7 @@ public class CategoryFunctions
     }
 
     [Function("GetCategories")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetCategories", tags: new[] { "Categories" }, Summary = "Get active categories", Description = "Retrieves all active property categories.")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CategoryDto>))]
     public async Task<HttpResponseData> GetCategories(
@@ -50,6 +52,7 @@ public class CategoryFunctions
     }
 
     [Function("GetUserTypes")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetUserTypes", tags: new[] { "StaticData" }, Summary = "Get user types", Description = "Retrieves all possible user types.")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]))]
     public async Task<HttpResponseData> GetUserTypes(
@@ -61,6 +64,7 @@ public class CategoryFunctions
     }
 
     [Function("GetUserRoles")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetUserRoles", tags: new[] { "StaticData" }, Summary = "Get user roles", Description = "Retrieves all possible user roles.")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]))]
     public async Task<HttpResponseData> GetUserRoles(
@@ -72,6 +76,7 @@ public class CategoryFunctions
     }
 
     [Function("GetAllCategories")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "GetAllCategories", tags: new[] { "Categories" }, Summary = "Get all categories", Description = "Retrieves all categories including inactive ones. Requires admin authorization.")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CategoryDto>))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(object))]
@@ -79,9 +84,6 @@ public class CategoryFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "categories/all")] HttpRequestData req)
     {
         _logger.LogInformation("Getting all categories including inactive");
-
-        if (!IsAuthorized(req))
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
 
         try
         {
@@ -96,6 +98,7 @@ public class CategoryFunctions
     }
 
     [Function("GetCategoryById")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetCategoryById", tags: new[] { "Categories" }, Summary = "Get category by ID")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(CategoryDto))]
@@ -122,6 +125,7 @@ public class CategoryFunctions
     }
 
     [Function("GetCategoriesByCity")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetCategoriesByCity", tags: new[] { "Categories" }, Summary = "Get categories by city")]
     [OpenApiParameter(name: "city", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CategoryDto>))]
@@ -144,6 +148,7 @@ public class CategoryFunctions
     }
 
     [Function("GetCategoriesByCountry")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "GetCategoriesByCountry", tags: new[] { "Categories" }, Summary = "Get categories by country")]
     [OpenApiParameter(name: "country", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CategoryDto>))]
@@ -166,6 +171,7 @@ public class CategoryFunctions
     }
 
     [Function("CreateCategory")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "CreateCategory", tags: new[] { "Categories" }, Summary = "Create category", Description = "Creates a new category. Requires admin authorization.")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateCategoryRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(CategoryDto))]
@@ -174,9 +180,6 @@ public class CategoryFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "categories")] HttpRequestData req)
     {
         _logger.LogInformation("Creating new category");
-
-        if (!IsAuthorized(req))
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
 
         try
         {
@@ -210,6 +213,7 @@ public class CategoryFunctions
     }
 
     [Function("UpdateCategory")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "UpdateCategory", tags: new[] { "Categories" }, Summary = "Update category")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateCategoryRequest), Required = true)]
@@ -220,9 +224,6 @@ public class CategoryFunctions
         Guid id)
     {
         _logger.LogInformation("Updating category: {Id}", id);
-
-        if (!IsAuthorized(req))
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
 
         try
         {
@@ -250,6 +251,7 @@ public class CategoryFunctions
     }
 
     [Function("DeleteCategory")]
+    [Authorize("Admin")]
     [OpenApiOperation(operationId: "DeleteCategory", tags: new[] { "Categories" }, Summary = "Delete category")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.NoContent)]
@@ -259,9 +261,6 @@ public class CategoryFunctions
         Guid id)
     {
         _logger.LogInformation("Deleting category: {Id}", id);
-
-        if (!IsAuthorized(req))
-            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Unauthorized");
 
         try
         {
@@ -276,23 +275,6 @@ public class CategoryFunctions
             _logger.LogError(ex, "Error deleting category {Id}", id);
             return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, "Failed to delete category");
         }
-    }
-
-    private bool IsAuthorized(HttpRequestData req)
-    {
-        var skipAuth = _configuration["SKIP_AUTH"];
-        if (skipAuth?.ToLower() == "true")
-            return true;
-
-        if (!req.Headers.TryGetValues("Authorization", out var authHeaders))
-            return false;
-
-        var authHeader = authHeaders.FirstOrDefault();
-        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-            return false;
-
-        var token = authHeader.Substring("Bearer ".Length).Trim();
-        return token == "mock-jwt-token";
     }
 
     private static async Task<HttpResponseData> CreateJsonResponse<T>(HttpRequestData req, HttpStatusCode statusCode, T content)

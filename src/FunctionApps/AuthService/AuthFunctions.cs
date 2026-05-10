@@ -7,6 +7,7 @@ using StayHere.Application.Common.Interfaces;
 using System.Text.Json;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
+using StayHere.Shared.Attributes;
 
 namespace StayHere.AuthService.Functions;
 
@@ -24,6 +25,7 @@ public class AuthFunctions
     }
 
     [Function("Signup")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "Signup", tags: new[] { "Auth" }, Summary = "Register a new user", Description = "Creates a new user account.")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(RegisterRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserDto), Description = "The registered user details.")]
@@ -58,6 +60,7 @@ public class AuthFunctions
     }
 
     [Function("Login")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "Login", tags: new[] { "Auth" }, Summary = "Login or Request OTP", Description = "Handles Entra ID login or requests a local OTP.")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(LoginRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AuthResponse), Description = "Login successful.")]
@@ -115,6 +118,7 @@ public class AuthFunctions
     }
 
     [Function("VerifyOtp")]
+    [AllowAnonymous]
     [OpenApiOperation(operationId: "VerifyOtp", tags: new[] { "Auth" }, Summary = "Verify OTP and Login", Description = "Verifies the provided OTP and returns an authentication token.")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(OtpVerificationRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AuthResponse))]
@@ -149,6 +153,7 @@ public class AuthFunctions
     }
 
     [Function("GetProfiles")]
+    [Authorize]
     [OpenApiOperation(operationId: "GetProfiles", tags: new[] { "Auth" }, Summary = "Get User Profiles", Description = "Retrieves all profiles associated with a user.")]
     [OpenApiParameter(name: "userId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<UserProfileDto>))]
@@ -178,6 +183,7 @@ public class AuthFunctions
     }
 
     [Function("UpdateProfile")]
+    [Authorize]
     [OpenApiOperation(operationId: "UpdateProfile", tags: new[] { "Auth" }, Summary = "Update User Profile", Description = "Updates user profile details like phone number and full name.")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateProfileRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object))]
