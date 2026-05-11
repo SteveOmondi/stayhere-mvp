@@ -6,7 +6,7 @@ trigger:
     - src/**
     - scripts/publish-to-apicenter.ps1
     - scripts/sync-apim-operations.ps1
-    - scripts/apim-security-map.psd1
+    - scripts/apim-security-map.json
     - azure-pipelines-docs.yml
 
 variables:

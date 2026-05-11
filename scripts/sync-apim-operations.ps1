@@ -23,7 +23,7 @@
     The APIM service name. If not provided, auto-discovered via tag/name pattern.
 
 .PARAMETER SecurityMapPath
-    Path to the apim-security-map.psd1 rules file. Defaults to sibling file.
+    Path to the apim-security-map.json rules file. Defaults to sibling file.
 
 .PARAMETER DryRun
     If set, prints what would be created/deleted without making any changes.
@@ -36,7 +36,7 @@
 param(
     [string]$ResourceGroupName = "rg-stayhere-dev-5c27bcf3",
     [string]$ApimName          = "",
-    [string]$SecurityMapPath   = (Join-Path $PSScriptRoot "apim-security-map.psd1"),
+    [string]$SecurityMapPath   = (Join-Path $PSScriptRoot "apim-security-map.json"),
     [switch]$DryRun
 )
 
@@ -80,17 +80,19 @@ function Get-UrlTemplate {
     return $Path -replace '\{(\w+):[^}]+\}', '{$1}'
 }
 
-# Match a "METHOD:path" key against the ordered security map.
+# Match a "METHOD:path" key against the JSON security rules array (evaluated in order).
 # Supports * (single segment) and ** (any suffix) wildcards.
 function Get-SecurityRule {
-    param([string]$Method, [string]$Path, [System.Collections.Specialized.OrderedDictionary]$Rules)
+    param([string]$Method, [string]$Path, [array]$Rules)
 
     $key = "$($Method.ToUpper()):$($Path.TrimStart('/'))"
 
-    foreach ($pattern in $Rules.Keys) {
-        $regex = '^' + [regex]::Escape($pattern).Replace('\*\*', '.+').Replace('\*', '[^/]+') + '$'
+    foreach ($rule in $Rules) {
+        # Skip comment-only entries
+        if (-not $rule.pattern) { continue }
+        $regex = '^' + [regex]::Escape($rule.pattern).Replace('\*\*', '.+').Replace('\*', '[^/]+') + '$'
         if ($key -match $regex) {
-            return $Rules[$pattern]
+            return $rule.access
         }
     }
     # Default: requires-jwt
@@ -172,8 +174,7 @@ if (-not (Test-Path $SecurityMapPath)) {
     Write-Error "Security map not found at: $SecurityMapPath"
     exit 1
 }
-$securityConfig = Import-PowerShellDataFile -Path $SecurityMapPath
-$securityRules  = $securityConfig.Rules
+$securityRules = Get-Content $SecurityMapPath -Raw | ConvertFrom-Json
 Write-OK "Loaded $($securityRules.Count) security rules."
 
 Write-Step "Installing/updating Azure API Center extension..."

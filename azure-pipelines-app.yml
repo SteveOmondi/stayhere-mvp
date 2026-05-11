@@ -251,18 +251,8 @@ stages:
 
 - stage: Deploy_AuthService
   displayName: 'Deploy Auth'
-  dependsOn: [CheckChanges, Migrate_Database]
-  condition: |
-    or(
-      eq(variables['Build.Reason'], 'Manual'),
-      and(
-        succeeded(),
-        or(
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AuthService'], 'true'),
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
-        )
-      )
-    )
+  dependsOn: Migrate_Database
+  condition: succeeded()
   jobs:
   - job: Deploy
     pool:
@@ -308,18 +298,8 @@ stages:
 
 - stage: Deploy_PropertyService
   displayName: 'Deploy Property'
-  dependsOn: [CheckChanges, Migrate_Database]
-  condition: |
-    or(
-      eq(variables['Build.Reason'], 'Manual'),
-      and(
-        succeeded(),
-        or(
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyService'], 'true'),
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
-        )
-      )
-    )
+  dependsOn: Migrate_Database
+  condition: succeeded()
   jobs:
   - job: Deploy
     pool:
@@ -351,18 +331,8 @@ stages:
 
 - stage: Deploy_CustomerService
   displayName: 'Deploy Customer'
-  dependsOn: [CheckChanges, Migrate_Database]
-  condition: |
-    or(
-      eq(variables['Build.Reason'], 'Manual'),
-      and(
-        succeeded(),
-        or(
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_CustomerService'], 'true'),
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
-        )
-      )
-    )
+  dependsOn: Migrate_Database
+  condition: succeeded()
   jobs:
   - job: Deploy
     pool:
@@ -394,18 +364,8 @@ stages:
 
 - stage: Deploy_PropertyOwnerService
   displayName: 'Deploy PropertyOwner'
-  dependsOn: [CheckChanges, Migrate_Database]
-  condition: |
-    or(
-      eq(variables['Build.Reason'], 'Manual'),
-      and(
-        succeeded(),
-        or(
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyOwnerService'], 'true'),
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
-        )
-      )
-    )
+  dependsOn: Migrate_Database
+  condition: succeeded()
   jobs:
   - job: Deploy
     pool:
@@ -437,18 +397,8 @@ stages:
 
 - stage: Deploy_StaticDataService
   displayName: 'Deploy StaticData'
-  dependsOn: [CheckChanges, Migrate_Database]
-  condition: |
-    or(
-      eq(variables['Build.Reason'], 'Manual'),
-      and(
-        succeeded(),
-        or(
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StaticDataService'], 'true'),
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
-        )
-      )
-    )
+  dependsOn: Migrate_Database
+  condition: succeeded()
   jobs:
   - job: Deploy
     pool:
@@ -480,18 +430,8 @@ stages:
 
 - stage: Deploy_AiAgentService
   displayName: 'Deploy AiAgent'
-  dependsOn: [CheckChanges, Migrate_Database]
-  condition: |
-    or(
-      eq(variables['Build.Reason'], 'Manual'),
-      and(
-        succeeded(),
-        or(
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'], 'true'),
-          eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')
-        )
-      )
-    )
+  dependsOn: Migrate_Database
+  condition: succeeded()
   jobs:
   - job: Deploy
     pool:
