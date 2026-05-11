@@ -185,6 +185,16 @@ resource "azurerm_api_management_api_operation" "get_featured_listings" {
   url_template        = "/listings/featured"
 }
 
+resource "azurerm_api_management_api_operation" "get_listings_by_location" {
+  operation_id        = "get-listings-by-location"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Listings By Location"
+  method              = "GET"
+  url_template        = "/listings/by-location"
+}
+
 resource "azurerm_api_management_api_operation" "get_available_listings" {
   operation_id        = "get-available-listings"
   api_name            = azurerm_api_management_api.property.name
@@ -231,6 +241,23 @@ resource "azurerm_api_management_api_operation" "update_listing" {
   display_name        = "Update Listing"
   method              = "PUT"
   url_template        = "/listings/{id}"
+
+  template_parameter {
+    name        = "id"
+    required    = true
+    type        = "string"
+    description = "Listing GUID"
+  }
+}
+
+resource "azurerm_api_management_api_operation" "regenerate_listing_embedding" {
+  operation_id        = "regenerate-listing-embedding"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Regenerate Listing Embedding"
+  method              = "POST"
+  url_template        = "/listings/{id}/embedding"
 
   template_parameter {
     name        = "id"

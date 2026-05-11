@@ -40,6 +40,30 @@ resource "azurerm_api_management_api_operation_policy" "customer_get" {
   xml_content         = local.jwt_policy
 }
 
+resource "azurerm_api_management_api_operation_policy" "customer_update" {
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  operation_id        = azurerm_api_management_api_operation.customer_update.operation_id
+  xml_content         = local.jwt_policy
+}
+
+resource "azurerm_api_management_api_operation_policy" "customer_deactivate" {
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  operation_id        = azurerm_api_management_api_operation.customer_deactivate.operation_id
+  xml_content         = local.jwt_policy
+}
+
+resource "azurerm_api_management_api_operation_policy" "customer_attach_property" {
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  operation_id        = azurerm_api_management_api_operation.customer_attach_property.operation_id
+  xml_content         = local.jwt_policy
+}
+
 # --- PROPERTY OWNER PROTECTION ---
 resource "azurerm_api_management_api_operation_policy" "owner_list" {
   api_name            = azurerm_api_management_api.propertyowner.name
@@ -54,6 +78,30 @@ resource "azurerm_api_management_api_operation_policy" "owner_wallet" {
   api_management_name = azurerm_api_management.main.name
   resource_group_name = var.rg_name
   operation_id        = azurerm_api_management_api_operation.propertyowner_wallet.operation_id
+  xml_content         = local.jwt_policy
+}
+
+resource "azurerm_api_management_api_operation_policy" "owner_update" {
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  operation_id        = azurerm_api_management_api_operation.propertyowner_update.operation_id
+  xml_content         = local.jwt_policy
+}
+
+resource "azurerm_api_management_api_operation_policy" "owner_create_agent" {
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  operation_id        = azurerm_api_management_api_operation.propertyowner_create_agent.operation_id
+  xml_content         = local.jwt_policy
+}
+
+resource "azurerm_api_management_api_operation_policy" "owner_create_caretaker" {
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  operation_id        = azurerm_api_management_api_operation.propertyowner_create_caretaker.operation_id
   xml_content         = local.jwt_policy
 }
 

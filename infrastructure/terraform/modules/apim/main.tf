@@ -216,6 +216,51 @@ resource "azurerm_api_management_api_operation" "static_category_by_city" {
   }
 }
 
+resource "azurerm_api_management_api_operation" "static_category_by_country" {
+  operation_id        = "get-category-by-country"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Categories By Country"
+  method              = "GET"
+  url_template        = "/categories/country/{country}"
+  template_parameter {
+    name     = "country"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "static_update_category" {
+  operation_id        = "update-category"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Update Category"
+  method              = "PUT"
+  url_template        = "/categories/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "static_delete_category" {
+  operation_id        = "delete-category"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Delete Category"
+  method              = "DELETE"
+  url_template        = "/categories/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
 resource "azurerm_api_management_api_operation" "static_create_category" {
   operation_id        = "create-category"
   api_name            = azurerm_api_management_api.staticdata.name
@@ -267,6 +312,16 @@ resource "azurerm_api_management_api_operation" "aiagent_listings" {
   url_template        = "/listings"
 }
 
+resource "azurerm_api_management_api_operation" "aiagent_health" {
+  operation_id        = "ai-health"
+  api_name            = azurerm_api_management_api.aiagent.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "AI Agent Health"
+  method              = "GET"
+  url_template        = "/health"
+}
+
 resource "azurerm_api_management_api_operation" "propertyowner_create" {
   operation_id        = "create-owner"
   api_name            = azurerm_api_management_api.propertyowner.name
@@ -294,6 +349,51 @@ resource "azurerm_api_management_api_operation" "propertyowner_get_by_id" {
   resource_group_name = var.rg_name
   display_name        = "Get Owner By ID"
   method              = "GET"
+  url_template        = "/owners/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_get_by_user" {
+  operation_id        = "get-owner-by-user"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Owner By User ID"
+  method              = "GET"
+  url_template        = "/owners/user/{userId}"
+  template_parameter {
+    name     = "userId"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_get_by_email" {
+  operation_id        = "get-owner-by-email"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Owner By Email"
+  method              = "GET"
+  url_template        = "/owners/email/{email}"
+  template_parameter {
+    name     = "email"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_update" {
+  operation_id        = "update-owner"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Update Owner"
+  method              = "PUT"
   url_template        = "/owners/{id}"
   template_parameter {
     name     = "id"
@@ -332,6 +432,106 @@ resource "azurerm_api_management_api_operation" "propertyowner_agents" {
   }
 }
 
+resource "azurerm_api_management_api_operation" "propertyowner_create_agent" {
+  operation_id        = "create-agent"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Create Agent"
+  method              = "POST"
+  url_template        = "/owners/{ownerId}/agents"
+  template_parameter {
+    name     = "ownerId"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_get_agent" {
+  operation_id        = "get-agent-by-id"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Agent By ID"
+  method              = "GET"
+  url_template        = "/agents/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_create_caretaker" {
+  operation_id        = "create-caretaker"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Create Caretaker"
+  method              = "POST"
+  url_template        = "/owners/{ownerId}/caretakers"
+  template_parameter {
+    name     = "ownerId"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_get_caretaker" {
+  operation_id        = "get-caretaker-by-id"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Caretaker By ID"
+  method              = "GET"
+  url_template        = "/caretakers/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_caretakers" {
+  operation_id        = "get-owner-caretakers"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Owner Caretakers"
+  method              = "GET"
+  url_template        = "/owners/{ownerId}/caretakers"
+  template_parameter {
+    name     = "ownerId"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_portal_directory" {
+  operation_id        = "get-owner-portal-directory"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Portal Owner Directory"
+  method              = "GET"
+  url_template        = "/owners/portal-directory"
+}
+
+resource "azurerm_api_management_api_operation" "propertyowner_get_owner_listings" {
+  operation_id        = "get-owner-listings"
+  api_name            = azurerm_api_management_api.propertyowner.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Owner Listings"
+  method              = "GET"
+  url_template        = "/owners/{ownerId}/listings"
+  template_parameter {
+    name     = "ownerId"
+    type     = "string"
+    required = true
+  }
+}
+
 # --- CUSTOMER OPERATIONS ---
 resource "azurerm_api_management_api_operation" "customer_create" {
   operation_id        = "create-customer"
@@ -363,6 +563,121 @@ resource "azurerm_api_management_api_operation" "customer_get_by_id" {
   url_template        = "/customers/{id}"
   template_parameter {
     name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "customer_get_by_phone" {
+  operation_id        = "get-customer-by-phone"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Customer By Phone"
+  method              = "GET"
+  url_template        = "/customers/by-phone/{phone}"
+  template_parameter {
+    name     = "phone"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "customer_profile" {
+  operation_id        = "get-customer-profile"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Customer Profiles"
+  method              = "GET"
+  url_template        = "/customers/profile"
+}
+
+resource "azurerm_api_management_api_operation" "customer_update" {
+  operation_id        = "update-customer"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Update Customer"
+  method              = "PUT"
+  url_template        = "/customers/{id}"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "customer_deactivate" {
+  operation_id        = "deactivate-customer"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Deactivate Customer"
+  method              = "POST"
+  url_template        = "/customers/{id}/deactivate"
+  template_parameter {
+    name     = "id"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "customer_attach_property" {
+  operation_id        = "attach-customer-property"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Attach Property To Customer"
+  method              = "POST"
+  url_template        = "/customers/{customerId}/properties"
+  template_parameter {
+    name     = "customerId"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "customer_properties" {
+  operation_id        = "get-customer-properties"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Customer Properties"
+  method              = "GET"
+  url_template        = "/customers/{customerId}/properties"
+  template_parameter {
+    name     = "customerId"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "customer_add_document" {
+  operation_id        = "add-customer-document"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Add Customer Document"
+  method              = "POST"
+  url_template        = "/customers/{customerId}/documents"
+  template_parameter {
+    name     = "customerId"
+    type     = "string"
+    required = true
+  }
+}
+
+resource "azurerm_api_management_api_operation" "customer_documents" {
+  operation_id        = "get-customer-documents"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "Get Customer Documents"
+  method              = "GET"
+  url_template        = "/customers/{customerId}/documents"
+  template_parameter {
+    name     = "customerId"
     type     = "string"
     required = true
   }
