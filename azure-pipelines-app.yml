@@ -520,3 +520,44 @@ stages:
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
         package: '$(Pipeline.Workspace)/AiAgentService_Pkg/AiAgentService'
+
+- stage: Sync_APIM
+  displayName: 'Sync APIM Operations'
+  # Runs after ALL deploy stages. Succeeds even if only some services were deployed.
+  dependsOn:
+    - Deploy_AuthService
+    - Deploy_PropertyService
+    - Deploy_CustomerService
+    - Deploy_PropertyOwnerService
+    - Deploy_StaticDataService
+    - Deploy_AiAgentService
+  condition: |
+    and(
+      not(failed()),
+      not(canceled())
+    )
+  jobs:
+  - job: SyncOperations
+    displayName: 'Auto-Sync from Swagger'
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: 'Sync APIM Operations from Swagger'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: 'scripts/sync-apim-operations.ps1'
+        arguments: '-ResourceGroupName "rg-stayhere-dev-5c27bcf3"'
+
+    - task: AzureCLI@2
+      displayName: 'Sync API Center'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: 'scripts/publish-to-apicenter.ps1'
+        arguments: '-ResourceGroupName "rg-stayhere-dev-5c27bcf3" -ServiceContext "apim-dev-5c27bcf3-apic"'
