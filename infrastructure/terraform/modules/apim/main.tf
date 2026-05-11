@@ -16,7 +16,7 @@ resource "azurerm_api_management_api" "auth_api" {
   display_name        = "Auth API"
   path                = "auth"
   protocols           = ["https"]
-  service_url         = "https://${var.auth_function_host}"
+  service_url         = "https://${var.auth_function_host}/api"
   subscription_required = false
 }
 
@@ -28,7 +28,7 @@ resource "azurerm_api_management_api" "property" {
   display_name        = "Property API"
   path                = "property"
   protocols           = ["https"]
-  service_url         = "https://${var.property_function_host}"
+  service_url         = "https://${var.property_function_host}/api"
   subscription_required = false
 }
 
@@ -40,7 +40,7 @@ resource "azurerm_api_management_api" "customer" {
   display_name        = "Customer API"
   path                = "customers"
   protocols           = ["https"]
-  service_url         = "https://${var.customer_function_host}"
+  service_url         = "https://${var.customer_function_host}/api"
   subscription_required = false
 }
 
@@ -52,7 +52,7 @@ resource "azurerm_api_management_api" "propertyowner" {
   display_name        = "Property Owner API"
   path                = "propertyowner"
   protocols           = ["https"]
-  service_url         = "https://${var.propertyowner_function_host}"
+  service_url         = "https://${var.propertyowner_function_host}/api"
   subscription_required = false
 }
 
@@ -64,7 +64,7 @@ resource "azurerm_api_management_api" "staticdata" {
   display_name        = "Static Data API"
   path                = "staticdata"
   protocols           = ["https"]
-  service_url         = "https://${var.staticdata_function_host}"
+  service_url         = "https://${var.staticdata_function_host}/api"
   subscription_required = false
 }
 
@@ -76,7 +76,7 @@ resource "azurerm_api_management_api" "aiagent" {
   display_name        = "AI Agent API"
   path                = "aiagent"
   protocols           = ["https"]
-  service_url         = "https://${var.aiagent_function_host}"
+  service_url         = "https://${var.aiagent_function_host}/api"
   subscription_required = false
 }
 
