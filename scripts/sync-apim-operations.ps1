@@ -358,3 +358,5 @@ if ($DryRun) {
     Write-Host "`n  *** DRY-RUN — no changes were applied ***" -ForegroundColor Magenta
 }
 Write-Host "────────────────────────────────────────────`n" -ForegroundColor DarkGray
+
+exit 0

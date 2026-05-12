@@ -125,3 +125,4 @@ Write-Host "----------------------------------------------------"
 Write-Host "API Center refresh completed successfully!" -ForegroundColor Green
 Write-Host "Portal: https://$ServiceContext.portal.eastus.azure-apicenter.ms/"
 
+exit 0
