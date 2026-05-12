@@ -96,6 +96,17 @@ foreach ($api in $apiMap) {
             Write-Host "  Rewriting server URL to: $gatewayPath" -ForegroundColor Gray
             $json.servers = @( @{ url = $gatewayPath; description = "APIM Gateway" } )
 
+            # REWRITE: Strip /api/ prefix from paths
+            $newPaths = @{}
+            foreach ($p in $json.paths.PSObject.Properties) {
+                $newKey = $p.Name
+                if ($newKey.StartsWith("/api/", [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $newKey = $newKey.Substring(4)
+                }
+                $newPaths[$newKey] = $p.Value
+            }
+            $json.paths = $newPaths
+
             # Save rewritten JSON
             $json | ConvertTo-Json -Depth 10 | Out-File -FilePath $swaggerPath -Encoding ascii
             $success = $true

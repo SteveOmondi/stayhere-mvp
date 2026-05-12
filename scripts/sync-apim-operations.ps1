@@ -230,6 +230,9 @@ foreach ($api in $apiMap) {
     $swaggerOps = [System.Collections.Generic.Dictionary[string, hashtable]]::new()
     foreach ($pathEntry in $swagger.paths.PSObject.Properties) {
         $rawPath = $pathEntry.Name
+        if ($rawPath.StartsWith("/api/", [System.StringComparison]::OrdinalIgnoreCase)) {
+            $rawPath = $rawPath.Substring(4)
+        }
         $urlTemplate = Get-UrlTemplate -Path $rawPath
 
         foreach ($methodEntry in $pathEntry.Value.PSObject.Properties) {
@@ -300,9 +303,9 @@ foreach ($api in $apiMap) {
                 --service-name $ApimName `
                 --api-id $($api.id) `
                 --operation-id $opId `
-                --display-name $($op.DisplayName) `
+                --display-name "$($op.DisplayName)" `
                 --method $($op.Method) `
-                --url-template $($op.UrlTemplate) 2>$null | Out-Null
+                --url-template "$($op.UrlTemplate)" 2>$null | Out-Null
             Write-OK "Created: $opId"
         } else {
             Write-Dry "Would create: [$($op.Method)] $($op.UrlTemplate) → $opId"
