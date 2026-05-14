@@ -36,24 +36,24 @@ Write-Host "CLEANUP: Removing all existing assets from $ServiceContext..." -Fore
 
 # 0. Delete all API Sources (to unlink resources)
 Write-Host "  Unlinking API Sources..." -ForegroundColor Gray
-$existingSources = az apic api-source list --resource-group $ResourceGroupName --service-name $ServiceContext -o json --allow-preview true | ConvertFrom-Json
+$existingSources = az apic api-source list --resource-group $ResourceGroupName --service-name $ServiceContext -o json | ConvertFrom-Json
 foreach ($source in $existingSources) {
     Write-Host "  Deleting API Source: $($source.name)..." -ForegroundColor Gray
-    az apic api-source delete --resource-group $ResourceGroupName --service-name $ServiceContext --api-source-name $($source.name) --yes --allow-preview true
+    az apic api-source delete --resource-group $ResourceGroupName --service-name $ServiceContext --api-source-name $($source.name) --yes
 }
 
 # 1. Delete all existing APIs
-$existingApis = az apic api list --resource-group $ResourceGroupName --service-name $ServiceContext -o json --allow-preview true | ConvertFrom-Json
+$existingApis = az apic api list --resource-group $ResourceGroupName --service-name $ServiceContext -o json | ConvertFrom-Json
 foreach ($existing in $existingApis) {
     Write-Host "  Deleting API Asset: $($existing.name)..." -ForegroundColor Gray
-    az apic api delete --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($existing.name) --yes --allow-preview true
+    az apic api delete --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($existing.name) --yes
 }
 
 # 2. Delete all existing Environments
-$existingEnvs = az apic environment list --resource-group $ResourceGroupName --service-name $ServiceContext -o json --allow-preview true | ConvertFrom-Json
+$existingEnvs = az apic environment list --resource-group $ResourceGroupName --service-name $ServiceContext -o json | ConvertFrom-Json
 foreach ($env in $existingEnvs) {
     Write-Host "  Deleting Environment: $($env.name)..." -ForegroundColor Gray
-    az apic environment delete --resource-group $ResourceGroupName --service-name $ServiceContext --environment-id $($env.name) --yes --allow-preview true
+    az apic environment delete --resource-group $ResourceGroupName --service-name $ServiceContext --environment-id $($env.name) --yes
 }
 
 Write-Host "Cleanup complete. Recreating all assets..." -ForegroundColor Green
@@ -73,34 +73,46 @@ foreach ($api in $apiMap) {
     }
 
     Write-Host "  Creating API metadata..."
-    az apic api create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --title $($api.title) --type rest --allow-preview true
+    az apic api create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --title $($api.title) --type rest
     
-    az apic api version create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --title "Version 1.0.0" --lifecycle production --allow-preview true
+    az apic api version create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --title "Version 1.0.0" --lifecycle production
     
-    az apic api definition create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --definition-id "openapi" --title "OpenAPI Definition" --allow-preview true
+    az apic api definition create --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --definition-id "openapi" --title "OpenAPI Definition"
     
     # Download and REWRITE Swagger
     $swaggerPath = Join-Path $PSScriptRoot "$($api.id)-swagger.json"
-    $candidatePaths = @("/api/swagger.json", "/swagger.json")
+    $candidatePaths = @("/api/openapi/v3.json", "/openapi/v3.json", "/api/swagger.json", "/swagger.json")
     $success = $false
 
     foreach ($path in $candidatePaths) {
         $url = "https://$hostName$path"
         Write-Host "  Downloading spec from: $url..."
         try {
-            $json = Invoke-RestMethod -Uri $url -ErrorAction Stop
+            $response = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
+            $json = $response.Content | ConvertFrom-Json
             
             # REWRITE: Point the Swagger 'servers' to APIM instead of the direct Function App
             $gatewayPath = "$apimUrl/$($api.path)"
             Write-Host "  Rewriting server URL to: $gatewayPath" -ForegroundColor Gray
             $json.servers = @( @{ url = $gatewayPath; description = "APIM Gateway" } )
 
+            # REWRITE: Strip /api/ prefix from paths
+            $newPaths = @{}
+            foreach ($p in $json.paths.PSObject.Properties) {
+                $newKey = $p.Name
+                if ($newKey.StartsWith("/api/", [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $newKey = $newKey.Substring(4)
+                }
+                $newPaths[$newKey] = $p.Value
+            }
+            $json.paths = $newPaths
+
             # Save rewritten JSON
             $json | ConvertTo-Json -Depth 10 | Out-File -FilePath $swaggerPath -Encoding ascii
             $success = $true
             break
         } catch {
-            Write-Host "  Could not download from $url..." -ForegroundColor Gray
+            Write-Host "  Could not download or parse from $url..." -ForegroundColor Gray
         }
     }
 
@@ -108,7 +120,7 @@ foreach ($api in $apiMap) {
         try {
             Write-Host "  Importing rewritten spec to API Center..."
             $specJson = '{"name":"openapi","version":"3.0.1"}'
-            az apic api definition import-specification --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --definition-id "openapi" --format inline --value "@$swaggerPath" --specification $specJson --allow-preview true
+            az apic api definition import-specification --resource-group $ResourceGroupName --service-name $ServiceContext --api-id $($api.id) --version-id "v1-0-0" --definition-id "openapi" --format inline --value "@$swaggerPath" --specification $specJson
             
             Remove-Item -Path $swaggerPath -ErrorAction SilentlyContinue
             Write-Host "  SUCCESS: $($api.id) is now live in API Center." -ForegroundColor Green
@@ -124,3 +136,4 @@ Write-Host "----------------------------------------------------"
 Write-Host "API Center refresh completed successfully!" -ForegroundColor Green
 Write-Host "Portal: https://$ServiceContext.portal.eastus.azure-apicenter.ms/"
 
+exit 0

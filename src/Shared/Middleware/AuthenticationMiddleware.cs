@@ -142,6 +142,10 @@ public class AuthenticationMiddleware : IFunctionsWorkerMiddleware
             if (string.IsNullOrWhiteSpace(entryPoint))
                 return (false, Array.Empty<string>());
 
+            // Bypass authentication for automatically injected OpenAPI/Swagger endpoints
+            if (entryPoint.StartsWith("Microsoft.Azure.Functions.Worker.Extensions.OpenApi", StringComparison.OrdinalIgnoreCase))
+                return (true, Array.Empty<string>());
+
             var lastDot = entryPoint.LastIndexOf('.');
             if (lastDot <= 0 || lastDot >= entryPoint.Length - 1)
                 return (false, Array.Empty<string>());
