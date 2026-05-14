@@ -16,6 +16,7 @@
     "OpenRouter__RecommendNarrationMode": "Llm",
     "OpenRouter__RecommendNarrationMaxTokens": "280",
     "OpenRouter__RecommendLlmTimeoutSeconds": "40",
-    "ListingPortalBaseUrl": "http://localhost:7101/api"
+    "ListingPortalBaseUrl": "http://localhost:7101/api",
+    "JWT_SECRET": "your-base64-encoded-jwt-secret"
   }
 }

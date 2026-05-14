@@ -83,9 +83,9 @@ public class AuthenticationMiddleware : IFunctionsWorkerMiddleware
     {
         try
         {
-            var secretRaw = _configuration["JWT_SECRET"];
-            if (string.IsNullOrWhiteSpace(secretRaw))
-                return null;
+            // Same fallback default as IdentityService.GenerateJwtAsync — keeps validation aligned
+            // when JWT_SECRET is not set in Azure Function App application settings.
+            var secretRaw = _configuration["JWT_SECRET"] ?? "U3RheUhlcmVNdHBTZWN1cmVKV1RLZXkyMDI2IVNlY3JldA==";
 
             byte[] key;
             try { key = Convert.FromBase64String(secretRaw); }

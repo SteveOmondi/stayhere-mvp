@@ -9,6 +9,7 @@
     "DB_USER": "postgres",
     "DB_PASSWORD": "your-postgres-password",
     "DB_SSL_MODE": "Prefer",
-    "REDIS_CONNECTION": "localhost:6379"
+    "REDIS_CONNECTION": "localhost:6379",
+    "JWT_SECRET": "your-base64-encoded-jwt-secret"
   }
 }

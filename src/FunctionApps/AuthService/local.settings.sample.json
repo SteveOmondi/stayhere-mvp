@@ -8,6 +8,7 @@
     "DB_NAME": "stayhere",
     "DB_USER": "postgres",
     "DB_PASSWORD": "your-postgres-password",
-    "DB_SSL_MODE": "Prefer"
+    "DB_SSL_MODE": "Prefer",
+    "JWT_SECRET": "your-base64-encoded-jwt-secret"
   }
 }
