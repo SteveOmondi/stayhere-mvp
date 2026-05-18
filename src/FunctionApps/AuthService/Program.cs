@@ -1,6 +1,7 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using StayHere.AuthService;
 using StayHere.Application.Authentication.Services;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Onboarding.Services;
@@ -33,6 +34,7 @@ var host = new HostBuilder()
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IOtpService, OtpService>();
         services.AddScoped<IOnboardingService, OnboardingService>();
+        services.AddHostedService<AdminSeedService>();
 
         // Infrastructure Services
         services.AddScoped<IIdentityService, IdentityService>();

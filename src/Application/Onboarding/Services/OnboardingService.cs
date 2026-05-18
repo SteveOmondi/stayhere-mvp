@@ -102,6 +102,11 @@ public class OnboardingService : IOnboardingService
             await _customerRepository.AddAsync(customer);
             profileId = customer.Id;
         }
+        else if (roleEnum == UserRole.Admin)
+        {
+            // Admin has no separate profile entity — the role on User is the profile.
+            profileId = user.Id;
+        }
         else
         {
             throw new NotSupportedException($"Self-onboarding for role {request.Role} is not fully implemented yet.");
