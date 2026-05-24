@@ -237,6 +237,10 @@ stages:
           export DB_PASSWORD=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_PASSWORD") | .value')
           export DB_SSL_MODE=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_SSL_MODE") | .value')
           
+          if [ -z "$DB_SSL_MODE" ] || [ "$DB_SSL_MODE" == "null" ]; then
+             export DB_SSL_MODE="Require"
+          fi
+          
           if [ -z "$DB_HOST" ] || [ "$DB_HOST" == "null" ]; then
              echo "##vso[task.logissue type=error]Failed to extract DB_HOST from app settings."
              exit 1
