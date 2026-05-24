@@ -244,6 +244,10 @@ stages:
           
           echo "Successfully discovered configuration. Running migrations to $DB_HOST..."
           
+          # Force .NET to use IPv4. Azure DevOps Ubuntu agents now resolve IPv6 for Flexible Server,
+          # but the Flexible Server firewall rules are IPv4 only, causing a TCP timeout.
+          export DOTNET_SYSTEM_NET_DISABLEIPV6=1
+          
           dotnet ef database update \
             --project src/Infrastructure \
             --startup-project src/Infrastructure \
