@@ -298,15 +298,32 @@ foreach ($api in $apiMap) {
         Write-Info "CREATE: [$($op.Method)] $($op.UrlTemplate) → $opId"
 
         if (-not $DryRun) {
-            az apim api operation create `
-                --resource-group $ResourceGroupName `
-                --service-name $ApimName `
-                --api-id $($api.id) `
-                --operation-id $opId `
-                --display-name "$($op.DisplayName)" `
-                --method $($op.Method) `
-                --url-template "$($op.UrlTemplate)" 2>$null | Out-Null
-            Write-OK "Created: $opId"
+            $azArgs = @(
+                "apim", "api", "operation", "create",
+                "--resource-group", $ResourceGroupName,
+                "--service-name", $ApimName,
+                "--api-id", $($api.id),
+                "--operation-id", $opId,
+                "--display-name", $op.DisplayName,
+                "--method", $op.Method,
+                "--url-template", $op.UrlTemplate
+            )
+            
+            $paramMatches = [regex]::Matches($op.UrlTemplate, '\{([^}]+)\}')
+            foreach ($m in $paramMatches) {
+                $azArgs += "--template-parameters"
+                $azArgs += "name=$($m.Groups[1].Value) type=string required=true"
+            }
+            
+            $errFile = New-TemporaryFile
+            & az $azArgs 2>$errFile | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                $errTxt = Get-Content $errFile -Raw
+                Write-Host "  FAILED to create $opId. Error: $errTxt" -ForegroundColor Red
+            } else {
+                Write-OK "Created: $opId"
+            }
+            Remove-Item $errFile -ErrorAction SilentlyContinue
         } else {
             Write-Dry "Would create: [$($op.Method)] $($op.UrlTemplate) → $opId"
         }
@@ -326,14 +343,23 @@ foreach ($api in $apiMap) {
                 $tempFile = [System.IO.Path]::GetTempFileName()
                 try {
                     $jwtPolicyXml | Out-File -FilePath $tempFile -Encoding utf8
-                    az apim api operation policy create `
-                        --resource-group $ResourceGroupName `
-                        --service-name $ApimName `
-                        --api-id $($api.id) `
-                        --operation-id $opId `
-                        --policy-id policy `
-                        --value (Get-Content $tempFile -Raw) `
-                        --format rawxml 2>$null | Out-Null
+                    $azPolicyArgs = @(
+                        "apim", "api", "operation", "policy", "create",
+                        "--resource-group", $ResourceGroupName,
+                        "--service-name", $ApimName,
+                        "--api-id", $($api.id),
+                        "--operation-id", $opId,
+                        "--policy-id", "policy",
+                        "--value", (Get-Content $tempFile -Raw),
+                        "--format", "rawxml"
+                    )
+                    $errFilePol = New-TemporaryFile
+                    & az $azPolicyArgs 2>$errFilePol | Out-Null
+                    if ($LASTEXITCODE -ne 0) {
+                        $errTxt = Get-Content $errFilePol -Raw
+                        Write-Host "  FAILED to apply policy to $opId. Error: $errTxt" -ForegroundColor Red
+                    }
+                    Remove-Item $errFilePol -ErrorAction SilentlyContinue
                 } finally {
                     Remove-Item $tempFile -ErrorAction SilentlyContinue
                 }
