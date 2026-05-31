@@ -16,7 +16,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_create
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_createpropertyowner.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_createpropertyowner.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_createpropertyowner.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getpropertyownerbyid" {
@@ -41,7 +67,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getpro
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getpropertyownerbyid.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getpropertyownerbyid.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getpropertyownerbyid.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getpropertyownerbyuserid" {
@@ -66,7 +118,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getpro
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getpropertyownerbyuserid.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getpropertyownerbyuserid.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getpropertyownerbyuserid.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getpropertyownerbyemail" {
@@ -91,7 +169,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getpro
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getpropertyownerbyemail.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getpropertyownerbyemail.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getpropertyownerbyemail.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_updatepropertyowner" {
@@ -116,7 +220,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_update
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_updatepropertyowner.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_updatepropertyowner.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_updatepropertyowner.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getownerwallet" {
@@ -141,7 +271,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getown
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getownerwallet.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getownerwallet.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getownerwallet.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getownerproperties" {
@@ -166,7 +322,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getown
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getownerproperties.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getownerproperties.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getownerproperties.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getownerlistings" {
@@ -191,7 +373,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getown
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getownerlistings.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getownerlistings.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getownerlistings.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_createagent" {
@@ -216,7 +424,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_create
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_createagent.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_createagent.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_createagent.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getagentbyid" {
@@ -241,7 +475,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getage
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getagentbyid.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getagentbyid.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getagentbyid.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getowneragents" {
@@ -266,7 +526,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getown
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getowneragents.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getowneragents.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getowneragents.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_createcaretaker" {
@@ -291,7 +577,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_create
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_createcaretaker.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_createcaretaker.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_createcaretaker.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getcaretakerbyid" {
@@ -316,7 +628,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getcar
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getcaretakerbyid.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getcaretakerbyid.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getcaretakerbyid.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getownercaretakers" {
@@ -341,7 +679,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getown
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getownercaretakers.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getownercaretakers.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getownercaretakers.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getownersportaldirectory" {
@@ -360,7 +724,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getown
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getownersportaldirectory.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getownersportaldirectory.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getownersportaldirectory.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_propertyowner_getowners" {
@@ -379,6 +769,32 @@ resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getown
   api_management_name = azurerm_api_management_api_operation.op_propertyowner_getowners.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_propertyowner_getowners.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_propertyowner_getowners.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 

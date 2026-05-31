@@ -49,7 +49,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_staticdata_getallcat
   api_management_name = azurerm_api_management_api_operation.op_staticdata_getallcategories.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_staticdata_getallcategories.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_staticdata_getallcategories.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_staticdata_getcategorybyid" {
@@ -119,7 +145,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_staticdata_createcat
   api_management_name = azurerm_api_management_api_operation.op_staticdata_createcategory.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_staticdata_createcategory.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_staticdata_createcategory.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_staticdata_updatecategory" {
@@ -144,7 +196,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_staticdata_updatecat
   api_management_name = azurerm_api_management_api_operation.op_staticdata_updatecategory.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_staticdata_updatecategory.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_staticdata_updatecategory.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_staticdata_deletecategory" {
@@ -169,6 +247,32 @@ resource "azurerm_api_management_api_operation_policy" "pol_staticdata_deletecat
   api_management_name = azurerm_api_management_api_operation.op_staticdata_deletecategory.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_staticdata_deletecategory.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_staticdata_deletecategory.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 

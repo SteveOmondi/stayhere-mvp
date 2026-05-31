@@ -16,7 +16,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_aiagent_agentchat" {
   api_management_name = azurerm_api_management_api_operation.op_aiagent_agentchat.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_aiagent_agentchat.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_aiagent_agentchat.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_aiagent_agentrespondandrecommend" {
@@ -35,7 +61,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_aiagent_agentrespond
   api_management_name = azurerm_api_management_api_operation.op_aiagent_agentrespondandrecommend.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_aiagent_agentrespondandrecommend.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_aiagent_agentrespondandrecommend.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_aiagent_agentknowledgestatus" {
@@ -54,7 +106,33 @@ resource "azurerm_api_management_api_operation_policy" "pol_aiagent_agentknowled
   api_management_name = azurerm_api_management_api_operation.op_aiagent_agentknowledgestatus.api_management_name
   resource_group_name = azurerm_api_management_api_operation.op_aiagent_agentknowledgestatus.resource_group_name
   operation_id        = azurerm_api_management_api_operation.op_aiagent_agentknowledgestatus.operation_id
-  xml_content         = file("${path.module}/jwt_policy.xml")
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
 }
 
 resource "azurerm_api_management_api_operation" "op_aiagent_agentsearchlistings" {
