@@ -8,6 +8,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_createproperty
   display_name        = "CreatePropertyOwner"
   method              = "POST"
   url_template        = "/owners"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_createpropertyowner" {
@@ -26,6 +27,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getpropertyown
   display_name        = "GetPropertyOwnerById"
   method              = "GET"
   url_template        = "/owners/{id}"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "id"
@@ -50,6 +52,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getpropertyown
   display_name        = "GetPropertyOwnerByUserId"
   method              = "GET"
   url_template        = "/owners/user/{userId}"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "userId"
@@ -74,6 +77,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getpropertyown
   display_name        = "GetPropertyOwnerByEmail"
   method              = "GET"
   url_template        = "/owners/email/{email}"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "email"
@@ -98,6 +102,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_updateproperty
   display_name        = "UpdatePropertyOwner"
   method              = "PUT"
   url_template        = "/owners/{id}"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "id"
@@ -122,6 +127,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getownerwallet
   display_name        = "GetOwnerWallet"
   method              = "GET"
   url_template        = "/owners/{ownerId}/wallet"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "ownerId"
@@ -146,6 +152,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getownerproper
   display_name        = "GetOwnerProperties"
   method              = "GET"
   url_template        = "/owners/{ownerId}/properties"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "ownerId"
@@ -170,6 +177,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getownerlistin
   display_name        = "GetOwnerListings"
   method              = "GET"
   url_template        = "/owners/{ownerId}/listings"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "ownerId"
@@ -194,6 +202,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_createagent" {
   display_name        = "CreateAgent"
   method              = "POST"
   url_template        = "/owners/{ownerId}/agents"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "ownerId"
@@ -218,6 +227,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getagentbyid" 
   display_name        = "GetAgentById"
   method              = "GET"
   url_template        = "/agents/{id}"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "id"
@@ -242,6 +252,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getowneragents
   display_name        = "GetOwnerAgents"
   method              = "GET"
   url_template        = "/owners/{ownerId}/agents"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "ownerId"
@@ -266,6 +277,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_createcaretake
   display_name        = "CreateCaretaker"
   method              = "POST"
   url_template        = "/owners/{ownerId}/caretakers"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "ownerId"
@@ -290,6 +302,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getcaretakerby
   display_name        = "GetCaretakerById"
   method              = "GET"
   url_template        = "/caretakers/{id}"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "id"
@@ -314,6 +327,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getownercareta
   display_name        = "GetOwnerCaretakers"
   method              = "GET"
   url_template        = "/owners/{ownerId}/caretakers"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 
   template_parameter {
     name     = "ownerId"
@@ -338,6 +352,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getownersporta
   display_name        = "GetOwnersPortalDirectory"
   method              = "GET"
   url_template        = "/owners/portal-directory"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getownersportaldirectory" {
@@ -356,6 +371,7 @@ resource "azurerm_api_management_api_operation" "op_propertyowner_getowners" {
   display_name        = "GetOwners"
   method              = "GET"
   url_template        = "/owners"
+  depends_on          = [azurerm_api_management_api_policy.propertyowner]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_propertyowner_getowners" {

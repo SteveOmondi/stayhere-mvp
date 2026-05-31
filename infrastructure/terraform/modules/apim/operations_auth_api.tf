@@ -8,6 +8,7 @@ resource "azurerm_api_management_api_operation" "op_auth_api_signup" {
   display_name        = "Signup"
   method              = "POST"
   url_template        = "/auth/signup"
+  depends_on          = [azurerm_api_management_api_policy.auth]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_auth_api_signup" {
@@ -26,6 +27,7 @@ resource "azurerm_api_management_api_operation" "op_auth_api_login" {
   display_name        = "Login"
   method              = "POST"
   url_template        = "/auth/login"
+  depends_on          = [azurerm_api_management_api_policy.auth]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_auth_api_login" {
@@ -44,6 +46,7 @@ resource "azurerm_api_management_api_operation" "op_auth_api_verifyotp" {
   display_name        = "VerifyOtp"
   method              = "POST"
   url_template        = "/auth/verifyotp"
+  depends_on          = [azurerm_api_management_api_policy.auth]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_auth_api_verifyotp" {
@@ -62,6 +65,7 @@ resource "azurerm_api_management_api_operation" "op_auth_api_getprofiles" {
   display_name        = "GetProfiles"
   method              = "GET"
   url_template        = "/auth/profiles/{userId}"
+  depends_on          = [azurerm_api_management_api_policy.auth]
 
   template_parameter {
     name     = "userId"
@@ -86,6 +90,7 @@ resource "azurerm_api_management_api_operation" "op_auth_api_updateprofile" {
   display_name        = "UpdateProfile"
   method              = "PATCH"
   url_template        = "/auth/profile/update"
+  depends_on          = [azurerm_api_management_api_policy.auth]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_auth_api_updateprofile" {
@@ -104,6 +109,7 @@ resource "azurerm_api_management_api_operation" "op_auth_api_onboard" {
   display_name        = "Onboard"
   method              = "POST"
   url_template        = "/auth/onboard"
+  depends_on          = [azurerm_api_management_api_policy.auth]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_auth_api_onboard" {

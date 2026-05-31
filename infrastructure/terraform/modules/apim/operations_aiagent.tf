@@ -8,6 +8,7 @@ resource "azurerm_api_management_api_operation" "op_aiagent_agentchat" {
   display_name        = "AgentChat"
   method              = "POST"
   url_template        = "/chat"
+  depends_on          = [azurerm_api_management_api_policy.aiagent]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_aiagent_agentchat" {
@@ -26,6 +27,7 @@ resource "azurerm_api_management_api_operation" "op_aiagent_agentrespondandrecom
   display_name        = "AgentRespondAndRecommend"
   method              = "POST"
   url_template        = "/respondandrecommend"
+  depends_on          = [azurerm_api_management_api_policy.aiagent]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_aiagent_agentrespondandrecommend" {
@@ -44,6 +46,7 @@ resource "azurerm_api_management_api_operation" "op_aiagent_agentknowledgestatus
   display_name        = "AgentKnowledgeStatus"
   method              = "GET"
   url_template        = "/knowledge/status"
+  depends_on          = [azurerm_api_management_api_policy.aiagent]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_aiagent_agentknowledgestatus" {
@@ -62,6 +65,7 @@ resource "azurerm_api_management_api_operation" "op_aiagent_agentsearchlistings"
   display_name        = "AgentSearchListings"
   method              = "GET"
   url_template        = "/listings"
+  depends_on          = [azurerm_api_management_api_policy.aiagent]
 }
 
 resource "azurerm_api_management_api_operation" "op_aiagent_agenthealth" {
@@ -72,5 +76,6 @@ resource "azurerm_api_management_api_operation" "op_aiagent_agenthealth" {
   display_name        = "AgentHealth"
   method              = "GET"
   url_template        = "/health"
+  depends_on          = [azurerm_api_management_api_policy.aiagent]
 }
 

@@ -8,6 +8,7 @@ resource "azurerm_api_management_api_operation" "op_property_createlisting" {
   display_name        = "CreateListing"
   method              = "POST"
   url_template        = "/listings"
+  depends_on          = [azurerm_api_management_api_policy.property]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_property_createlisting" {
@@ -26,6 +27,7 @@ resource "azurerm_api_management_api_operation" "op_property_createlistingfrompr
   display_name        = "CreateListingFromProperty"
   method              = "POST"
   url_template        = "/properties/{propertyId}/listings"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "propertyId"
@@ -50,6 +52,7 @@ resource "azurerm_api_management_api_operation" "op_property_getlistingbyid" {
   display_name        = "GetListingById"
   method              = "GET"
   url_template        = "/listings/{id}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -66,6 +69,7 @@ resource "azurerm_api_management_api_operation" "op_property_getlistingbycode" {
   display_name        = "GetListingByCode"
   method              = "GET"
   url_template        = "/listings/code/{code}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "code"
@@ -82,6 +86,7 @@ resource "azurerm_api_management_api_operation" "op_property_getalllistings" {
   display_name        = "GetAllListings"
   method              = "GET"
   url_template        = "/listings"
+  depends_on          = [azurerm_api_management_api_policy.property]
 }
 
 resource "azurerm_api_management_api_operation" "op_property_getlistingsbyproperty" {
@@ -92,6 +97,7 @@ resource "azurerm_api_management_api_operation" "op_property_getlistingsbyproper
   display_name        = "GetListingsByProperty"
   method              = "GET"
   url_template        = "/listings/property/{propertyId}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "propertyId"
@@ -108,6 +114,7 @@ resource "azurerm_api_management_api_operation" "op_property_getlistingsbyowner"
   display_name        = "GetListingsByOwner"
   method              = "GET"
   url_template        = "/listings/owner/{ownerId}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "ownerId"
@@ -132,6 +139,7 @@ resource "azurerm_api_management_api_operation" "op_property_getlistingsbycity" 
   display_name        = "GetListingsByCity"
   method              = "GET"
   url_template        = "/listings/city/{city}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "city"
@@ -148,6 +156,7 @@ resource "azurerm_api_management_api_operation" "op_property_getlistingsbycounty
   display_name        = "GetListingsByCounty"
   method              = "GET"
   url_template        = "/listings/county/{county}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "county"
@@ -164,6 +173,7 @@ resource "azurerm_api_management_api_operation" "op_property_getlistingsbylocati
   display_name        = "GetListingsByLocation"
   method              = "GET"
   url_template        = "/listings/by-location"
+  depends_on          = [azurerm_api_management_api_policy.property]
 }
 
 resource "azurerm_api_management_api_operation" "op_property_getlistingsbytype" {
@@ -174,6 +184,7 @@ resource "azurerm_api_management_api_operation" "op_property_getlistingsbytype" 
   display_name        = "GetListingsByType"
   method              = "GET"
   url_template        = "/listings/type/{propertyType}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "propertyType"
@@ -190,6 +201,7 @@ resource "azurerm_api_management_api_operation" "op_property_getlistingsbylistin
   display_name        = "GetListingsByListingType"
   method              = "GET"
   url_template        = "/listings/listing-type/{listingType}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "listingType"
@@ -206,6 +218,7 @@ resource "azurerm_api_management_api_operation" "op_property_getfeaturedlistings
   display_name        = "GetFeaturedListings"
   method              = "GET"
   url_template        = "/listings/featured"
+  depends_on          = [azurerm_api_management_api_policy.property]
 }
 
 resource "azurerm_api_management_api_operation" "op_property_getavailablelistings" {
@@ -216,6 +229,7 @@ resource "azurerm_api_management_api_operation" "op_property_getavailablelisting
   display_name        = "GetAvailableListings"
   method              = "GET"
   url_template        = "/listings/available"
+  depends_on          = [azurerm_api_management_api_policy.property]
 }
 
 resource "azurerm_api_management_api_operation" "op_property_searchlistings" {
@@ -226,6 +240,7 @@ resource "azurerm_api_management_api_operation" "op_property_searchlistings" {
   display_name        = "SearchListings"
   method              = "POST"
   url_template        = "/listings/search"
+  depends_on          = [azurerm_api_management_api_policy.property]
 }
 
 resource "azurerm_api_management_api_operation" "op_property_updatelisting" {
@@ -236,6 +251,7 @@ resource "azurerm_api_management_api_operation" "op_property_updatelisting" {
   display_name        = "UpdateListing"
   method              = "PUT"
   url_template        = "/listings/{id}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -260,6 +276,7 @@ resource "azurerm_api_management_api_operation" "op_property_regeneratelistingem
   display_name        = "RegenerateListingEmbedding"
   method              = "POST"
   url_template        = "/listings/{id}/embedding"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -284,6 +301,7 @@ resource "azurerm_api_management_api_operation" "op_property_updatelistingavaila
   display_name        = "UpdateListingAvailability"
   method              = "PATCH"
   url_template        = "/listings/{id}/availability"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -308,6 +326,7 @@ resource "azurerm_api_management_api_operation" "op_property_updatelistingrating
   display_name        = "UpdateListingRating"
   method              = "PATCH"
   url_template        = "/listings/{id}/rating"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -324,6 +343,7 @@ resource "azurerm_api_management_api_operation" "op_property_incrementlistingvie
   display_name        = "IncrementListingViews"
   method              = "POST"
   url_template        = "/listings/{id}/view"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -340,6 +360,7 @@ resource "azurerm_api_management_api_operation" "op_property_updatelistingfeatur
   display_name        = "UpdateListingFeatured"
   method              = "PATCH"
   url_template        = "/listings/{id}/featured"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -364,6 +385,7 @@ resource "azurerm_api_management_api_operation" "op_property_assignlistingagent"
   display_name        = "AssignListingAgent"
   method              = "POST"
   url_template        = "/listings/{id}/agent"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -388,6 +410,7 @@ resource "azurerm_api_management_api_operation" "op_property_removelistingagent"
   display_name        = "RemoveListingAgent"
   method              = "DELETE"
   url_template        = "/listings/{id}/agent"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -412,6 +435,7 @@ resource "azurerm_api_management_api_operation" "op_property_assignlistingcareta
   display_name        = "AssignListingCaretaker"
   method              = "POST"
   url_template        = "/listings/{id}/caretaker"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -436,6 +460,7 @@ resource "azurerm_api_management_api_operation" "op_property_removelistingcareta
   display_name        = "RemoveListingCaretaker"
   method              = "DELETE"
   url_template        = "/listings/{id}/caretaker"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -460,6 +485,7 @@ resource "azurerm_api_management_api_operation" "op_property_deletelisting" {
   display_name        = "DeleteListing"
   method              = "DELETE"
   url_template        = "/listings/{id}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -484,6 +510,7 @@ resource "azurerm_api_management_api_operation" "op_property_createproperty" {
   display_name        = "CreateProperty"
   method              = "POST"
   url_template        = "/properties"
+  depends_on          = [azurerm_api_management_api_policy.property]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_property_createproperty" {
@@ -502,6 +529,7 @@ resource "azurerm_api_management_api_operation" "op_property_getpropertybyid" {
   display_name        = "GetPropertyById"
   method              = "GET"
   url_template        = "/properties/{id}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -518,6 +546,7 @@ resource "azurerm_api_management_api_operation" "op_property_getpropertybycode" 
   display_name        = "GetPropertyByCode"
   method              = "GET"
   url_template        = "/properties/code/{code}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "code"
@@ -534,6 +563,7 @@ resource "azurerm_api_management_api_operation" "op_property_getallproperties" {
   display_name        = "GetAllProperties"
   method              = "GET"
   url_template        = "/properties"
+  depends_on          = [azurerm_api_management_api_policy.property]
 }
 
 resource "azurerm_api_management_api_operation" "op_property_getpropertiesbyowner" {
@@ -544,6 +574,7 @@ resource "azurerm_api_management_api_operation" "op_property_getpropertiesbyowne
   display_name        = "GetPropertiesByOwner"
   method              = "GET"
   url_template        = "/properties/owner/{ownerId}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "ownerId"
@@ -568,6 +599,7 @@ resource "azurerm_api_management_api_operation" "op_property_updateproperty" {
   display_name        = "UpdateProperty"
   method              = "PUT"
   url_template        = "/properties/{id}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"
@@ -592,6 +624,7 @@ resource "azurerm_api_management_api_operation" "op_property_deleteproperty" {
   display_name        = "DeleteProperty"
   method              = "DELETE"
   url_template        = "/properties/{id}"
+  depends_on          = [azurerm_api_management_api_policy.property]
 
   template_parameter {
     name     = "id"

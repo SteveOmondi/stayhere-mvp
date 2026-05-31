@@ -8,6 +8,7 @@ resource "azurerm_api_management_api_operation" "op_customer_createcustomer" {
   display_name        = "CreateCustomer"
   method              = "POST"
   url_template        = "/customers"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_customer_createcustomer" {
@@ -26,6 +27,7 @@ resource "azurerm_api_management_api_operation" "op_customer_getcustomers" {
   display_name        = "GetCustomers"
   method              = "GET"
   url_template        = "/customers/list"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_customer_getcustomers" {
@@ -44,6 +46,7 @@ resource "azurerm_api_management_api_operation" "op_customer_getcustomerbyid" {
   display_name        = "GetCustomerById"
   method              = "GET"
   url_template        = "/customers/{id}"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 
   template_parameter {
     name     = "id"
@@ -68,6 +71,7 @@ resource "azurerm_api_management_api_operation" "op_customer_getcustomerbyphone"
   display_name        = "GetCustomerByPhone"
   method              = "GET"
   url_template        = "/customers/by-phone/{phone}"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 
   template_parameter {
     name     = "phone"
@@ -92,6 +96,7 @@ resource "azurerm_api_management_api_operation" "op_customer_getcustomersbyregio
   display_name        = "GetCustomersByRegion"
   method              = "GET"
   url_template        = "/customers/profile"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_customer_getcustomersbyregion" {
@@ -110,6 +115,7 @@ resource "azurerm_api_management_api_operation" "op_customer_getcustomersbylisti
   display_name        = "GetCustomersByListing"
   method              = "GET"
   url_template        = "/listings/{listingId}/customers"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 
   template_parameter {
     name     = "listingId"
@@ -126,6 +132,7 @@ resource "azurerm_api_management_api_operation" "op_customer_updatecustomer" {
   display_name        = "UpdateCustomer"
   method              = "PUT"
   url_template        = "/customers/{id}"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 
   template_parameter {
     name     = "id"
@@ -150,6 +157,7 @@ resource "azurerm_api_management_api_operation" "op_customer_deactivatecustomer"
   display_name        = "DeactivateCustomer"
   method              = "POST"
   url_template        = "/customers/{id}/deactivate"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 
   template_parameter {
     name     = "id"
@@ -174,6 +182,7 @@ resource "azurerm_api_management_api_operation" "op_customer_attachcustomerprope
   display_name        = "AttachCustomerProperty"
   method              = "POST"
   url_template        = "/customers/{customerId}/properties"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 
   template_parameter {
     name     = "customerId"
@@ -198,6 +207,7 @@ resource "azurerm_api_management_api_operation" "op_customer_getcustomerproperti
   display_name        = "GetCustomerProperties"
   method              = "GET"
   url_template        = "/customers/{customerId}/properties"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 
   template_parameter {
     name     = "customerId"
@@ -222,6 +232,7 @@ resource "azurerm_api_management_api_operation" "op_customer_addcustomerdocument
   display_name        = "AddCustomerDocument"
   method              = "POST"
   url_template        = "/customers/{customerId}/documents"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 
   template_parameter {
     name     = "customerId"
@@ -246,6 +257,7 @@ resource "azurerm_api_management_api_operation" "op_customer_getcustomerdocument
   display_name        = "GetCustomerDocuments"
   method              = "GET"
   url_template        = "/customers/{customerId}/documents"
+  depends_on          = [azurerm_api_management_api_policy.customer]
 
   template_parameter {
     name     = "customerId"

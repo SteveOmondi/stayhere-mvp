@@ -8,6 +8,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_getcategories" {
   display_name        = "GetCategories"
   method              = "GET"
   url_template        = "/categories"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 }
 
 resource "azurerm_api_management_api_operation" "op_staticdata_getusertypes" {
@@ -18,6 +19,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_getusertypes" {
   display_name        = "GetUserTypes"
   method              = "GET"
   url_template        = "/user-types"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 }
 
 resource "azurerm_api_management_api_operation" "op_staticdata_getuserroles" {
@@ -28,6 +30,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_getuserroles" {
   display_name        = "GetUserRoles"
   method              = "GET"
   url_template        = "/user-roles"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 }
 
 resource "azurerm_api_management_api_operation" "op_staticdata_getallcategories" {
@@ -38,6 +41,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_getallcategories"
   display_name        = "GetAllCategories"
   method              = "GET"
   url_template        = "/categories/all"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_staticdata_getallcategories" {
@@ -56,6 +60,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_getcategorybyid" 
   display_name        = "GetCategoryById"
   method              = "GET"
   url_template        = "/categories/{id}"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 
   template_parameter {
     name     = "id"
@@ -72,6 +77,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_getcategoriesbyci
   display_name        = "GetCategoriesByCity"
   method              = "GET"
   url_template        = "/categories/city/{city}"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 
   template_parameter {
     name     = "city"
@@ -88,6 +94,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_getcategoriesbyco
   display_name        = "GetCategoriesByCountry"
   method              = "GET"
   url_template        = "/categories/country/{country}"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 
   template_parameter {
     name     = "country"
@@ -104,6 +111,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_createcategory" {
   display_name        = "CreateCategory"
   method              = "POST"
   url_template        = "/categories"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 }
 
 resource "azurerm_api_management_api_operation_policy" "pol_staticdata_createcategory" {
@@ -122,6 +130,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_updatecategory" {
   display_name        = "UpdateCategory"
   method              = "PUT"
   url_template        = "/categories/{id}"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 
   template_parameter {
     name     = "id"
@@ -146,6 +155,7 @@ resource "azurerm_api_management_api_operation" "op_staticdata_deletecategory" {
   display_name        = "DeleteCategory"
   method              = "DELETE"
   url_template        = "/categories/{id}"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
 
   template_parameter {
     name     = "id"
