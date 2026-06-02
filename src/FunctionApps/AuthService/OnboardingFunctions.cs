@@ -32,7 +32,7 @@ public class OnboardingFunctions
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserDto))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "text/plain", bodyType: typeof(string))]
     public async Task<HttpResponseData> Onboard(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "onboard")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/onboard")] HttpRequestData req)
     {
         _logger.LogInformation("Processing Onboarding request.");
 

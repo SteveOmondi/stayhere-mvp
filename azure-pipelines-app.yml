@@ -237,12 +237,20 @@ stages:
           export DB_PASSWORD=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_PASSWORD") | .value')
           export DB_SSL_MODE=$(echo $SETTINGS | jq -r '.[] | select(.name=="DB_SSL_MODE") | .value')
           
+          if [ -z "$DB_SSL_MODE" ] || [ "$DB_SSL_MODE" == "null" ]; then
+             export DB_SSL_MODE="Require"
+          fi
+          
           if [ -z "$DB_HOST" ] || [ "$DB_HOST" == "null" ]; then
              echo "##vso[task.logissue type=error]Failed to extract DB_HOST from app settings."
              exit 1
           fi
           
           echo "Successfully discovered configuration. Running migrations to $DB_HOST..."
+          
+          # Force .NET to use IPv4. Azure DevOps Ubuntu agents now resolve IPv6 for Flexible Server,
+          # but the Flexible Server firewall rules are IPv4 only, causing a TCP timeout.
+          export DOTNET_SYSTEM_NET_DISABLEIPV6=1
           
           dotnet ef database update \
             --project src/Infrastructure \
@@ -461,8 +469,8 @@ stages:
         appName: $(DynamicAppName)
         package: '$(Pipeline.Workspace)/AiAgentService_Pkg/AiAgentService'
 
-- stage: Sync_APIM
-  displayName: 'Sync APIM Operations'
+- stage: Sync_APICenter
+  displayName: 'Sync API Center'
   # Runs after ALL deploy stages. Succeeds even if only some services were deployed.
   dependsOn:
     - Deploy_AuthService
@@ -478,20 +486,11 @@ stages:
     )
   jobs:
   - job: SyncOperations
-    displayName: 'Auto-Sync from Swagger'
+    displayName: 'Auto-Sync to API Center'
     pool:
       vmImage: $(vmImageName)
     steps:
     - checkout: self
-
-    - task: AzureCLI@2
-      displayName: 'Sync APIM Operations from Swagger'
-      inputs:
-        azureSubscription: $(azureSubscription)
-        scriptType: 'pscore'
-        scriptLocation: 'scriptPath'
-        scriptPath: 'scripts/sync-apim-operations.ps1'
-        arguments: '-ResourceGroupName "rg-stayhere-dev-5c27bcf3"'
 
     - task: AzureCLI@2
       displayName: 'Sync API Center'
