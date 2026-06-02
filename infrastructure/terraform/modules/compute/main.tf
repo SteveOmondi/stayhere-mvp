@@ -94,6 +94,9 @@ resource "azurerm_linux_function_app" "property" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "Google__ApiKey"                 = var.google_api_key
+    "Google__EmbeddingModel"         = var.google_embedding_model
+    "Google__EmbeddingCacheMinutes"  = "60"
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
@@ -260,13 +263,15 @@ resource "azurerm_linux_function_app" "aiagent" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT"           = "false"
     "FUNCTIONS_EXTENSION_VERSION"              = "~4"
     "SKIP_AUTH"                                = var.skip_auth
-    "OpenRouter__ApiKey"                       = var.openrouter_api_key
-    "OpenRouter__Model"                        = var.openrouter_model
-    "OpenRouter__EmbeddingModel"               = var.openrouter_embedding_model
-    "OpenRouter__HttpReferer"                  = "https://stayhere.com"
-    "OpenRouter__RecommendNarrationMode"       = "Llm"
-    "OpenRouter__RecommendNarrationMaxTokens"  = "280"
-    "OpenRouter__RecommendLlmTimeoutSeconds"   = "40"
+    "Groq__ApiKey"                             = var.groq_api_key
+    "Groq__Model"                              = var.groq_model
+    "Groq__MaxRetries"                         = "4"
+    "Groq__RecommendNarrationMode"             = "Llm"
+    "Groq__RecommendNarrationMaxTokens"        = "280"
+    "Groq__RecommendLlmTimeoutSeconds"         = "40"
+    "Google__ApiKey"                           = var.google_api_key
+    "Google__EmbeddingModel"                   = var.google_embedding_model
+    "Google__EmbeddingCacheMinutes"            = "60"
     "ListingPortalBaseUrl"                     = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
     "AzureWebJobs.Http.RoutePrefix"            = ""
     "WEBSITE_RUN_FROM_PACKAGE"                 = "1"
@@ -355,19 +360,24 @@ variable "entra_client_secret_name" {
   type = string
 }
 
-variable "openrouter_api_key" {
+variable "groq_api_key" {
   type      = string
   sensitive = true
 }
 
-variable "openrouter_model" {
+variable "groq_model" {
   type    = string
-  default = "deepseek/deepseek-chat-v3.1:free"
+  default = "llama-3.3-70b-versatile"
 }
 
-variable "openrouter_embedding_model" {
+variable "google_api_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "google_embedding_model" {
   type    = string
-  default = "nvidia/llama-nemotron-embed-vl-1b-v2:free"
+  default = "text-embedding-004"
 }
 
 variable "onfon_client_id" {

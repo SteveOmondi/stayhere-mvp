@@ -485,9 +485,23 @@ public class ListingFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "listings/{id:guid}/embedding")] HttpRequestData req,
         Guid id)
     {
-        var (callerId, authError) = await RequireUserIdAsync(req);
-        if (authError != null)
-            return authError;
+        Guid callerId;
+
+        if (string.Equals(_configuration["SKIP_AUTH"], "true", StringComparison.OrdinalIgnoreCase)
+            && !req.Headers.Contains("X-User-Id"))
+        {
+            // Dev bypass: resolve the listing's owner directly so no token or header is required
+            var preview = await _listingService.GetListingByIdAsync(id);
+            if (preview == null)
+                return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
+            callerId = preview.OwnerId;
+        }
+        else
+        {
+            var (userId, authError) = await RequireUserIdAsync(req);
+            if (authError != null) return authError;
+            callerId = userId;
+        }
 
         try
         {
@@ -813,10 +827,13 @@ public class ListingFunctions
     {
         if (string.Equals(_configuration["SKIP_AUTH"], "true", StringComparison.OrdinalIgnoreCase))
         {
-            if (!req.Headers.TryGetValues("X-User-Id", out var vals))
-                return null;
-            var s = vals.FirstOrDefault();
-            return Guid.TryParse(s, out var headerGuid) ? headerGuid : null;
+            // X-User-Id header takes precedence so callers can target a specific owner
+            if (req.Headers.TryGetValues("X-User-Id", out var vals))
+            {
+                var s = vals.FirstOrDefault();
+                if (Guid.TryParse(s, out var headerGuid)) return headerGuid;
+            }
+            // No header — fall through to the dev principal the middleware already set
         }
 
         if (!req.FunctionContext.Items.TryGetValue("User", out var principalObj))

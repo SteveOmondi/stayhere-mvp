@@ -28,7 +28,7 @@ public interface IListingService
 
     Task<ListingDto?> UpdateListingAsync(Guid id, Guid requesterId, UpdateListingRequest request);
 
-    /// <summary>Recomputes and stores the pgvector embedding (OpenRouter). Owner or agent only.</summary>
+    /// <summary>Recomputes and stores the pgvector embedding via Google AI Studio. Owner or agent only.</summary>
     Task<ListingDto?> RegenerateListingEmbeddingAsync(Guid id, Guid requesterId);
     Task<ListingDto?> UpdateAvailabilityAsync(Guid id, Guid requesterId, UpdateAvailabilityRequest request);
     Task<ListingDto?> UpdateRatingAsync(Guid id, UpdateRatingRequest request);

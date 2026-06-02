@@ -1,6 +1,6 @@
 namespace StayHere.Application.Common.Interfaces;
 
-public interface IOpenRouterChatService
+public interface IChatService
 {
     Task<string> GenerateResponseAsync(
         string prompt,

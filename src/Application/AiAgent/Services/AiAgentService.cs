@@ -13,7 +13,7 @@ public class AiAgentService : IAiAgentService
     private const int KnowledgeCatalogPageSize = 500;
 
     private readonly IAgentKnowledgeBaseRepository _knowledgeBase;
-    private readonly IOpenRouterChatService _openRouter;
+    private readonly IChatService _chatService;
     private readonly IEmbeddingService _embeddingService;
     private readonly IAgentConversationRepository _conversations;
     private readonly IListingRepository _listings;
@@ -23,7 +23,7 @@ public class AiAgentService : IAiAgentService
 
     public AiAgentService(
         IAgentKnowledgeBaseRepository knowledgeBase,
-        IOpenRouterChatService openRouter,
+        IChatService chatService,
         IEmbeddingService embeddingService,
         IAgentConversationRepository conversations,
         IListingRepository listings,
@@ -32,7 +32,7 @@ public class AiAgentService : IAiAgentService
         ILogger<AiAgentService> logger)
     {
         _knowledgeBase = knowledgeBase;
-        _openRouter = openRouter;
+        _chatService = chatService;
         _embeddingService = embeddingService;
         _conversations = conversations;
         _listings = listings;
@@ -50,7 +50,7 @@ public class AiAgentService : IAiAgentService
         var history = await _conversations.GetHistoryAsync(conversationId, cancellationToken);
         var prompt = BuildPrompt(request.Query, context, history);
 
-        var response = await _openRouter.GenerateResponseAsync(
+        var response = await _chatService.GenerateResponseAsync(
             prompt,
             request.MaxTokens,
             request.Temperature,
@@ -262,8 +262,8 @@ public class AiAgentService : IAiAgentService
     }
 
     /// <summary>
-    /// Uses OpenRouter by default. Only <c>Template</c>, <c>Off</c>, or <c>False</c> skips the chat call. Empty config values default to Llm.
-    /// The function app must load <c>OpenRouter__ApiKey</c> (same as embeddings); otherwise a contextual fallback message is used.
+    /// Uses Groq by default. Only <c>Template</c>, <c>Off</c>, or <c>False</c> skips the chat call. Empty config values default to Llm.
+    /// The function app must load <c>Groq__ApiKey</c>; otherwise a contextual fallback message is used.
     /// </summary>
     private async Task<string> ResolveRecommendNarrativeAsync(
         string query,
@@ -275,7 +275,7 @@ public class AiAgentService : IAiAgentService
         if (top.Count == 0)
             return BuildRecommendTemplateMessage(query, extracted, top);
 
-        var modeRaw = _configuration["OpenRouter:RecommendNarrationMode"];
+        var modeRaw = _configuration["Groq:RecommendNarrationMode"];
         var mode = string.IsNullOrWhiteSpace(modeRaw) ? "Llm" : modeRaw.Trim();
         var skipLlm = mode.Equals("Template", StringComparison.OrdinalIgnoreCase)
                       || mode.Equals("Off", StringComparison.OrdinalIgnoreCase)
@@ -286,20 +286,20 @@ public class AiAgentService : IAiAgentService
             return BuildRecommendTemplateMessage(query, extracted, top);
         }
 
-        if (string.IsNullOrWhiteSpace(GetOpenRouterApiKey()))
+        if (string.IsNullOrWhiteSpace(GetGroqApiKey()))
         {
             _logger.LogWarning(
-                "Recommend narration: OpenRouter API key missing for this host. Set OpenRouter__ApiKey in src/FunctionApps/AiAgentService/local.settings.json (see local.settings.sample.json). Using contextual fallback.");
+                "Recommend narration: Groq API key missing for this host. Set Groq__ApiKey in src/FunctionApps/AiAgentService/local.settings.json (see local.settings.sample.json). Using contextual fallback.");
             return BuildRecommendTemplateMessage(query, extracted, top);
         }
 
         var kbSection = await BuildRecommendKnowledgeSectionAsync(query, extracted, cancellationToken);
         var userPrompt = BuildRecommendNarrationUserPrompt(query, extracted, top, kbSection);
 
-        var maxTokens = int.TryParse(_configuration["OpenRouter:RecommendNarrationMaxTokens"], out var mt)
+        var maxTokens = int.TryParse(_configuration["Groq:RecommendNarrationMaxTokens"], out var mt)
             ? Math.Clamp(mt, 64, 500)
             : 220;
-        var timeoutSec = int.TryParse(_configuration["OpenRouter:RecommendLlmTimeoutSeconds"], out var ts)
+        var timeoutSec = int.TryParse(_configuration["Groq:RecommendLlmTimeoutSeconds"], out var ts)
             ? Math.Clamp(ts, 8, 90)
             : 35;
 
@@ -307,7 +307,7 @@ public class AiAgentService : IAiAgentService
         {
             using var llmCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             llmCts.CancelAfter(TimeSpan.FromSeconds(timeoutSec));
-            var text = await _openRouter.GenerateResponseAsync(
+            var text = await _chatService.GenerateResponseAsync(
                 userPrompt,
                 maxTokens,
                 temperature,
@@ -334,9 +334,9 @@ public class AiAgentService : IAiAgentService
         }
     }
 
-    private string? GetOpenRouterApiKey() =>
-        _configuration["OpenRouter:ApiKey"]?.Trim()
-        ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY")?.Trim();
+    private string? GetGroqApiKey() =>
+        _configuration["Groq:ApiKey"]?.Trim()
+        ?? Environment.GetEnvironmentVariable("GROQ_API_KEY")?.Trim();
 
     private async Task<string> BuildRecommendKnowledgeSectionAsync(
         string query,

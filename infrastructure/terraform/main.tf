@@ -87,9 +87,10 @@ module "compute" {
   mongodb_connection_string = module.database.mongodb_connection_string
   redis_connection_string   = module.cache.redis_connection_string
 
-  openrouter_api_key         = var.openrouter_api_key
-  openrouter_model           = var.openrouter_model
-  openrouter_embedding_model = var.openrouter_embedding_model
+  groq_api_key           = var.groq_api_key
+  groq_model             = var.groq_model
+  google_api_key         = var.google_api_key
+  google_embedding_model = var.google_embedding_model
 
   onfon_client_id  = var.onfon_client_id
   onfon_base_url   = var.onfon_base_url

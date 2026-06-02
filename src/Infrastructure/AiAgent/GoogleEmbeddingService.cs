@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -12,17 +11,17 @@ using StayHere.Domain;
 
 namespace StayHere.Infrastructure.AiAgent;
 
-public class OpenRouterEmbeddingService : IEmbeddingService
+public class GoogleEmbeddingService : IEmbeddingService
 {
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<OpenRouterEmbeddingService> _logger;
+    private readonly ILogger<GoogleEmbeddingService> _logger;
     private readonly IMemoryCache _cache;
 
-    public OpenRouterEmbeddingService(
+    public GoogleEmbeddingService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<OpenRouterEmbeddingService> logger,
+        ILogger<GoogleEmbeddingService> logger,
         IMemoryCache cache)
     {
         _httpClient = httpClient;
@@ -33,14 +32,14 @@ public class OpenRouterEmbeddingService : IEmbeddingService
 
     public async Task<float[]> EmbedAsync(string text, CancellationToken cancellationToken = default)
     {
-        var apiKey = _configuration["OpenRouter:ApiKey"]?.Trim()
-                     ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY")?.Trim();
-        var model = _configuration["OpenRouter:EmbeddingModel"] ?? "openai/text-embedding-3-small";
+        var apiKey = _configuration["Google:ApiKey"]?.Trim()
+                     ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY")?.Trim();
+        var model = _configuration["Google:EmbeddingModel"] ?? "text-embedding-004";
 
         if (string.IsNullOrEmpty(apiKey))
-            throw new InvalidOperationException("OpenRouter API key is not configured (OpenRouter:ApiKey).");
+            throw new InvalidOperationException("Google AI Studio API key is not configured (Google:ApiKey).");
 
-        var cacheMinutes = int.TryParse(_configuration["OpenRouter:EmbeddingCacheMinutes"], out var cm)
+        var cacheMinutes = int.TryParse(_configuration["Google:EmbeddingCacheMinutes"], out var cm)
             ? Math.Clamp(cm, 0, 24 * 60)
             : 45;
         var cacheKey = BuildCacheKey(model, text);
@@ -50,10 +49,18 @@ public class OpenRouterEmbeddingService : IEmbeddingService
             return (float[])cached.Clone();
         }
 
-        const string url = "https://openrouter.ai/api/v1/embeddings";
-        var body = new { model, input = text };
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:embedContent";
+        var body = new
+        {
+            model = $"models/{model}",
+            content = new
+            {
+                parts = new[] { new { text } }
+            },
+            outputDimensionality = StayHereEmbeddingDimensions.Default
+        };
 
-        var maxAttempts = int.TryParse(_configuration["OpenRouter:MaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 4;
+        var maxAttempts = int.TryParse(_configuration["Google:MaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 4;
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -61,27 +68,31 @@ public class OpenRouterEmbeddingService : IEmbeddingService
             {
                 Content = JsonContent.Create(body)
             };
-            req.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
-            req.Headers.TryAddWithoutValidation("HTTP-Referer", _configuration["OpenRouter:HttpReferer"] ?? "http://localhost:7074");
-            req.Headers.TryAddWithoutValidation("X-Title", "StayHere Embeddings");
+            req.Headers.TryAddWithoutValidation("x-goog-api-key", apiKey);
 
             var response = await _httpClient.SendAsync(req, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 var delay = ParseRetryAfter(response) ?? TimeSpan.FromSeconds(Math.Pow(2, attempt));
-                _logger.LogWarning("OpenRouter embeddings rate limited (429). Attempt {Attempt}/{Max}. Waiting {Delay}s", attempt, maxAttempts, delay.TotalSeconds);
+                _logger.LogWarning("Google embeddings rate limited (429). Attempt {Attempt}/{Max}. Waiting {Delay}s", attempt, maxAttempts, delay.TotalSeconds);
                 if (attempt == maxAttempts)
                     response.EnsureSuccessStatusCode();
                 await Task.Delay(delay, cancellationToken);
                 continue;
             }
 
-            response.EnsureSuccessStatusCode();
-            var payload = await response.Content.ReadFromJsonAsync<EmbeddingsResponse>(cancellationToken: cancellationToken);
-            var vec = payload?.Data is { Length: > 0 } ? payload.Data[0].Embedding : null;
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Google AI Studio returned {Status} for model {Model}. Response: {Body}", (int)response.StatusCode, model, errorBody);
+                response.EnsureSuccessStatusCode();
+            }
+
+            var payload = await response.Content.ReadFromJsonAsync<GoogleEmbeddingResponse>(cancellationToken: cancellationToken);
+            var vec = payload?.Embedding?.Values;
             if (vec == null || vec.Length == 0)
-                throw new InvalidOperationException("OpenRouter returned no embedding vector.");
+                throw new InvalidOperationException("Google AI Studio returned no embedding vector.");
 
             if (vec.Length != StayHereEmbeddingDimensions.Default)
             {
@@ -101,14 +112,14 @@ public class OpenRouterEmbeddingService : IEmbeddingService
             return vec;
         }
 
-        throw new InvalidOperationException("Embedding request failed after retries.");
+        throw new InvalidOperationException("Google embedding request failed after retries.");
     }
 
     private static string BuildCacheKey(string model, string text)
     {
         var input = Encoding.UTF8.GetBytes($"{model}\n{text}");
         var hash = SHA256.HashData(input);
-        return "or-embed:" + Convert.ToHexString(hash);
+        return "goog-embed:" + Convert.ToHexString(hash);
     }
 
     private static float[] NormalizeDimension(float[] vec, int expected)
@@ -116,8 +127,7 @@ public class OpenRouterEmbeddingService : IEmbeddingService
         if (vec.Length == expected)
             return vec;
         var result = new float[expected];
-        var copy = Math.Min(vec.Length, expected);
-        Array.Copy(vec, result, copy);
+        Array.Copy(vec, result, Math.Min(vec.Length, expected));
         return result;
     }
 
@@ -134,14 +144,15 @@ public class OpenRouterEmbeddingService : IEmbeddingService
         return null;
     }
 
-    private sealed class EmbeddingsResponse
-    {
-        public EmbeddingData[]? Data { get; set; }
-    }
-
-    private sealed class EmbeddingData
+    private sealed class GoogleEmbeddingResponse
     {
         [JsonPropertyName("embedding")]
-        public float[]? Embedding { get; set; }
+        public GoogleEmbeddingValues? Embedding { get; set; }
+    }
+
+    private sealed class GoogleEmbeddingValues
+    {
+        [JsonPropertyName("values")]
+        public float[]? Values { get; set; }
     }
 }

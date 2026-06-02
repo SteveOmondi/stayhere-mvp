@@ -1,6 +1,8 @@
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Properties.Services;
 using StayHere.Domain.Repositories;
@@ -30,7 +32,7 @@ var host = new HostBuilder()
         services.AddStayHereRedisCache(config);
 
         services.AddMemoryCache();
-        services.AddHttpClient<IEmbeddingService, OpenRouterEmbeddingService>(client =>
+        services.AddHttpClient<IEmbeddingService, GoogleEmbeddingService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(25);
         });
@@ -59,4 +61,29 @@ var host = new HostBuilder()
     })
     .Build();
 
+await ApplyMigrationsAsync(host);
+
 await host.RunAsync();
+
+static async Task ApplyMigrationsAsync(IHost host)
+{
+    await using var scope = host.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<StayHereDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<StayHereDbContext>>();
+    try
+    {
+        var pending = await db.Database.GetPendingMigrationsAsync();
+        if (pending.Any())
+        {
+            logger.LogInformation("Applying {Count} pending migration(s): {Names}",
+                pending.Count(), string.Join(", ", pending));
+            await db.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied successfully.");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Database migration failed on startup.");
+        throw;
+    }
+}

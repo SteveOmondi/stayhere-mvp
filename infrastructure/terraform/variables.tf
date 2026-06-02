@@ -51,22 +51,28 @@ variable "entra_tenant_id" {
   default     = ""
 }
 
-variable "openrouter_api_key" {
+variable "groq_api_key" {
   type        = string
-  description = "OpenRouter API Key for AI Agent"
+  description = "Groq API Key for AI Agent LLM (llama-3.3-70b-versatile)"
   sensitive   = true
 }
 
-variable "openrouter_model" {
+variable "groq_model" {
   type        = string
-  description = "OpenRouter Model to use"
-  default     = "deepseek/deepseek-chat-v3.1:free"
+  description = "Groq model to use for chat completions"
+  default     = "llama-3.3-70b-versatile"
 }
 
-variable "openrouter_embedding_model" {
+variable "google_api_key" {
   type        = string
-  description = "OpenRouter Embedding Model to use"
-  default     = "nvidia/llama-nemotron-embed-vl-1b-v2:free"
+  description = "Google AI Studio API Key for embeddings (text-embedding-004)"
+  sensitive   = true
+}
+
+variable "google_embedding_model" {
+  type        = string
+  description = "Google AI Studio embedding model to use"
+  default     = "text-embedding-004"
 }
 
 variable "onfon_client_id" {

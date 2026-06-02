@@ -1,22 +1,21 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.Common.Interfaces;
 
 namespace StayHere.Infrastructure.AiAgent;
 
-public class OpenRouterChatService : IOpenRouterChatService
+public class GroqChatService : IChatService
 {
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<OpenRouterChatService> _logger;
+    private readonly ILogger<GroqChatService> _logger;
 
-    public OpenRouterChatService(
+    public GroqChatService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<OpenRouterChatService> logger)
+        ILogger<GroqChatService> logger)
     {
         _httpClient = httpClient;
         _configuration = configuration;
@@ -30,17 +29,17 @@ public class OpenRouterChatService : IOpenRouterChatService
         CancellationToken cancellationToken = default,
         string? systemPrompt = null)
     {
-        var apiKey = _configuration["OpenRouter:ApiKey"]?.Trim()
-                     ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY")?.Trim();
-        var model = _configuration["OpenRouter:Model"] ?? "deepseek/deepseek-chat-v3.1:free";
+        var apiKey = _configuration["Groq:ApiKey"]?.Trim()
+                     ?? Environment.GetEnvironmentVariable("GROQ_API_KEY")?.Trim();
+        var model = _configuration["Groq:Model"] ?? "llama-3.3-70b-versatile";
 
         if (string.IsNullOrEmpty(apiKey))
         {
-            _logger.LogError("OpenRouter API key is not configured (OpenRouter:ApiKey)");
-            throw new InvalidOperationException("OpenRouter API key is not configured. Set OpenRouter:ApiKey in local.settings.json or environment.");
+            _logger.LogError("Groq API key is not configured (Groq:ApiKey)");
+            throw new InvalidOperationException("Groq API key is not configured. Set Groq:ApiKey in local.settings.json or environment.");
         }
 
-        const string url = "https://openrouter.ai/api/v1/chat/completions";
+        const string url = "https://api.groq.com/openai/v1/chat/completions";
         var systemContent = string.IsNullOrWhiteSpace(systemPrompt) ? GetSystemPrompt() : systemPrompt.Trim();
         var request = new
         {
@@ -56,7 +55,7 @@ public class OpenRouterChatService : IOpenRouterChatService
             stream = false
         };
 
-        var maxAttempts = int.TryParse(_configuration["OpenRouter:MaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 4;
+        var maxAttempts = int.TryParse(_configuration["Groq:MaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 4;
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -67,16 +66,14 @@ public class OpenRouterChatService : IOpenRouterChatService
                     Content = JsonContent.Create(request)
                 };
                 httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
-                httpRequest.Headers.TryAddWithoutValidation("HTTP-Referer", _configuration["OpenRouter:HttpReferer"] ?? "http://localhost:7074");
-                httpRequest.Headers.TryAddWithoutValidation("X-Title", "StayHere AI Agent");
 
-                _logger.LogDebug("Sending request to OpenRouter with model {Model} (attempt {Attempt})", model, attempt);
+                _logger.LogDebug("Sending request to Groq with model {Model} (attempt {Attempt})", model, attempt);
                 var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
 
                 if (response.StatusCode == HttpStatusCode.TooManyRequests)
                 {
                     var delay = ParseRetryAfter(response) ?? TimeSpan.FromSeconds(Math.Pow(2, attempt));
-                    _logger.LogWarning("OpenRouter chat rate limited (429). Attempt {Attempt}/{Max}. Waiting {Delay}s", attempt, maxAttempts, delay.TotalSeconds);
+                    _logger.LogWarning("Groq chat rate limited (429). Attempt {Attempt}/{Max}. Waiting {Delay}s", attempt, maxAttempts, delay.TotalSeconds);
                     if (attempt == maxAttempts)
                         response.EnsureSuccessStatusCode();
                     await Task.Delay(delay, cancellationToken);
@@ -85,26 +82,26 @@ public class OpenRouterChatService : IOpenRouterChatService
 
                 response.EnsureSuccessStatusCode();
 
-                var responseContent = await response.Content.ReadFromJsonAsync<OpenRouterResponse>(cancellationToken: cancellationToken);
+                var responseContent = await response.Content.ReadFromJsonAsync<GroqChatResponse>(cancellationToken: cancellationToken);
 
                 if (responseContent?.Choices is { Length: > 0 })
                 {
                     var text = responseContent.Choices[0].Message?.Content?.Trim() ?? string.Empty;
-                    _logger.LogDebug("OpenRouter response length {Length}", text.Length);
+                    _logger.LogDebug("Groq response length {Length}", text.Length);
                     return text;
                 }
 
-                _logger.LogWarning("OpenRouter returned empty choices");
+                _logger.LogWarning("Groq returned empty choices");
                 return "I apologize, but I couldn't generate a response at this time.";
             }
             catch (HttpRequestException ex) when (attempt < maxAttempts)
             {
-                _logger.LogWarning(ex, "OpenRouter chat attempt {Attempt} failed; retrying", attempt);
+                _logger.LogWarning(ex, "Groq chat attempt {Attempt} failed; retrying", attempt);
                 await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), cancellationToken);
             }
         }
 
-        throw new HttpRequestException("OpenRouter chat failed after retries.");
+        throw new HttpRequestException("Groq chat failed after retries.");
     }
 
     private static string GetSystemPrompt() =>
@@ -135,17 +132,17 @@ You know property markets across Kenya, especially Nairobi areas like Westlands,
 
 Be helpful, context-aware, conversational — and always StayHere-first.";
 
-    private sealed class OpenRouterResponse
+    private sealed class GroqChatResponse
     {
-        public OpenRouterChoice[]? Choices { get; set; }
+        public GroqChatChoice[]? Choices { get; set; }
     }
 
-    private sealed class OpenRouterChoice
+    private sealed class GroqChatChoice
     {
-        public OpenRouterMessage? Message { get; set; }
+        public GroqChatMessage? Message { get; set; }
     }
 
-    private sealed class OpenRouterMessage
+    private sealed class GroqChatMessage
     {
         public string? Content { get; set; }
     }

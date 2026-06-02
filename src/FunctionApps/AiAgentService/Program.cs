@@ -34,11 +34,11 @@ var host = new HostBuilder()
         services.AddSingleton<IAgentKnowledgeBaseRepository, AgentKnowledgeBaseRepository>();
         services.AddSingleton<IAgentConversationRepository, AgentConversationRepository>();
         services.AddMemoryCache();
-        services.AddHttpClient<IEmbeddingService, OpenRouterEmbeddingService>(client =>
+        services.AddHttpClient<IEmbeddingService, GoogleEmbeddingService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(25);
         });
-        services.AddHttpClient<IOpenRouterChatService, OpenRouterChatService>(client =>
+        services.AddHttpClient<IChatService, GroqChatService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(120);
         });

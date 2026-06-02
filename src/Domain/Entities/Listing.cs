@@ -51,6 +51,6 @@ public class Listing
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    /// <summary>Semantic embedding for pgvector similarity search (typically 1536 dimensions).</summary>
+    /// <summary>Semantic embedding for pgvector similarity search (768 dimensions, text-embedding-004).</summary>
     public float[]? Embedding { get; set; }
 }
