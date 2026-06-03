@@ -15,7 +15,6 @@
     "Groq__RecommendNarrationMode": "Llm",
     "Groq__RecommendNarrationMaxTokens": "280",
     "Groq__RecommendLlmTimeoutSeconds": "40",
-    "Google__ApiKey": "YOUR_GEMINI_API_KEY_HERE",
     "Google__EmbeddingModel": "text-embedding-004",
     "Google__EmbeddingCacheMinutes": "60",
     "KnowledgeBasePath": "knowledgebase",
