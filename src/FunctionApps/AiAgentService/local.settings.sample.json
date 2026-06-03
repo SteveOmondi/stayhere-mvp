@@ -15,7 +15,7 @@
     "Groq__RecommendNarrationMode": "Llm",
     "Groq__RecommendNarrationMaxTokens": "280",
     "Groq__RecommendLlmTimeoutSeconds": "40",
-    "Google__ApiKey": "AQ.Ab8RN6If6G6I71TxtOb5UQKwNF1yR5e_rEjXY8M4-GngFzobZA",
+    "Google__ApiKey": "",
     "Google__EmbeddingModel": "text-embedding-004",
     "Google__EmbeddingCacheMinutes": "60",
     "KnowledgeBasePath": "knowledgebase",
