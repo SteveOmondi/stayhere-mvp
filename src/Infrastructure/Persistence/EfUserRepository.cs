@@ -41,6 +41,14 @@ public class EfUserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
     }
 
+    public async Task<(List<User> Users, int Total)> GetAllAsync(int page, int pageSize)
+    {
+        var query = _context.Users.Include(u => u.Organization).OrderByDescending(u => u.CreatedAt);
+        var total = await query.CountAsync();
+        var users = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        return (users, total);
+    }
+
     public async Task CreateAsync(User user)
     {
         _context.Users.Add(user);

@@ -1,24 +1,207 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,opsz,wght@0,8..32,300;0,8..32,400;0,8..32,500;0,8..32,600;0,8..32,700;1,8..32,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design tokens ───────────────────────────────────────── */
 :root {
   color-scheme: light;
+  --sidebar-w: 272px;
+  --topbar-h: 64px;
+  --gold: #c9a227;
+  --gold-light: #e8d48b;
+  --navy: #0c1222;
+  --radius-card: 14px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-elevated: 0 10px 40px rgba(0,0,0,0.12);
 }
+
+/* ─── Base ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
-  @apply bg-brand-cream text-brand-900 font-sans min-h-screen;
+  @apply font-sans text-brand-900 bg-portal-bg min-h-screen;
+  font-feature-settings: 'kern', 'liga';
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ─── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-brand-400/40 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-brand-500/60; }
+
+/* ─── Cards ───────────────────────────────────────────────── */
+.portal-card {
+  @apply bg-white rounded-2xl border border-black/[0.07] shadow-card;
+}
+
+.portal-card-hover {
+  @apply portal-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5;
+}
+
+.stat-card {
+  @apply portal-card p-6 relative overflow-hidden;
+}
+
+/* ─── Sidebar navigation ──────────────────────────────────── */
+.nav-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium
+         text-white/55 transition-all duration-150 cursor-pointer select-none;
+}
+.nav-item:hover { @apply bg-white/[0.06] text-white/90; }
+.nav-item.active {
+  @apply bg-brand-gold/15 text-brand-goldlight;
+  box-shadow: inset 3px 0 0 var(--gold);
+  padding-left: calc(0.75rem - 3px);
+}
+.nav-section {
+  @apply text-[10px] font-bold uppercase tracking-widest text-white/25 px-3 pt-5 pb-1;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────── */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl
+         transition-all duration-200 cursor-pointer select-none whitespace-nowrap;
+}
+.btn-primary {
+  @apply btn px-5 py-2.5 text-sm bg-brand-950 text-brand-goldlight
+         hover:bg-brand-800 shadow-sm hover:shadow-md active:scale-[0.98];
+}
+.btn-gold {
+  @apply btn px-5 py-2.5 text-sm bg-brand-gold text-brand-950
+         hover:bg-brand-golddark shadow-sm hover:shadow-glow-gold active:scale-[0.98];
+}
+.btn-secondary {
+  @apply btn px-5 py-2.5 text-sm bg-white border border-black/10 text-brand-800
+         hover:bg-slate-50 hover:border-black/15 active:scale-[0.98];
+}
+.btn-ghost {
+  @apply btn px-4 py-2 text-sm text-brand-700 hover:bg-black/5 rounded-lg;
+}
+.btn-danger {
+  @apply btn px-5 py-2.5 text-sm bg-red-600 text-white hover:bg-red-700 active:scale-[0.98];
+}
+.btn-sm {
+  @apply btn px-3 py-1.5 text-xs;
+}
+.btn-icon {
+  @apply btn p-2 text-brand-700 hover:bg-black/5 rounded-lg;
+}
+
+/* ─── Inputs ──────────────────────────────────────────────── */
+.portal-input {
+  @apply w-full border border-black/10 rounded-xl px-4 py-2.5 text-sm bg-white
+         placeholder:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-gold/25
+         focus:border-brand-gold/60 transition-all duration-150;
+}
+.portal-select {
+  @apply portal-input appearance-none cursor-pointer;
+}
+.portal-label {
+  @apply block text-xs font-bold text-brand-700 uppercase tracking-wide mb-1.5;
+}
+.portal-field { @apply space-y-1.5; }
+
+/* ─── Tables ──────────────────────────────────────────────── */
+.portal-table { @apply w-full text-sm text-left; }
+.portal-table thead { @apply border-b border-black/10; }
+.portal-table thead th {
+  @apply px-4 py-3 text-[11px] font-bold text-brand-600 uppercase tracking-wider
+         bg-slate-50/80;
+}
+.portal-table tbody tr {
+  @apply border-b border-black/5 hover:bg-slate-50/70 transition-colors duration-100;
+}
+.portal-table tbody td { @apply px-4 py-3.5 text-brand-800; }
+.portal-table tbody tr:last-child { @apply border-b-0; }
+
+/* ─── Badges ──────────────────────────────────────────────── */
+.badge {
+  @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold;
+}
+.badge-success { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60; }
+.badge-warning { @apply bg-amber-50 text-amber-700 ring-1 ring-amber-200/60; }
+.badge-error   { @apply bg-red-50 text-red-700 ring-1 ring-red-200/60; }
+.badge-info    { @apply bg-blue-50 text-blue-700 ring-1 ring-blue-200/60; }
+.badge-neutral { @apply bg-slate-100 text-slate-600 ring-1 ring-slate-200/60; }
+.badge-gold    { @apply bg-brand-gold/10 text-brand-golddark ring-1 ring-brand-gold/20; }
+.badge-navy    { @apply bg-brand-950/10 text-brand-800 ring-1 ring-brand-950/10; }
+
+/* ─── Modal backdrop ──────────────────────────────────────── */
+.modal-backdrop {
+  @apply fixed inset-0 z-[100] flex items-center justify-center p-4;
+  background: rgba(12,18,34,0.55);
+  backdrop-filter: blur(4px);
+}
+.modal-panel {
+  @apply bg-white rounded-3xl shadow-modal border border-black/[0.07] w-full
+         animate-scale-in;
+}
+
+/* ─── Status indicators ───────────────────────────────────── */
+.status-dot { @apply inline-block w-2 h-2 rounded-full; }
+.status-online { @apply bg-emerald-400; animation: pulseDot 2s ease-in-out infinite; }
+.status-offline { @apply bg-red-400; }
+.status-pending { @apply bg-amber-400; }
+
+/* ─── Dividers ────────────────────────────────────────────── */
+.divider { @apply border-t border-black/[0.07] my-5; }
+
+/* ─── Hero overlay ────────────────────────────────────────── */
 .hero-overlay {
   background: linear-gradient(
-    105deg,
-    rgba(12, 18, 34, 0.92) 0%,
-    rgba(12, 18, 34, 0.75) 45%,
-    rgba(12, 18, 34, 0.55) 100%
+    110deg,
+    rgba(12,18,34,0.94) 0%,
+    rgba(12,18,34,0.78) 42%,
+    rgba(12,18,34,0.50) 100%
   );
 }
 
-.glass-panel {
-  @apply bg-white/80 backdrop-blur-md border border-white/60 shadow-glass rounded-2xl;
+/* ─── SVG chart helpers ───────────────────────────────────── */
+.chart-line {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
+.chart-line-blue {
+  fill: none;
+  stroke: #3b82f6;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ─── Loading skeleton ────────────────────────────────────── */
+.skeleton { @apply animate-pulse bg-slate-200 rounded-lg; }
+
+/* ─── Glass panel ─────────────────────────────────────────── */
+.glass-panel {
+  @apply bg-white/85 backdrop-blur-md border border-white/60 shadow-glass rounded-2xl;
+}
+
+/* ─── Utility: truncate 2 lines ───────────────────────────── */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── Animations ──────────────────────────────────────────── */
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+
+/* ─── Toast notifications ─────────────────────────────────── */
+.toast {
+  @apply flex items-start gap-3 w-full text-left px-4 py-3.5 rounded-2xl shadow-elevated
+         text-sm border transition-all duration-200;
+}
+.toast-success { @apply bg-white border-emerald-200 text-emerald-900; }
+.toast-error   { @apply bg-white border-red-200 text-red-900; }
+.toast-info    { @apply bg-white border-brand-gold/30 text-brand-900; }

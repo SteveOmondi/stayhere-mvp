@@ -7,7 +7,9 @@ public record CreatePropertyRequest(
     string? Description,
     int TotalUnits,
     int TotalFloors,
-    LocationDto Location
+    LocationDto Location,
+    string? PrimaryImageUrl = null,
+    List<string>? Images = null
 );
 
 public record UpdatePropertyRequest(
@@ -15,7 +17,9 @@ public record UpdatePropertyRequest(
     string? Description,
     int? TotalUnits,
     int? TotalFloors,
-    LocationDto? Location
+    LocationDto? Location,
+    string? PrimaryImageUrl = null,
+    List<string>? Images = null
 );
 
 public record PropertyDto(
@@ -28,7 +32,9 @@ public record PropertyDto(
     LocationDto Location,
     Guid OwnerId,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    string? PrimaryImageUrl = null,
+    List<string>? Images = null
 );
 
 public record PropertyListDto(
@@ -38,7 +44,8 @@ public record PropertyListDto(
     int TotalUnits,
     int TotalFloors,
     string City,
-    string County
+    string County,
+    string? PrimaryImageUrl = null
 );
 
 // ----- Listing (unit within a property) -----
@@ -63,7 +70,8 @@ public record CreateListingRequest(
     int? YearBuilt,
     string? Developer,
     OwnerContactDto Owner,
-    AgentContactDto? Agent
+    AgentContactDto? Agent,
+    string? PrimaryImageUrl = null
 );
 
 public record CreateListingFromPropertyRequest(
@@ -85,7 +93,8 @@ public record CreateListingFromPropertyRequest(
     int? YearBuilt,
     string? Developer,
     OwnerContactDto Owner,
-    AgentContactDto? Agent
+    AgentContactDto? Agent,
+    string? PrimaryImageUrl = null
 );
 
 public record UpdateListingRequest(
@@ -108,7 +117,8 @@ public record UpdateListingRequest(
     OwnerContactDto? Owner,
     AgentContactDto? Agent,
     bool? IsFeatured,
-    decimal? RecommendedScore
+    decimal? RecommendedScore,
+    string? PrimaryImageUrl = null
 );
 
 public record ListingDto(
@@ -147,7 +157,8 @@ public record ListingDto(
     bool IsFeatured,
     decimal RecommendedScore,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    string? PrimaryImageUrl = null
 );
 
 public record ListingListDto(
@@ -245,3 +256,5 @@ public record PaginatedResult<T>(
     int PageSize,
     int TotalPages
 );
+
+public record ImageUploadUrlResponse(string UploadUrl, string ImageId, string PublicUrl);

@@ -120,6 +120,32 @@ public class CustomerFunctions
         return await CreateJsonResponse(req, HttpStatusCode.OK, customers);
     }
 
+    [Function("GetCustomersByOwner")]
+    [Authorize("Admin", "PropertyOwner", "PropertyManager")]
+    [OpenApiOperation(operationId: "GetCustomersByOwner", tags: new[] { "Customers" }, Summary = "Get all tenants for an owner", Description = "Returns all customers renting in any listing owned by the given owner (auth user ID). Accessible by Admin, PropertyOwner, PropertyManager.")]
+    [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CustomerDto>))]
+    public async Task<HttpResponseData> GetCustomersByOwner(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "customers/by-owner/{ownerId:guid}")] HttpRequestData req,
+        Guid ownerId)
+    {
+        var customers = await _customerService.GetCustomersByOwnerAsync(ownerId);
+        return await CreateJsonResponse(req, HttpStatusCode.OK, customers);
+    }
+
+    [Function("GetCustomersByProperty")]
+    [Authorize("Admin", "PropertyOwner", "PropertyManager", "CareTaker")]
+    [OpenApiOperation(operationId: "GetCustomersByProperty", tags: new[] { "Customers" }, Summary = "Get tenants in a specific property", Description = "Returns all customers renting in any listing under the given property. Accessible by Admin, PropertyOwner, PropertyManager, CareTaker.")]
+    [OpenApiParameter(name: "propertyId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<CustomerDto>))]
+    public async Task<HttpResponseData> GetCustomersByProperty(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "customers/by-property/{propertyId:guid}")] HttpRequestData req,
+        Guid propertyId)
+    {
+        var customers = await _customerService.GetCustomersByPropertyAsync(propertyId);
+        return await CreateJsonResponse(req, HttpStatusCode.OK, customers);
+    }
+
     [Function("GetCustomersByListing")]
     [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "GetCustomersByListing", tags: new[] { "Customers" }, Summary = "Get customers by listing ID")]

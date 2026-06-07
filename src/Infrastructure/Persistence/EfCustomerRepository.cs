@@ -65,6 +65,35 @@ public class EfCustomerRepository : ICustomerRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Customer>> GetByOwnerAsync(Guid ownerId, CancellationToken cancellationToken = default)
+    {
+        // Listing.OwnerId holds the property owner's auth user ID (same as User.Id / JWT nameid)
+        var customerIds = await _db.CustomerProperties
+            .Join(_db.Listings, cp => cp.ListingId, l => l.Id, (cp, l) => new { cp.CustomerId, l.OwnerId })
+            .Where(x => x.OwnerId == ownerId)
+            .Select(x => x.CustomerId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return await _db.Customers
+            .Where(c => customerIds.Contains(c.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Customer>> GetByPropertyAsync(Guid propertyId, CancellationToken cancellationToken = default)
+    {
+        var customerIds = await _db.CustomerProperties
+            .Join(_db.Listings, cp => cp.ListingId, l => l.Id, (cp, l) => new { cp.CustomerId, l.PropertyId })
+            .Where(x => x.PropertyId == propertyId)
+            .Select(x => x.CustomerId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return await _db.Customers
+            .Where(c => customerIds.Contains(c.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Customer>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await _db.Customers.ToListAsync(cancellationToken);
 

@@ -1,10 +1,13 @@
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using StayHere.Infrastructure.Persistence;
 using StayHere.Application.Categories.Services;
 using StayHere.Application.Common.Interfaces;
+using StayHere.Application.StaticData.Services;
 using StayHere.Domain.Repositories;
-using StayHere.Infrastructure.Persistence;
 using StayHere.Shared.Middleware;
 
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Configurations;
@@ -26,8 +29,12 @@ var host = new HostBuilder()
         services.AddStayHereDbContext(connectionString);
 
         services.AddScoped<ICategoryRepository, EfCategoryRepository>();
+        services.AddScoped<IRoleDefinitionRepository, EfRoleDefinitionRepository>();
+        services.AddScoped<IUserTypeDefinitionRepository, EfUserTypeDefinitionRepository>();
 
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IRoleDefinitionService, RoleDefinitionService>();
+        services.AddScoped<IUserTypeDefinitionService, UserTypeDefinitionService>();
 
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
@@ -49,4 +56,29 @@ var host = new HostBuilder()
     })
     .Build();
 
+await ApplyMigrationsAsync(host);
+
 await host.RunAsync();
+
+static async Task ApplyMigrationsAsync(IHost host)
+{
+    await using var scope = host.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<StayHereDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<StayHereDbContext>>();
+    try
+    {
+        var pending = await db.Database.GetPendingMigrationsAsync();
+        if (pending.Any())
+        {
+            logger.LogInformation("Applying {Count} pending migration(s): {Names}",
+                pending.Count(), string.Join(", ", pending));
+            await db.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied successfully.");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Database migration failed on startup.");
+        throw;
+    }
+}

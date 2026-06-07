@@ -10,4 +10,6 @@ public interface IAuthService
     Task<UserDto> RegisterAsync(RegisterRequest request);
     Task<List<UserProfileDto>> GetProfilesAsync(Guid userId);
     Task<bool> UpdateProfileAsync(UpdateProfileRequest request);
+    Task<(List<UserDto> Users, int Total)> GetAllUsersAsync(int page, int pageSize);
+    Task<UserDto?> GetUserByIdAsync(Guid id);
 }

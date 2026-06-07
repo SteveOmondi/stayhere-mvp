@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,opsz,wght@0,8..32,300;0,8..32,400;0,8..32,500;0,8..32,600;0,8..32,700;1,8..32,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sidebar-w: 268px;
+  --topbar-h: 64px;
+  --gold: #c9a227;
+  --teal: #0d9488;
+  --navy: #0c1222;
+  --radius: 14px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  @apply font-sans text-brand-900 min-h-screen;
+  background: #f0f2f7;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-brand-400/40 rounded-full; }
+
+/* ── Cards ─────────────────────────────────────────────── */
+.card { @apply bg-white rounded-2xl border border-black/[0.07] shadow-card; }
+.card-hover { @apply card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5; }
+.stat-card   { @apply card p-6 relative overflow-hidden; }
+
+/* ── Navigation ─────────────────────────────────────────── */
+.nav-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium
+         text-white/55 transition-all duration-150 cursor-pointer select-none;
+}
+.nav-item:hover { @apply bg-white/[0.06] text-white/90; }
+.nav-item.active {
+  background: rgba(13,148,136,0.18);
+  color: #5eead4;
+  box-shadow: inset 3px 0 0 #0d9488;
+  padding-left: calc(0.75rem - 3px);
+}
+.nav-section { @apply text-[10px] font-bold uppercase tracking-widest text-white/25 px-3 pt-5 pb-1; }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn { @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 cursor-pointer select-none whitespace-nowrap; }
+.btn-primary   { @apply btn px-5 py-2.5 text-sm bg-brand-950 text-brand-goldlight hover:bg-brand-800 shadow-sm hover:shadow-md active:scale-[0.98]; }
+.btn-teal      { @apply btn px-5 py-2.5 text-sm text-white shadow-sm hover:shadow-glow active:scale-[0.98]; background: linear-gradient(135deg,#0d9488,#0f766e); }
+.btn-teal:hover { filter: brightness(1.1); }
+.btn-secondary { @apply btn px-5 py-2.5 text-sm bg-white border border-black/10 text-brand-800 hover:bg-slate-50 hover:border-black/15 active:scale-[0.98]; }
+.btn-ghost     { @apply btn px-4 py-2 text-sm text-brand-700 hover:bg-black/5 rounded-lg; }
+.btn-danger    { @apply btn px-5 py-2.5 text-sm bg-red-600 text-white hover:bg-red-700 active:scale-[0.98]; }
+.btn-icon      { @apply btn p-2 text-brand-700 hover:bg-black/5 rounded-lg; }
+
+/* ── Inputs ─────────────────────────────────────────────── */
+.field-label { @apply block text-xs font-bold text-brand-700 uppercase tracking-wide mb-1.5; }
+.field { @apply space-y-1.5; }
+.input {
+  @apply w-full border border-black/10 rounded-xl px-4 py-2.5 text-sm bg-white
+         placeholder:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-teal/25
+         focus:border-brand-teal/60 transition-all duration-150;
+}
+.select { @apply input appearance-none cursor-pointer; }
+textarea.input { @apply resize-none; }
+
+/* ── Tables ─────────────────────────────────────────────── */
+.tbl { @apply w-full text-sm text-left; }
+.tbl thead { @apply border-b border-black/10; }
+.tbl thead th { @apply px-4 py-3 text-[11px] font-bold text-brand-600 uppercase tracking-wider bg-slate-50/80; }
+.tbl tbody tr { @apply border-b border-black/5 hover:bg-slate-50/70 transition-colors duration-100; }
+.tbl tbody td { @apply px-4 py-3.5 text-brand-800; }
+.tbl tbody tr:last-child { @apply border-b-0; }
+
+/* ── Badges ─────────────────────────────────────────────── */
+.badge { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold; }
+.badge-success { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60; }
+.badge-warning { @apply bg-amber-50 text-amber-700 ring-1 ring-amber-200/60; }
+.badge-error   { @apply bg-red-50 text-red-700 ring-1 ring-red-200/60; }
+.badge-info    { @apply bg-blue-50 text-blue-700 ring-1 ring-blue-200/60; }
+.badge-neutral { @apply bg-slate-100 text-slate-600 ring-1 ring-slate-200/60; }
+.badge-teal    { @apply bg-teal-50 text-teal-700 ring-1 ring-teal-200/60; }
+.badge-gold    { @apply bg-amber-50 text-amber-700 ring-1 ring-amber-200/60; }
+.badge-occupied   { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+.badge-vacant     { @apply bg-sky-50 text-sky-700 ring-1 ring-sky-200; }
+
+/* ── Modal ──────────────────────────────────────────────── */
+.modal-bg { @apply fixed inset-0 z-[100] flex items-center justify-center p-4; background: rgba(12,18,34,0.55); backdrop-filter: blur(4px); }
+.modal-box { @apply bg-white rounded-3xl shadow-modal border border-black/[0.07] w-full animate-scale-in; }
+
+/* ── Skeleton ───────────────────────────────────────────── */
+.skeleton {
+  @apply rounded-lg;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ── Status dot ─────────────────────────────────────────── */
+.dot { @apply inline-block w-2 h-2 rounded-full; }
+.dot-online  { @apply bg-emerald-400; animation: pulseDot 2s ease-in-out infinite; }
+.dot-offline { @apply bg-red-400; }
+.dot-warning { @apply bg-amber-400; }
+
+/* ── Toast ──────────────────────────────────────────────── */
+.toast { @apply flex items-start gap-3 w-full text-left px-4 py-3.5 rounded-2xl shadow-elevated text-sm border transition-all duration-200; }
+.toast-success { @apply bg-white border-emerald-200 text-emerald-900; }
+.toast-error   { @apply bg-white border-red-200 text-red-900; }
+.toast-info    { @apply bg-white border-teal-200 text-brand-900; }
+
+/* ── Animated progress bar ──────────────────────────────── */
+.progress-track { @apply h-2 rounded-full bg-slate-100 overflow-hidden; }
+.progress-fill  { @apply h-full rounded-full transition-all duration-700 ease-out; }
+
+/* ── Property card ──────────────────────────────────────── */
+.property-card { @apply card-hover overflow-hidden cursor-pointer; }
+.property-card img { @apply w-full object-cover transition-transform duration-500; }
+.property-card:hover img { transform: scale(1.05); }
+
+/* ── Chart helpers ──────────────────────────────────────── */
+.chart-line { fill: none; stroke: #0d9488; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.chart-line-gold { fill: none; stroke: #c9a227; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Hero overlay ───────────────────────────────────────── */
+.hero-overlay { background: linear-gradient(110deg, rgba(12,18,34,0.95) 0%, rgba(12,18,34,0.72) 45%, rgba(12,18,34,0.45) 100%); }
+
+/* ── Stagger animation helpers ──────────────────────────── */
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+
+@keyframes pulseDot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(13,148,136,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(13,148,136,0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

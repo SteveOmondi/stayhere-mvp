@@ -26,6 +26,8 @@ public class PropertyService : IPropertyService
             Description = request.Description,
             TotalUnits = request.TotalUnits,
             TotalFloors = request.TotalFloors,
+            PrimaryImageUrl = request.PrimaryImageUrl,
+            Images = request.Images ?? new List<string>(),
             Location = new PropertyLocation(
                 request.Location.Country,
                 request.Location.County,
@@ -83,6 +85,8 @@ public class PropertyService : IPropertyService
         if (request.Description != null) property.Description = request.Description;
         if (request.TotalUnits.HasValue) property.TotalUnits = request.TotalUnits.Value;
         if (request.TotalFloors.HasValue) property.TotalFloors = request.TotalFloors.Value;
+        if (request.PrimaryImageUrl != null) property.PrimaryImageUrl = request.PrimaryImageUrl;
+        if (request.Images != null) property.Images = request.Images;
         if (request.Location != null)
         {
             property.Location = new PropertyLocation(
@@ -133,7 +137,9 @@ public class PropertyService : IPropertyService
             ),
             property.OwnerId,
             property.CreatedAt,
-            property.UpdatedAt
+            property.UpdatedAt,
+            property.PrimaryImageUrl,
+            property.Images
         );
     }
 
@@ -146,7 +152,8 @@ public class PropertyService : IPropertyService
             property.TotalUnits,
             property.TotalFloors,
             property.Location.City,
-            property.Location.County
+            property.Location.County,
+            property.PrimaryImageUrl
         );
     }
 

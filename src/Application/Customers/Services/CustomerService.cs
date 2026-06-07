@@ -65,6 +65,18 @@ public class CustomerService : ICustomerService
         return customers.Select(MapToDto).ToList();
     }
 
+    public async Task<IReadOnlyList<CustomerDto>> GetCustomersByOwnerAsync(Guid ownerId)
+    {
+        var customers = await _customerRepository.GetByOwnerAsync(ownerId);
+        return customers.Select(MapToDto).ToList();
+    }
+
+    public async Task<IReadOnlyList<CustomerDto>> GetCustomersByPropertyAsync(Guid propertyId)
+    {
+        var customers = await _customerRepository.GetByPropertyAsync(propertyId);
+        return customers.Select(MapToDto).ToList();
+    }
+
     public async Task<IReadOnlyList<CustomerDto>> GetAllCustomersAsync()
     {
         var customers = await _customerRepository.GetAllAsync();

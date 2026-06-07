@@ -15,6 +15,9 @@ public class Property
     /// <summary>Number of floors in the building</summary>
     public int TotalFloors { get; set; }
 
+    public string? PrimaryImageUrl { get; set; }
+    public List<string> Images { get; set; } = new();
+
     public PropertyLocation Location { get; set; } = null!;
     public Guid OwnerId { get; set; }
 

@@ -327,7 +327,19 @@ public class AuthService : IAuthService
         return true;
     }
 
-    private UserDto MapToDto(User user) => 
+    public async Task<(List<UserDto> Users, int Total)> GetAllUsersAsync(int page, int pageSize)
+    {
+        var (users, total) = await _userRepository.GetAllAsync(page, pageSize);
+        return (users.Select(MapToDto).ToList(), total);
+    }
+
+    public async Task<UserDto?> GetUserByIdAsync(Guid id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        return user == null ? null : MapToDto(user);
+    }
+
+    private UserDto MapToDto(User user) =>
         new UserDto(
             user.Id, 
             user.Email, 

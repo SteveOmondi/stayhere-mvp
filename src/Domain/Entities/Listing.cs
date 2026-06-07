@@ -26,6 +26,7 @@ public class Listing
     public PropertyLocation Location { get; set; } = null!;
 
     public List<string> Amenities { get; set; } = new();
+    public string? PrimaryImageUrl { get; set; }
     public List<string> Images { get; set; } = new();
 
     public int? SizeSqft { get; set; }

@@ -2,53 +2,53 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 /**
- * Dev-only reverse proxy so the browser talks to `localhost:5173` only (no CORS).
- * Must match ports in repo `scripts/stayhere-function-ports.ps1`.
+ * Dev proxy: routes /stayhere-api/* → Azure APIM, avoiding CORS on localhost.
+ * Strips the /stayhere-api/<service> prefix so the path reaches APIM correctly.
+ * e.g. /stayhere-api/owner/owners/list → https://.../propertyowner/owners/list
  */
-const fn = {
-  auth: "http://localhost:7100",
-  property: "http://localhost:7101",
-  customer: "http://localhost:7102",
-  owner: "http://localhost:7103",
-  static: "http://localhost:7104",
-  ai: "http://localhost:7105",
-};
+const APIM = "https://apim-dev-5c27bcf3.azure-api.net";
 
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173,
+    port: 5100,
     open: true,
     proxy: {
       "/stayhere-api/auth": {
-        target: fn.auth,
+        target: `${APIM}/auth`,
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/stayhere-api\/auth/, "/api"),
-      },
-      "/stayhere-api/property": {
-        target: fn.property,
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/stayhere-api\/property/, "/api"),
-      },
-      "/stayhere-api/customer": {
-        target: fn.customer,
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/stayhere-api\/customer/, "/api"),
+        secure: true,
+        rewrite: (p) => p.replace(/^\/stayhere-api\/auth/, ""),
       },
       "/stayhere-api/owner": {
-        target: fn.owner,
+        target: `${APIM}/propertyowner`,
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/stayhere-api\/owner/, "/api"),
+        secure: true,
+        rewrite: (p) => p.replace(/^\/stayhere-api\/owner/, ""),
+      },
+      "/stayhere-api/property": {
+        target: `${APIM}/property`,
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/stayhere-api\/property/, ""),
+      },
+      "/stayhere-api/customer": {
+        target: `${APIM}/customers`,
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/stayhere-api\/customer/, ""),
       },
       "/stayhere-api/static": {
-        target: fn.static,
+        target: `${APIM}/staticdata`,
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/stayhere-api\/static/, "/api"),
+        secure: true,
+        rewrite: (p) => p.replace(/^\/stayhere-api\/static/, ""),
       },
       "/stayhere-api/ai": {
-        target: fn.ai,
+        target: `${APIM}/aiagent`,
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/stayhere-api\/ai/, "/api"),
+        secure: true,
+        rewrite: (p) => p.replace(/^\/stayhere-api\/ai/, ""),
       },
     },
   },

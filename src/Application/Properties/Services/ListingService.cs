@@ -75,6 +75,7 @@ public class ListingService : IListingService
             IsFurnished = request.IsFurnished,
             Location = new PropertyLocation(location.Country, location.County, location.City, location.Suburb, location.Street, location.Latitude, location.Longitude),
             Amenities = request.Amenities ?? new List<string>(),
+            PrimaryImageUrl = request.PrimaryImageUrl,
             Images = NormalizeListingImages(request.Images),
             SizeSqft = request.SizeSqft,
             YearBuilt = request.YearBuilt,
@@ -137,6 +138,7 @@ public class ListingService : IListingService
             IsFurnished = request.IsFurnished,
             Location = new PropertyLocation(location.Country, location.County, location.City, location.Suburb, location.Street, location.Latitude, location.Longitude),
             Amenities = request.Amenities ?? new List<string>(),
+            PrimaryImageUrl = request.PrimaryImageUrl,
             Images = NormalizeListingImages(request.Images),
             SizeSqft = request.SizeSqft,
             YearBuilt = request.YearBuilt,
@@ -305,6 +307,7 @@ public class ListingService : IListingService
         if (request.Location != null)
             listing.Location = new PropertyLocation(request.Location.Country, request.Location.County, request.Location.City, request.Location.Suburb, request.Location.Street, request.Location.Latitude, request.Location.Longitude);
         if (request.Amenities != null) listing.Amenities = request.Amenities;
+        if (request.PrimaryImageUrl != null) listing.PrimaryImageUrl = request.PrimaryImageUrl;
         if (request.Images != null) listing.Images = NormalizeListingImages(request.Images);
         if (request.SizeSqft.HasValue) listing.SizeSqft = request.SizeSqft;
         if (request.YearBuilt.HasValue) listing.YearBuilt = request.YearBuilt;
@@ -480,7 +483,8 @@ public class ListingService : IListingService
             listing.IsFeatured,
             listing.RecommendedScore,
             listing.CreatedAt,
-            listing.UpdatedAt
+            listing.UpdatedAt,
+            listing.PrimaryImageUrl
         );
     }
 
@@ -502,7 +506,7 @@ public class ListingService : IListingService
             listing.Bathrooms,
             listing.Location.City,
             listing.Location.County,
-            listing.Images.FirstOrDefault(),
+            listing.PrimaryImageUrl ?? listing.Images.FirstOrDefault(),
             listing.AvailabilityStatus.ToString(),
             listing.Views,
             listing.Rating,

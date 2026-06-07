@@ -28,6 +28,13 @@ public class InMemoryUserRepository : IUserRepository
         }
         return Task.CompletedTask;
     }
+
+    public Task<(List<User> Users, int Total)> GetAllAsync(int page, int pageSize)
+    {
+        var total = _users.Count;
+        var users = _users.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        return Task.FromResult((users, total));
+    }
 }
 
 public class InMemoryOtpRepository : IOtpRepository

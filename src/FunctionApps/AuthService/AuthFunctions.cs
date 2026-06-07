@@ -219,6 +219,74 @@ public class AuthFunctions
         }
     }
 
+    [Function("GetAllUsers")]
+    [Authorize]
+    [OpenApiOperation(operationId: "GetAllUsers", tags: new[] { "Auth" }, Summary = "Get All Users (Admin)", Description = "Returns a paginated list of all registered users. Admin only.")]
+    [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object))]
+    public async Task<HttpResponseData> GetAllUsers(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "auth/users")] HttpRequestData req)
+    {
+        _logger.LogInformation("Processing GetAllUsers request.");
+        try
+        {
+            var qs = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
+            int.TryParse(qs["page"], out var page);
+            int.TryParse(qs["pageSize"], out var pageSize);
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 200) pageSize = 20;
+
+            var (users, total) = await _authService.GetAllUsersAsync(page, pageSize);
+            return await CreateJsonResponse(req, new
+            {
+                succeeded = true,
+                page,
+                pageSize,
+                totalCount = total,
+                totalPages = (int)Math.Ceiling((double)total / pageSize),
+                items = users
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during GetAllUsers");
+            var res = req.CreateResponse(HttpStatusCode.BadRequest);
+            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
+            return res;
+        }
+    }
+
+    [Function("GetUserById")]
+    [Authorize]
+    [OpenApiOperation(operationId: "GetUserById", tags: new[] { "Auth" }, Summary = "Get User By ID (Admin)", Description = "Returns a single user by their auth ID. Admin only.")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserDto))]
+    public async Task<HttpResponseData> GetUserById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "auth/users/{id:guid}")] HttpRequestData req,
+        Guid id)
+    {
+        _logger.LogInformation("Processing GetUserById request for {Id}.", id);
+        try
+        {
+            var user = await _authService.GetUserByIdAsync(id);
+            if (user == null)
+            {
+                var notFound = req.CreateResponse(HttpStatusCode.NotFound);
+                await notFound.WriteAsJsonAsync(new { Succeeded = false, Message = "User not found." });
+                return notFound;
+            }
+            return await CreateJsonResponse(req, user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during GetUserById");
+            var res = req.CreateResponse(HttpStatusCode.BadRequest);
+            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
+            return res;
+        }
+    }
+
     private async Task<HttpResponseData> CreateJsonResponse<T>(HttpRequestData req, T content)
     {
         var response = req.CreateResponse(HttpStatusCode.OK);

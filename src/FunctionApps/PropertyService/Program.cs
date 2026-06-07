@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Properties.Services;
+using StayHere.Infrastructure.Cloudflare;
 using StayHere.Domain.Repositories;
 using StayHere.Infrastructure.AiAgent;
 using StayHere.Infrastructure.Caching;
@@ -40,6 +41,7 @@ var host = new HostBuilder()
         services.AddScoped<IListingRepository, EfListingRepository>();
         services.AddScoped<IPropertyService, PropertyService>();
         services.AddScoped<IListingService, ListingService>();
+        services.AddHttpClient<IImageUploadService, CloudflareImagesService>();
 
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();

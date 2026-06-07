@@ -529,6 +529,11 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .HasDefaultValue("KES")
                         .HasColumnName("price_currency");
 
+                    b.Property<string>("PrimaryImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("primary_image_url");
+
                     b.Property<Guid>("PropertyId")
                         .HasColumnType("uuid")
                         .HasColumnName("property_id");
@@ -755,9 +760,19 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<string>("Images")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("images");
+
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid")
                         .HasColumnName("owner_id");
+
+                    b.Property<string>("PrimaryImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("primary_image_url");
 
                     b.Property<string>("PropertyCode")
                         .IsRequired()
@@ -793,6 +808,7 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                             BuildingName = "StayHere Heights",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Luxury living in the heart of the city",
+                            Images = "[]",
                             OwnerId = new Guid("44444444-4444-4444-4444-444444444444"),
                             PropertyCode = "PROP-001",
                             TotalFloors = 10,
@@ -865,6 +881,36 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                             UserId = new Guid("66666666-6666-6666-6666-666666666666"),
                             WalletId = new Guid("55555555-5555-5555-5555-555555555555")
                         });
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.RoleDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("role_definitions", (string)null);
                 });
 
             modelBuilder.Entity("StayHere.Domain.Entities.User", b =>
@@ -941,6 +987,36 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                             Roles = "[5,1]",
                             Type = "Individual"
                         });
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.UserTypeDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("user_type_definitions", (string)null);
                 });
 
             modelBuilder.Entity("StayHere.Domain.Entities.Wallet", b =>

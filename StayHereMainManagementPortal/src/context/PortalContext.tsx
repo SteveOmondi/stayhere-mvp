@@ -1,25 +1,41 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ApiError, ownersApi } from "../lib/api";
-import { loadConfig, saveConfig, type PortalConfig } from "../lib/config";
+import { loadConfig, saveConfig, setAuthToken, clearAuthToken, type PortalConfig } from "../lib/config";
 
 type Toast = { id: number; type: "success" | "error" | "info"; message: string };
 
 export type PortalOwnerEntry = {
-  id: string;
+  id: string;       // PropertyOwner entity ID
+  userId: string;   // Auth user ID (nameid from JWT) — use this for property/listing lookups
   fullName: string;
   email: string;
   phone: string;
 };
 
+export type AdminUser = {
+  email: string;
+  name?: string;
+  role?: string;
+  id?: string;
+};
+
 type Ctx = {
+  /* Config */
   config: PortalConfig;
   setConfig: (p: Partial<PortalConfig>) => void;
+  /* Auth */
+  isAuthenticated: boolean;
+  adminUser: AdminUser | null;
+  loginComplete: (token: string, user?: AdminUser) => void;
+  logout: () => void;
+  /* Data */
   reloadKey: number;
   bumpReload: () => void;
+  /* Toasts */
   toasts: Toast[];
   toast: (message: string, type?: Toast["type"]) => void;
   dismissToast: (id: number) => void;
-  /** Shared cache for header + listing wizard (GET owners/portal-directory). */
+  /* Owner directory */
   ownerDirectory: PortalOwnerEntry[];
   ownerDirectoryLoading: boolean;
   refreshOwnerDirectory: () => Promise<void>;
@@ -34,6 +50,18 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
   const [ownerDirectory, setOwnerDirectory] = useState<PortalOwnerEntry[]>([]);
   const [ownerDirectoryLoading, setOwnerDirectoryLoading] = useState(false);
 
+  /* Auth state — bootstrapped from config.authToken */
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const token = loadConfig().authToken;
+    return Boolean(token && token.length > 10);
+  });
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
+    try {
+      const stored = localStorage.getItem("sh_mgmt_admin_user");
+      return stored ? (JSON.parse(stored) as AdminUser) : null;
+    } catch { return null; }
+  });
+
   const setConfig = useCallback((p: Partial<PortalConfig>) => {
     saveConfig(p);
     setConfigState(loadConfig());
@@ -44,13 +72,32 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
   const toast = useCallback((message: string, type: Toast["type"] = "info") => {
     const id = Date.now();
     setToasts((t) => [...t, { id, type, message }]);
-    setTimeout(() => {
-      setToasts((t) => t.filter((x) => x.id !== id));
-    }, 5000);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 5000);
   }, []);
 
   const dismissToast = useCallback((id: number) => {
     setToasts((t) => t.filter((x) => x.id !== id));
+  }, []);
+
+  const loginComplete = useCallback((token: string, user?: AdminUser) => {
+    setAuthToken(token);
+    setConfigState(loadConfig());
+    setIsAuthenticated(true);
+    if (user) {
+      setAdminUser(user);
+      localStorage.setItem("sh_mgmt_admin_user", JSON.stringify(user));
+    }
+    console.log("%c✅ Authentication complete. Token stored.", "color:#10b981;font-weight:bold");
+    console.log("Token (first 40 chars):", token.slice(0, 40) + "…");
+  }, []);
+
+  const logout = useCallback(() => {
+    clearAuthToken();
+    localStorage.removeItem("sh_mgmt_admin_user");
+    setIsAuthenticated(false);
+    setAdminUser(null);
+    setConfigState(loadConfig());
+    console.log("%c🚪 Logged out — token cleared.", "color:#f59e0b;font-weight:bold");
   }, []);
 
   const refreshOwnerDirectory = useCallback(async () => {
@@ -63,6 +110,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           const r = x as Record<string, unknown>;
           return {
             id: String(r.id ?? ""),
+            userId: String(r.userId ?? r.id ?? ""),
             fullName: String(r.fullName ?? ""),
             email: String(r.email ?? ""),
             phone: String(r.phone ?? ""),
@@ -78,39 +126,23 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
   }, [toast]);
 
   useEffect(() => {
-    void refreshOwnerDirectory();
-  }, [reloadKey, config.propertyOwnerApiBase, refreshOwnerDirectory]);
+    if (isAuthenticated) void refreshOwnerDirectory();
+  }, [reloadKey, config.propertyOwnerApiBase, isAuthenticated, refreshOwnerDirectory]);
 
   const value = useMemo(
     () => ({
-      config,
-      setConfig,
-      reloadKey,
-      bumpReload,
-      toasts,
-      toast,
-      dismissToast,
-      ownerDirectory,
-      ownerDirectoryLoading,
-      refreshOwnerDirectory,
+      config, setConfig,
+      isAuthenticated, adminUser, loginComplete, logout,
+      reloadKey, bumpReload,
+      toasts, toast, dismissToast,
+      ownerDirectory, ownerDirectoryLoading, refreshOwnerDirectory,
     }),
-    [
-      config,
-      setConfig,
-      reloadKey,
-      bumpReload,
-      toasts,
-      toast,
-      dismissToast,
-      ownerDirectory,
-      ownerDirectoryLoading,
-      refreshOwnerDirectory,
-    ]
+    [config, setConfig, isAuthenticated, adminUser, loginComplete, logout,
+      reloadKey, bumpReload, toasts, toast, dismissToast,
+      ownerDirectory, ownerDirectoryLoading, refreshOwnerDirectory]
   );
 
-  return (
-    <PortalContext.Provider value={value}>{children}</PortalContext.Provider>
-  );
+  return <PortalContext.Provider value={value}>{children}</PortalContext.Provider>;
 }
 
 export function usePortal() {

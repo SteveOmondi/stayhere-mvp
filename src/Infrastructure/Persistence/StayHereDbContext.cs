@@ -37,6 +37,8 @@ public class StayHereDbContext : DbContext
     public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Organization> Organizations => Set<Organization>();
+    public DbSet<RoleDefinition> RoleDefinitions => Set<RoleDefinition>();
+    public DbSet<UserTypeDefinition> UserTypeDefinitions => Set<UserTypeDefinition>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +59,8 @@ public class StayHereDbContext : DbContext
         ConfigureOtpVerification(modelBuilder);
         ConfigureCategory(modelBuilder);
         ConfigureOrganization(modelBuilder);
+        ConfigureRoleDefinition(modelBuilder);
+        ConfigureUserTypeDefinition(modelBuilder);
 
         SeedData(modelBuilder);
     }
@@ -148,7 +152,7 @@ public class StayHereDbContext : DbContext
 
         var propertyId = Guid.Parse("33333333-3333-3333-3333-333333333333");
         modelBuilder.Entity<Property>().HasData(
-            new 
+            new
             {
                 Id = propertyId,
                 PropertyCode = "PROP-001",
@@ -156,6 +160,8 @@ public class StayHereDbContext : DbContext
                 Description = "Luxury living in the heart of the city",
                 TotalUnits = 50,
                 TotalFloors = 10,
+                PrimaryImageUrl = (string?)null,
+                Images = new List<string>(),
                 OwnerId = ownerId,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
@@ -241,6 +247,11 @@ public class StayHereDbContext : DbContext
 
     private static void ConfigureProperty(ModelBuilder modelBuilder)
     {
+        var stringListComparer = new ValueComparer<List<string>>(
+            (c1, c2) => c1!.SequenceEqual(c2!),
+            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+            c => c.ToList());
+
         modelBuilder.Entity<Property>(entity =>
         {
             entity.ToTable("properties");
@@ -251,6 +262,12 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.TotalUnits).HasColumnName("total_units");
             entity.Property(e => e.TotalFloors).HasColumnName("total_floors");
+            entity.Property(e => e.PrimaryImageUrl).HasColumnName("primary_image_url").HasMaxLength(500);
+            entity.Property(e => e.Images).HasColumnName("images")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrWhiteSpace(v) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                .Metadata.SetValueComparer(stringListComparer);
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
@@ -299,13 +316,14 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.Amenities).HasColumnName("amenities")
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                    v => string.IsNullOrWhiteSpace(v) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
                 .Metadata.SetValueComparer(stringListComparer);
             entity.Property(e => e.Images).HasColumnName("images")
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                    v => string.IsNullOrWhiteSpace(v) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
                 .Metadata.SetValueComparer(stringListComparer);
+            entity.Property(e => e.PrimaryImageUrl).HasColumnName("primary_image_url").HasMaxLength(500);
             entity.Property(e => e.SizeSqft).HasColumnName("size_sqft");
             entity.Property(e => e.YearBuilt).HasColumnName("year_built");
             entity.Property(e => e.Developer).HasColumnName("developer").HasMaxLength(255);
@@ -534,6 +552,34 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.Attempts).HasColumnName("attempts");
             entity.Property(e => e.Type).HasColumnName("type").HasConversion<string>();
             entity.HasIndex(e => new { e.Target, e.IsUsed });
+        });
+    }
+
+    private static void ConfigureRoleDefinition(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<RoleDefinition>(entity =>
+        {
+            entity.ToTable("role_definitions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.Name).IsUnique();
+        });
+    }
+
+    private static void ConfigureUserTypeDefinition(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserTypeDefinition>(entity =>
+        {
+            entity.ToTable("user_type_definitions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.Name).IsUnique();
         });
     }
 

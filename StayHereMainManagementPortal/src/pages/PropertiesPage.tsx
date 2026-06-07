@@ -4,6 +4,7 @@ import { ApiError, propertiesApi } from "../lib/api";
 import { effectiveOwnerId } from "../lib/effectiveOwner";
 import { asPaginated } from "../lib/paginated";
 import { usePortal } from "../context/PortalContext";
+import { IcoBuilding, IcoPlus, IcoListing, IcoEdit, IcoMapPin, IcoChevronRight } from "../components/icons";
 
 type Row = Record<string, unknown>;
 
@@ -22,123 +23,176 @@ export function PropertiesPage() {
     (async () => {
       setLoading(true);
       try {
-        if (!scopedOwner) {
-          if (!c) {
-            setRows([]);
-            setTotal(0);
-          }
-          return;
-        }
+        if (!scopedOwner) { if (!c) { setRows([]); setTotal(0); } return; }
         const data = await propertiesApi.byOwner(scopedOwner, page, 20);
         const p = asPaginated<Row>(data);
         if (c) return;
-        if (p) {
-          setRows(p.items);
-          setTotal(p.totalCount);
-        }
+        if (p) { setRows(p.items); setTotal(p.totalCount); }
       } catch (e) {
         if (!c) toast(e instanceof ApiError ? e.message : "Failed to load properties", "error");
       } finally {
         if (!c) setLoading(false);
       }
     })();
-    return () => {
-      c = true;
-    };
+    return () => { c = true; };
   }, [page, scopedOwner, reloadKey, toast]);
 
   return (
-    <div>
-      <div className="flex flex-wrap justify-between gap-4 mb-6">
+    <div className="space-y-5 animate-slide-up">
+
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="font-display text-2xl text-brand-950">Properties</h2>
-          <p className="text-sm text-brand-700 mt-1">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "#3b82f618" }}>
+              <IcoBuilding size={17} style={{ color: "#3b82f6" }} />
+            </div>
+            <h2 className="font-display text-3xl text-brand-900">Properties</h2>
+          </div>
+          <p className="text-sm text-brand-500">
             {scopedOwner
-              ? urlOwner
-                ? `URL filter · owner ${scopedOwner.slice(0, 8)}…`
-                : `Buildings for the owner selected in the header.`
-              : "Choose a property owner in the bar above (or add ?ownerId= to the URL)."}
+              ? urlOwner ? `URL filter — owner ${scopedOwner.slice(0, 8)}…` : "Buildings for the active owner scope."
+              : "Select a property owner in the sidebar to load their buildings."}
+            {total > 0 && ` · ${total} properties`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {urlOwner && (
-            <Link to="/properties" className="text-sm py-2 px-3 rounded-lg border">
-              Clear URL filter
+            <Link to="/properties" className="btn-ghost text-sm border border-black/10">
+              Clear filter
             </Link>
           )}
-          <Link
-            to="/listings/new-from-property"
-            className="text-sm py-2 px-4 rounded-xl border border-brand-950 text-brand-950 font-semibold"
-          >
-            + Listing from property
+          <Link to="/listings/new-from-property" className="btn-secondary text-sm">
+            <IcoListing size={14} /> New Listing
           </Link>
-          <Link
-            to="/properties/new"
-            className="text-sm py-2 px-4 rounded-xl bg-brand-950 text-brand-goldlight font-semibold"
-          >
-            + New property
+          <Link to="/properties/new" className="btn-primary text-sm">
+            <IcoPlus size={14} /> New Property
           </Link>
         </div>
       </div>
 
-      <div
-        className="h-32 rounded-2xl mb-6 bg-cover bg-center relative overflow-hidden"
-        style={{
-          backgroundImage:
-            "url(https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80)",
-        }}
-      >
-        <div className="absolute inset-0 bg-brand-950/55" />
-        <p className="relative z-10 text-white text-sm p-6 max-w-xl">
-          High-rise and garden-style stock — each row links to edit. Mutations use{" "}
-          <strong>X-User-Id</strong> from the active owner above (same as Settings).
-        </p>
+      {/* Hero */}
+      <div className="relative rounded-2xl overflow-hidden h-28">
+        <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=75"
+          alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(12,18,34,0.85), rgba(12,18,34,0.4))" }} />
+        <div className="absolute inset-0 flex items-center px-7 gap-10">
+          {[
+            { label: "Buildings",        value: total || "—" },
+            { label: "Active owner",     value: scopedOwner ? scopedOwner.slice(0, 8) + "…" : "None" },
+            { label: "Mutations use",    value: "X-User-Id" },
+          ].map(s => (
+            <div key={s.label}>
+              <div className="text-xl font-display font-bold text-brand-goldlight">{s.value}</div>
+              <div className="text-xs text-white/60 mt-0.5">{s.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-brand-800/10">
-        <table className="w-full text-sm">
-          <thead className="bg-brand-950 text-brand-cream/90 text-xs uppercase">
-            <tr>
-              <th className="px-3 py-2 text-left">Code</th>
-              <th className="px-3 py-2 text-left">Building</th>
-              <th className="px-3 py-2 text-left">City</th>
-              <th className="px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {loading ? (
+      {/* Table */}
+      <div className="portal-card overflow-hidden">
+        <div className="p-5 border-b border-black/[0.06] flex items-center justify-between">
+          <h3 className="font-semibold text-brand-900">Building Registry</h3>
+          <span className="badge badge-neutral">{rows.length} loaded</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="portal-table">
+            <thead>
               <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-brand-600">
-                  Loading…
-                </td>
+                <th>Building</th>
+                <th>Code</th>
+                <th>Location</th>
+                <th>Units / Floors</th>
+                <th>ID</th>
+                <th></th>
               </tr>
-            ) : !scopedOwner ? (
-              <tr>
-                <td colSpan={4} className="px-3 py-8 text-center text-brand-600">
-                  Select a property owner in the header to load their properties.
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => (
-                <tr key={String(r.id)} className="hover:bg-brand-cream/80">
-                  <td className="px-3 py-2 font-mono text-xs">{String(r.propertyCode ?? "")}</td>
-                  <td className="px-3 py-2 font-medium">{String(r.buildingName ?? "")}</td>
-                  <td className="px-3 py-2">{String(r.city ?? "")}</td>
-                  <td className="px-3 py-2 text-right">
-                    <Link
-                      to={`/properties/${String(r.id)}/edit`}
-                      className="text-brand-gold font-semibold text-xs hover:underline"
-                    >
-                      Edit
-                    </Link>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>{Array.from({ length: 6 }).map((_, j) => (
+                    <td key={j}><div className="skeleton h-4 w-full" /></td>
+                  ))}</tr>
+                ))
+              ) : !scopedOwner ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-16">
+                    <IcoBuilding size={32} className="mx-auto mb-2 text-brand-200" />
+                    <div className="text-brand-400">Select a property owner in the sidebar</div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-16">
+                    <IcoBuilding size={32} className="mx-auto mb-2 text-brand-200" />
+                    <div className="text-brand-400">No properties for this owner yet</div>
+                    <div className="mt-3">
+                      <Link to="/properties/new" className="btn-primary text-sm">
+                        <IcoPlus size={14} /> Add First Property
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ) : rows.map(r => (
+                <tr key={String(r.id)}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 bg-slate-100">
+                        <div className="w-full h-full flex items-center justify-center">
+                          <IcoBuilding size={18} className="text-brand-400" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-brand-900">{String(r.buildingName ?? "Unnamed")}</div>
+                        {r.description ? (
+                          <div className="text-[10px] text-brand-400 line-clamp-1">{String(r.description)}</div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <code className="text-[11px] bg-slate-100 px-2 py-0.5 rounded font-mono text-brand-700">
+                      {String(r.propertyCode ?? "—")}
+                    </code>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-1.5 text-brand-700 text-xs">
+                      <IcoMapPin size={12} className="text-brand-400" />
+                      {[r.suburb, r.city].filter(Boolean).map(v => String(v)).join(", ") || "—"}
+                    </div>
+                  </td>
+                  <td className="text-sm">
+                    {r.totalUnits || r.floors ? (
+                      <span className="text-brand-700">
+                        {r.totalUnits ? `${String(r.totalUnits)} units` : ""}
+                        {(r.totalUnits && r.floors) ? " · " : ""}
+                        {r.floors ? `${String(r.floors)} floors` : ""}
+                      </span>
+                    ) : <span className="text-brand-300">—</span>}
+                  </td>
+                  <td className="font-mono text-[10px] text-brand-400">{String(r.id ?? "").slice(0, 12)}…</td>
+                  <td>
+                    <div className="flex gap-1">
+                      <Link to={`/properties/${String(r.id)}/edit`} className="btn-icon hover:bg-blue-50 hover:text-blue-600">
+                        <IcoEdit size={13} />
+                      </Link>
+                      <Link to={`/listings?propertyId=${String(r.id)}`} className="btn-ghost text-xs gap-1 text-brand-gold">
+                        Listings <IcoChevronRight size={11} />
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {total > 0 && (
+          <div className="px-5 py-3 border-t border-black/[0.06] text-xs text-brand-500">
+            Showing {rows.length} of {total} properties
+          </div>
+        )}
       </div>
-      <p className="text-xs text-brand-600 mt-2">Total: {total}</p>
     </div>
   );
 }

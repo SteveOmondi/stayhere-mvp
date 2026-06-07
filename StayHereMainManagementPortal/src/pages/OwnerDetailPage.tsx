@@ -34,11 +34,6 @@ export function OwnerDetailPage() {
 
   useEffect(() => {
     if (!ownerId) return;
-    setConfig({ defaultOwnerUserId: ownerId });
-  }, [ownerId, setConfig]);
-
-  useEffect(() => {
-    if (!ownerId) return;
     let c = false;
     (async () => {
       setLoading(true);
@@ -52,7 +47,11 @@ export function OwnerDetailPage() {
           ownersApi.caretakers(ownerId),
         ]);
         if (c) return;
-        setOwner(o as Record<string, unknown>);
+        const ownerData = o as Record<string, unknown>;
+        setOwner(ownerData);
+        // Use the owner's auth userId for property/listing API calls (nameid from JWT)
+        const scopeId = String(ownerData.userId ?? ownerId);
+        setConfig({ defaultOwnerUserId: scopeId });
         setWallet(w as Record<string, unknown>);
         setProps(Array.isArray(pr) ? pr : []);
         const lp = asPaginated<unknown>(li);

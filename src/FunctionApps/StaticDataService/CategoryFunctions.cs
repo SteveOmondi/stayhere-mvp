@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.Categories.Models;
 using StayHere.Application.Common.Interfaces;
+using StayHere.Application.StaticData.Models;
 using StayHere.Domain.Entities;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
@@ -16,16 +17,22 @@ namespace StayHere.StaticDataService.Functions;
 public class CategoryFunctions
 {
     private readonly ICategoryService _categoryService;
+    private readonly IRoleDefinitionService _roleService;
+    private readonly IUserTypeDefinitionService _userTypeService;
     private readonly ILogger<CategoryFunctions> _logger;
     private readonly IConfiguration _configuration;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public CategoryFunctions(
         ICategoryService categoryService,
+        IRoleDefinitionService roleService,
+        IUserTypeDefinitionService userTypeService,
         ILogger<CategoryFunctions> logger,
         IConfiguration configuration)
     {
         _categoryService = categoryService;
+        _roleService = roleService;
+        _userTypeService = userTypeService;
         _logger = logger;
         _configuration = configuration;
     }
@@ -53,26 +60,86 @@ public class CategoryFunctions
 
     [Function("GetUserTypes")]
     [AllowAnonymous]
-    [OpenApiOperation(operationId: "GetUserTypes", tags: new[] { "StaticData" }, Summary = "Get user types", Description = "Retrieves all possible user types.")]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]))]
+    [OpenApiOperation(operationId: "GetUserTypes", tags: new[] { "StaticData" }, Summary = "Get user types", Description = "Retrieves system and custom user types.")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserTypeDefinitionDto[]))]
     public async Task<HttpResponseData> GetUserTypes(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user-types")] HttpRequestData req)
     {
         _logger.LogInformation("Getting user types");
-        var types = Enum.GetNames(typeof(UserType));
+        var types = await _userTypeService.GetAllUserTypesAsync();
         return await CreateJsonResponse(req, HttpStatusCode.OK, types);
     }
 
     [Function("GetUserRoles")]
     [AllowAnonymous]
-    [OpenApiOperation(operationId: "GetUserRoles", tags: new[] { "StaticData" }, Summary = "Get user roles", Description = "Retrieves all possible user roles.")]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]))]
+    [OpenApiOperation(operationId: "GetUserRoles", tags: new[] { "StaticData" }, Summary = "Get user roles", Description = "Retrieves system and custom user roles.")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(RoleDefinitionDto[]))]
     public async Task<HttpResponseData> GetUserRoles(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user-roles")] HttpRequestData req)
     {
         _logger.LogInformation("Getting user roles");
-        var roles = Enum.GetNames(typeof(UserRole));
+        var roles = await _roleService.GetAllRolesAsync();
         return await CreateJsonResponse(req, HttpStatusCode.OK, roles);
+    }
+
+    [Function("CreateUserRole")]
+    [Authorize("Admin")]
+    [OpenApiOperation(operationId: "CreateUserRole", tags: new[] { "StaticData" }, Summary = "Create custom user role", Description = "Creates a new custom user role. Admin only.")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateRoleDefinitionRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(RoleDefinitionDto))]
+    public async Task<HttpResponseData> CreateUserRole(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user-roles")] HttpRequestData req)
+    {
+        _logger.LogInformation("Creating custom user role");
+        try
+        {
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var request = JsonSerializer.Deserialize<CreateRoleDefinitionRequest>(body, JsonOptions);
+            if (request == null || string.IsNullOrWhiteSpace(request.Name))
+                return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Name is required");
+
+            var created = await _roleService.CreateRoleAsync(request);
+            return await CreateJsonResponse(req, HttpStatusCode.Created, created);
+        }
+        catch (JsonException)
+        {
+            return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid JSON format");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user role");
+            return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, "Failed to create user role");
+        }
+    }
+
+    [Function("CreateUserType")]
+    [Authorize("Admin")]
+    [OpenApiOperation(operationId: "CreateUserType", tags: new[] { "StaticData" }, Summary = "Create custom user type", Description = "Creates a new custom user type. Admin only.")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateUserTypeDefinitionRequest), Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(UserTypeDefinitionDto))]
+    public async Task<HttpResponseData> CreateUserType(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user-types")] HttpRequestData req)
+    {
+        _logger.LogInformation("Creating custom user type");
+        try
+        {
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var request = JsonSerializer.Deserialize<CreateUserTypeDefinitionRequest>(body, JsonOptions);
+            if (request == null || string.IsNullOrWhiteSpace(request.Name))
+                return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Name is required");
+
+            var created = await _userTypeService.CreateUserTypeAsync(request);
+            return await CreateJsonResponse(req, HttpStatusCode.Created, created);
+        }
+        catch (JsonException)
+        {
+            return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid JSON format");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user type");
+            return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, "Failed to create user type");
+        }
     }
 
     [Function("GetAllCategories")]
