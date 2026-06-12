@@ -111,6 +111,15 @@ module "security" {
   onfon_api_key_value       = var.onfon_api_key
 }
 
+# --- FRONTEND STATIC SITES ---
+module "frontend" {
+  source      = "./modules/frontend"
+  rg_name     = azurerm_resource_group.main.name
+  location    = azurerm_resource_group.main.location
+  environment = var.environment
+  suffix      = random_id.suffix.hex
+}
+
 # --- APIM MODULE ---
 module "apim" {
   source      = "./modules/apim"
@@ -131,4 +140,7 @@ module "apim" {
 
   onfon_client_id             = var.onfon_client_id
   onfon_sender_id             = var.onfon_sender_id
+
+  admin_portal_url            = module.frontend.admin_portal_url
+  owner_portal_url            = module.frontend.owner_portal_url
 }

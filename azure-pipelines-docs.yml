@@ -9,6 +9,16 @@ trigger:
     - scripts/apim-security-map.json
     - azure-pipelines-docs.yml
 
+resources:
+  pipelines:
+  - pipeline: infra
+    source: StayHere-Infra
+    trigger:
+      branches:
+        include:
+        - main
+
+
 variables:
 - name: vmImageName
   value: 'ubuntu-latest'

@@ -46,6 +46,14 @@
     "pattern": "PATCH:profile/update",
     "access": "requires-jwt"
   },
+  {
+    "pattern": "GET:auth/users",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "GET:auth/users/*",
+    "access": "requires-jwt"
+  },
 
   {
     "comment": "── Properties ────────────────────────────────────────────────",
@@ -74,6 +82,10 @@
   },
   {
     "pattern": "DELETE:properties/*",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "POST:upload/request-url",
     "access": "requires-jwt"
   },
 
@@ -228,6 +240,14 @@
     "pattern": "GET:listings/*/customers",
     "access": "requires-jwt"
   },
+  {
+    "pattern": "POST:logs",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "GET:logs",
+    "access": "requires-jwt"
+  },
 
   {
     "comment": "── Property Owners ───────────────────────────────────────────",
@@ -335,5 +355,13 @@
   {
     "pattern": "GET:user-roles",
     "access": "public"
+  },
+  {
+    "pattern": "POST:user-types",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "POST:user-roles",
+    "access": "requires-jwt"
   }
 ]

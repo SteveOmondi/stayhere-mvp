@@ -4,6 +4,16 @@ trigger:
   paths:
     include: [src/*]
 
+resources:
+  pipelines:
+  - pipeline: infra
+    source: StayHere-Infra
+    trigger:
+      branches:
+        include:
+        - main
+
+
 variables:
 - name: vmImageName
   value: 'ubuntu-latest'
@@ -16,8 +26,49 @@ variables:
 - group: StayHere-Variables
 
 stages:
+- stage: CheckInfra
+  displayName: 'Check Infrastructure Pipeline'
+  jobs:
+  - job: CheckInfraJob
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - bash: |
+        echo "Installing Azure DevOps extension..."
+        az extension add --name azure-devops --yes
+        
+        echo "Configuring defaults..."
+        az devops configure --defaults organization=$SYSTEM_COLLECTIONURI project=$SYSTEM_TEAMPROJECT
+        
+        echo "Searching for Infra Pipeline..."
+        INFRA_DEF_ID=$(az pipelines list --query "[?configuration.path=='azure-pipelines-infra.yml' || contains(configuration.path, 'azure-pipelines-infra.yml')].id" -o tsv | head -n 1)
+        
+        if [ -z "$INFRA_DEF_ID" ]; then
+          INFRA_DEF_ID=$(az pipelines list --query "[?contains(name, 'infra')].id" -o tsv | head -n 1)
+        fi
+        
+        if [ -n "$INFRA_DEF_ID" ]; then
+          echo "Found Infra Pipeline definition ID: $INFRA_DEF_ID"
+          ACTIVE_RUNS=$(az pipelines build list --definition-ids $INFRA_DEF_ID --status inProgress --query "length(@)" -o tsv)
+          echo "Active runs count: $ACTIVE_RUNS"
+          if [ "$ACTIVE_RUNS" -gt 0 ]; then
+            echo "##vso[task.logissue type=error]An active infrastructure pipeline run was detected. App deployment is blocked."
+            exit 1
+          fi
+          echo "No active infra pipeline runs detected."
+        else
+          echo "Warning: Infra pipeline not found. Proceeding."
+        fi
+      displayName: 'Verify No Active Infra Pipeline'
+      env:
+        AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+        SYSTEM_COLLECTIONURI: $(System.TeamFoundationCollectionUri)
+        SYSTEM_TEAMPROJECT: $(System.TeamProject)
+
 - stage: CheckChanges
   displayName: 'Detect Changed Services'
+  dependsOn: CheckInfra
+  condition: succeeded()
   jobs:
   - job: Detect
     pool:
@@ -57,6 +108,17 @@ stages:
           fi
           echo "##vso[task.setvariable variable=change_$SERVICE;isOutput=true]$HAS_CHANGE"
         done
+
+        # Frontend portal checks
+        PORTALS=("StayHereMainManagementPortal" "StayHerePropertyOwnerPortal")
+        for PORTAL in "${PORTALS[@]}"; do
+          HAS_CHANGE=false
+          if [ "$GLOBAL_CHANGE" = true ] || echo "$CHANGED_FILES" | grep -E "^$PORTAL/"; then
+            HAS_CHANGE=true
+            echo "Changes detected for $PORTAL."
+          fi
+          echo "##vso[task.setvariable variable=change_$PORTAL;isOutput=true]$HAS_CHANGE"
+        done
       name: DetectionStep
       displayName: 'Analyze Git Diffs'
 
@@ -74,6 +136,8 @@ stages:
       isOwner: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyOwnerService'] ]
       isStatic: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StaticDataService'] ]
       isAi: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'] ]
+      isAdminPortal: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHereMainManagementPortal'] ]
+      isOwnerPortal: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHerePropertyOwnerPortal'] ]
       globalChange: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'] ]
     steps:
     - task: UseDotNet@2
@@ -167,6 +231,34 @@ stages:
     - publish: $(Build.ArtifactStagingDirectory)/AiAgentService
       artifact: AiAgentService_Pkg
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAi'], 'true'), eq(variables['globalChange'], 'true')))
+
+    - task: NodeTool@0
+      displayName: 'Install Node.js'
+      inputs:
+        versionSpec: '20.x'
+
+    - script: |
+        npm ci
+        npm run build
+      workingDirectory: '$(System.DefaultWorkingDirectory)/StayHereMainManagementPortal'
+      displayName: 'Build StayHereMainManagementPortal'
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAdminPortal'], 'true'), eq(variables['globalChange'], 'true')))
+
+    - script: |
+        npm ci
+        npm run build
+      workingDirectory: '$(System.DefaultWorkingDirectory)/StayHerePropertyOwnerPortal'
+      displayName: 'Build StayHerePropertyOwnerPortal'
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isOwnerPortal'], 'true'), eq(variables['globalChange'], 'true')))
+
+    - publish: $(System.DefaultWorkingDirectory)/StayHereMainManagementPortal/dist
+      artifact: AdminPortal_Pkg
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAdminPortal'], 'true'), eq(variables['globalChange'], 'true')))
+
+    - publish: $(System.DefaultWorkingDirectory)/StayHerePropertyOwnerPortal/dist
+      artifact: OwnerPortal_Pkg
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isOwnerPortal'], 'true'), eq(variables['globalChange'], 'true')))
+
 
 - stage: Migrate_Database
   displayName: 'Migrate Database'
@@ -468,6 +560,88 @@ stages:
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
         package: '$(Pipeline.Workspace)/AiAgentService_Pkg/AiAgentService'
+
+- stage: Deploy_AdminPortal
+  displayName: 'Deploy Admin Portal'
+  dependsOn: Build
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHereMainManagementPortal'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - download: current
+      artifact: AdminPortal_Pkg
+    - task: AzureCLI@2
+      displayName: 'Discover and Deploy Admin Portal'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Discovering Resource Group..."
+          RG_NAME=$(az group list --query "[?tags.Project=='stayhere' && tags.Environment=='dev'].name" -o tsv | head -n 1)
+          if [ -z "$RG_NAME" ]; then
+            RG_NAME=$(az group list --query "[?contains(name, 'rg-stayhere-dev')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$RG_NAME" ]; then echo "Resource Group not found"; exit 1; fi
+          echo "Using Resource Group: $RG_NAME"
+
+          echo "Discovering Admin Portal Storage Account..."
+          STORAGE_NAME=$(az storage account list --resource-group $RG_NAME --query "[?tags.Portal=='admin'].name" -o tsv | head -n 1)
+          if [ -z "$STORAGE_NAME" ]; then
+            STORAGE_NAME=$(az storage account list --resource-group $RG_NAME --query "[?contains(name, 'admin')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$STORAGE_NAME" ]; then echo "Admin Portal storage account not found"; exit 1; fi
+          echo "Deploying Admin Portal to $STORAGE_NAME..."
+
+          az storage blob upload-batch \
+            --account-name $STORAGE_NAME \
+            --destination '$web' \
+            --source '$(Pipeline.Workspace)/AdminPortal_Pkg' \
+            --overwrite true \
+            --auth-mode key
+
+- stage: Deploy_OwnerPortal
+  displayName: 'Deploy Owner Portal'
+  dependsOn: Build
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHerePropertyOwnerPortal'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - download: current
+      artifact: OwnerPortal_Pkg
+    - task: AzureCLI@2
+      displayName: 'Discover and Deploy Owner Portal'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Discovering Resource Group..."
+          RG_NAME=$(az group list --query "[?tags.Project=='stayhere' && tags.Environment=='dev'].name" -o tsv | head -n 1)
+          if [ -z "$RG_NAME" ]; then
+            RG_NAME=$(az group list --query "[?contains(name, 'rg-stayhere-dev')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$RG_NAME" ]; then echo "Resource Group not found"; exit 1; fi
+          echo "Using Resource Group: $RG_NAME"
+
+          echo "Discovering Owner Portal Storage Account..."
+          STORAGE_NAME=$(az storage account list --resource-group $RG_NAME --query "[?tags.Portal=='owner'].name" -o tsv | head -n 1)
+          if [ -z "$STORAGE_NAME" ]; then
+            STORAGE_NAME=$(az storage account list --resource-group $RG_NAME --query "[?contains(name, 'owner')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$STORAGE_NAME" ]; then echo "Owner Portal storage account not found"; exit 1; fi
+          echo "Deploying Owner Portal to $STORAGE_NAME..."
+
+          az storage blob upload-batch \
+            --account-name $STORAGE_NAME \
+            --destination '$web' \
+            --source '$(Pipeline.Workspace)/OwnerPortal_Pkg' \
+            --overwrite true \
+            --auth-mode key
 
 - stage: Sync_APICenter
   displayName: 'Sync API Center'

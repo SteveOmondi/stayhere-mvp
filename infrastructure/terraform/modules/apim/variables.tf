@@ -46,3 +46,15 @@ variable "onfon_client_id" {
 variable "onfon_sender_id" {
   type = string
 }
+
+variable "admin_portal_url" {
+  type        = string
+  description = "Static website URL for the admin portal"
+  default     = ""
+}
+
+variable "owner_portal_url" {
+  type        = string
+  description = "Static website URL for the property owner portal"
+  default     = ""
+}
