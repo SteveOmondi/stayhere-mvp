@@ -277,9 +277,7 @@ resource "azurerm_api_management_policy" "global" {
             </expose-headers>
         </cors>
     </inbound>
-    <backend>
-        <forward-request />
-    </backend>
+    <backend />
     <outbound />
     <on-error />
 </policies>
