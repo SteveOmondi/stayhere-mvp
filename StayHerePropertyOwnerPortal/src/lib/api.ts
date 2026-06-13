@@ -139,6 +139,8 @@ export const listingsApi = {
 
 /* ══ Customers / Tenants ═══════════════════════════════════ */
 export const customersApi = {
+  list: () =>
+    req<unknown[]>(loadConfig().customerApiBase, "list"),
   /** Get all tenants across all of this owner's listings (scoped by auth user ID). */
   byOwner: (ownerId: string) =>
     req<unknown[]>(loadConfig().customerApiBase, `by-owner/${ownerId}`),
