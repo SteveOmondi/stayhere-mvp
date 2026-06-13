@@ -261,7 +261,7 @@ resource "azurerm_api_management_policy" "global" {
                 <origin>http://localhost:5173</origin>
                 <origin>http://localhost:5174</origin>
             </allowed-origins>
-            <allowed-methods preflight-max-age="300">
+            <allowed-methods preflight-result-max-age="300">
                 <method>GET</method>
                 <method>POST</method>
                 <method>PUT</method>
