@@ -95,6 +95,12 @@ static async Task ApplyMigrationsAsync(IHost host)
     await using var scope = host.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<StayHereDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<StayHereDbContext>>();
+
+    var skipMigrations = string.Equals(
+        Environment.GetEnvironmentVariable("SKIP_MIGRATIONS"), "true", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(
+        Environment.GetEnvironmentVariable("SKIP_AUTH"), "true", StringComparison.OrdinalIgnoreCase);
+
     try
     {
         var pending = (await db.Database.GetPendingMigrationsAsync()).ToList();
@@ -109,7 +115,16 @@ static async Task ApplyMigrationsAsync(IHost host)
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Database migration failed on startup.");
-        throw;
+        if (skipMigrations)
+        {
+            logger.LogWarning(ex,
+                "Database migration skipped — DB unreachable but SKIP_AUTH/SKIP_MIGRATIONS=true. " +
+                "Payment query endpoints will fail until Postgres is available.");
+        }
+        else
+        {
+            logger.LogError(ex, "Database migration failed on startup.");
+            throw;
+        }
     }
 }
