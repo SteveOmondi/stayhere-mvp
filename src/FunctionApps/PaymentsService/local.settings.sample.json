@@ -1,0 +1,22 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "DB_HOST": "your-azure-postgres-host.postgres.database.azure.com",
+    "DB_PORT": "5432",
+    "DB_NAME": "stayhere",
+    "DB_USER": "your-db-user",
+    "DB_PASSWORD": "your-db-password",
+    "DB_SSL_MODE": "Require",
+    "JWT_SECRET": "your-base64-encoded-jwt-secret",
+    "Mpesa__ConsumerKey": "YOUR_SAFARICOM_CONSUMER_KEY",
+    "Mpesa__ConsumerSecret": "YOUR_SAFARICOM_CONSUMER_SECRET",
+    "Mpesa__ShortCode": "YOUR_PAYBILL_OR_TILL",
+    "Mpesa__PassKey": "YOUR_LIPA_NA_MPESA_PASSKEY",
+    "Mpesa__StkCallbackUrl": "https://your-function-app.azurewebsites.net/api/payments/mpesa/stk/callback",
+    "Mpesa__C2bValidationUrl": "https://your-function-app.azurewebsites.net/api/payments/mpesa/c2b/validate",
+    "Mpesa__C2bConfirmationUrl": "https://your-function-app.azurewebsites.net/api/payments/mpesa/c2b/confirm",
+    "Mpesa__Environment": "production"
+  }
+}

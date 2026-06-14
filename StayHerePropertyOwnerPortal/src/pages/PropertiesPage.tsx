@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { propertiesApi, listingsApi, uploadApi, uploadFileToCloudflare, ApiError } from "../lib/api";
+import { propertiesApi, listingsApi, uploadApi, uploadToR2, ApiError } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
 import { IcoBuilding, IcoPlus, IcoMapPin, IcoListing, IcoChevRight, IcoX, IcoCheck, IcoLoader, IcoEdit, IcoRefresh } from "../components/icons";
@@ -82,8 +82,10 @@ export function PropertiesPage() {
   useEffect(() => { void load(); }, [reloadKey, userId]);
 
   async function uploadImage(file: File): Promise<string> {
-    const { uploadUrl, publicUrl } = await uploadApi.requestUrl();
-    await uploadFileToCloudflare(uploadUrl, file);
+    const contentType = file.type || "image/jpeg";
+    const { uploadUrl, publicUrl, contentType: signedContentType } =
+      await uploadApi.getPresignedUrl("properties/images", file.name, contentType);
+    await uploadToR2(uploadUrl, file, signedContentType);
     return publicUrl;
   }
 

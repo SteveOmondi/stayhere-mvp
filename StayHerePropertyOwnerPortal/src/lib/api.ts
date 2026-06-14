@@ -164,28 +164,143 @@ export const customersApi = {
     req<unknown>(loadConfig().customerApiBase, `${id}/properties`, { method: "POST", body }),
 };
 
+/* ══ Viewing Bookings ══════════════════════════════════════ */
+export type ViewingBooking = {
+  id: string; listingId: string; customerId: string; viewingBookingId?: string;
+  preferredDate: string; preferredTime: string; viewingType: string;
+  status: string; notes?: string; ownerNotes?: string; meetingLink?: string;
+  contactPhone?: string; createdAt: string; updatedAt: string;
+  listingTitle?: string; listingCode?: string; customerName?: string; customerEmail?: string;
+};
+
+export const bookingApi = {
+  byListing: (listingId: string) =>
+    req<ViewingBooking[]>(loadConfig().propertyApiBase, `bookings/listing/${listingId}`),
+  byOwner: (ownerId: string) =>
+    req<ViewingBooking[]>(loadConfig().propertyApiBase, `bookings/owner/${ownerId}`),
+  getById: (id: string) =>
+    req<ViewingBooking>(loadConfig().propertyApiBase, `bookings/${id}`),
+  confirm: (id: string, body?: { ownerNotes?: string; meetingLink?: string }) =>
+    req<ViewingBooking>(loadConfig().propertyApiBase, `bookings/${id}/confirm`, { method: "PATCH", body }),
+  complete: (id: string) =>
+    req<ViewingBooking>(loadConfig().propertyApiBase, `bookings/${id}/complete`, { method: "PATCH" }),
+  cancel: (id: string, body?: { ownerNotes?: string }) =>
+    req<ViewingBooking>(loadConfig().propertyApiBase, `bookings/${id}/cancel`, { method: "PATCH", body }),
+};
+
+/* ══ Tenant Applications ════════════════════════════════════ */
+export type ApplicationDocument = {
+  id: string; applicationId: string; documentType: string;
+  fileUrl: string; fileName?: string; uploadedAt: string;
+};
+
+export type TenantApplication = {
+  id: string; listingId: string; customerId: string; viewingBookingId?: string;
+  status: string; rejectionReason?: string; reviewedAt?: string; reviewedBy?: string;
+  termsAcceptedAt?: string; digitalSignatureUrl?: string;
+  createdAt: string; updatedAt: string;
+  documents?: ApplicationDocument[];
+  listingTitle?: string; listingCode?: string;
+  customerName?: string; customerEmail?: string; customerPhone?: string;
+};
+
+export const applicationApi = {
+  byListing: (listingId: string) =>
+    req<TenantApplication[]>(loadConfig().propertyApiBase, `applications/listing/${listingId}`),
+  byOwner: (ownerId: string) =>
+    req<TenantApplication[]>(loadConfig().propertyApiBase, `applications/owner/${ownerId}`),
+  getById: (id: string) =>
+    req<TenantApplication>(loadConfig().propertyApiBase, `applications/${id}`),
+  review: (id: string, body: { status: "Approved" | "Rejected"; rejectionReason?: string; reviewedBy?: string }) =>
+    req<TenantApplication>(loadConfig().propertyApiBase, `applications/${id}/review`, { method: "PATCH", body }),
+  cancel: (id: string) =>
+    req<TenantApplication>(loadConfig().propertyApiBase, `applications/${id}/cancel`, { method: "PATCH" }),
+};
+
+/* ══ Property Terms ════════════════════════════════════════ */
+export type PropertyTerms = {
+  id: string; listingId: string; title: string; isActive: boolean;
+  termsContent?: string; houseRules?: string; paymentTerms?: string;
+  noticePeriod?: string; petPolicy?: string; maintenancePolicy?: string;
+  securityDepositTerms?: string; securityDeposit?: number; adminFee?: number;
+  currency?: string;
+  mpesaPaybill?: string; mpesaTill?: string; mpesaAccountNumber?: string;
+  bankName?: string; bankAccountName?: string; bankAccountNumber?: string;
+  bankBranch?: string; paymentInstructions?: string;
+  onboardingInstructions?: string; accessInstructions?: string; itemsToCarry?: string;
+  createdAt: string; updatedAt: string;
+};
+
+export type UpsertTermsBody = Partial<Omit<PropertyTerms, "id" | "listingId" | "isActive" | "createdAt" | "updatedAt">>;
+
+export const termsApi = {
+  getByListing: (listingId: string) =>
+    req<PropertyTerms>(loadConfig().propertyApiBase, `listings/${listingId}/terms`),
+  create: (listingId: string, body: UpsertTermsBody) =>
+    req<PropertyTerms>(loadConfig().propertyApiBase, `listings/${listingId}/terms`, { method: "POST", body }),
+  update: (listingId: string, id: string, body: UpsertTermsBody) =>
+    req<PropertyTerms>(loadConfig().propertyApiBase, `listings/${listingId}/terms/${id}`, { method: "PUT", body }),
+  delete: (id: string) =>
+    req<void>(loadConfig().propertyApiBase, `terms/${id}`, { method: "DELETE" }),
+};
+
+/* ══ Payments ══════════════════════════════════════════════ */
+export type RentalPayment = {
+  id: string; applicationId: string; paymentType: string;
+  method: string; amount: number; currency: string;
+  status: string; reference?: string;
+  mpesaCheckoutRequestId?: string; mpesaReceiptNumber?: string;
+  createdAt: string; confirmedAt?: string;
+};
+
+export const paymentApi = {
+  getStatus: (applicationId: string) =>
+    req<RentalPayment[]>(loadConfig().propertyApiBase, `applications/${applicationId}/payment/status`),
+  confirm: (paymentId: string) =>
+    req<RentalPayment>(loadConfig().propertyApiBase, `payments/${paymentId}/confirm`, { method: "PATCH" }),
+};
+
 /* ══ Static / Categories ═══════════════════════════════════ */
 export const staticApi = {
   categories: () => req<unknown[]>(loadConfig().staticApiBase, "categories"),
 };
 
-/* ══ Image Upload ══════════════════════════════════════════ */
-export type UploadUrlResponse = { uploadUrl: string; imageId: string; publicUrl: string };
-
-export const uploadApi = {
-  /** POST /upload/request-url — get a Cloudflare direct upload URL (server keeps API token). */
-  requestUrl: () =>
-    req<UploadUrlResponse>(loadConfig().propertyApiBase, "upload/request-url", { method: "POST" }),
+/* ══ Image / File Upload ═══════════════════════════════════ */
+export type UploadUrlResponse = {
+  uploadUrl: string;
+  fileKey: string;
+  publicUrl: string;
+  expiresAt: string;
+  contentType: string;
 };
 
-/** Upload a File directly to a Cloudflare direct upload URL (no auth header needed). */
-export async function uploadFileToCloudflare(uploadUrl: string, file: File): Promise<void> {
-  const form = new FormData();
-  form.append("file", file);
-  const res = await fetch(uploadUrl, { method: "POST", body: form });
+export const uploadApi = {
+  /**
+   * POST /upload/presigned-url — returns a short-lived R2 presigned PUT URL.
+   * folder must be one of the server-allowed folders, e.g. "properties/images".
+   * contentType must exactly match what the client will send in the PUT Content-Type header.
+   */
+  getPresignedUrl: (folder: string, fileName: string, contentType: string) =>
+    req<UploadUrlResponse>(loadConfig().propertyApiBase, "upload/presigned-url", {
+      method: "POST",
+      body: { folder, fileName, contentType },
+    }),
+};
+
+/**
+ * Upload a File directly to Cloudflare R2 via a presigned PUT URL.
+ * contentType MUST match the value used to generate the URL — R2 includes
+ * it in the SigV4 signature and will return 403 if the header differs.
+ */
+export async function uploadToR2(uploadUrl: string, file: File, contentType: string): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": contentType },
+  });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Cloudflare upload failed ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`R2 upload failed ${res.status}: ${text.slice(0, 200)}`);
   }
 }
 

@@ -4,6 +4,23 @@ namespace StayHere.Application.Authentication.Models;
 public record LoginRequest(string? Email, string? PhoneNumber, string? EntraToken);
 public record RegisterRequest(string Email, string? PhoneNumber, string FullName, string UserType = "Individual");
 
+public record SignupAndOnboardRequest(
+    string FullName,
+    string Email,
+    string? PhoneNumber,
+    string Role  // Tenant | PropertyOwner | Admin
+);
+
+public class SignupAndOnboardResponse
+{
+    public bool Succeeded { get; set; } = true;
+    public string Message { get; set; } = string.Empty;
+    public Guid UserId { get; set; }
+    public Guid ProfileId { get; set; }
+    public string Role { get; set; } = string.Empty;
+    public UserDto? User { get; set; }
+}
+
 public record OtpRequest(string Target, OtpTypeDto Type);
 
 public record OtpVerificationRequest(

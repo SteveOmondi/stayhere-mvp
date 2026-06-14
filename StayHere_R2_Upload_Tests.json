@@ -1,0 +1,759 @@
+{
+  "info": {
+    "name": "StayHere — R2 Upload Tests",
+    "_postman_id": "2f551b43-4701-47ee-a82c-aa4f1c3d2e85",
+    "description": "Tests for the two R2 upload patterns:\n\nPattern A (Presigned URL — recommended):\n  1. POST /upload/presigned-url  → get a signed PUT URL\n  2. PUT <presignedUrl>           → upload directly to R2 (no API involved)\n\nPattern B (Server-proxied — simpler for testing):\n  1. POST /upload/file (multipart/form-data) → API streams bytes to R2\n\nLOCAL: run PropertyService with 'func start', no auth needed (SKIP_AUTH=true).\nPROD:  set collection variable 'token' to a valid JWT.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "r2_uploadUrl",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "r2_contentType",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "r2_fileKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "r2_publicUrl",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "LOCAL — http://localhost:7071/api (no auth required)",
+      "description": {
+        "content": "Runs against PropertyService started with:\n  cd src/FunctionApps/PropertyService && func start\n\nSKIP_AUTH=true in local.settings.json so no Bearer token is needed.\nR2 credentials in local.settings.json hit the REAL R2 bucket (stayhere).",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "name": "Pattern A — Presigned URL (Client-Direct)",
+          "description": {
+            "content": "Two-step flow — the API hands out a URL, the client PUTs the file directly to R2.\nNo file bytes pass through the API server.\n\nStep 1 → Run '1. Get Presigned URL'. The Tests script auto-saves uploadUrl into {{r2_uploadUrl}}.\nStep 2 → Run '2. PUT File to R2'. Select a file in Body → binary.",
+            "type": "text/plain"
+          },
+          "item": [
+            {
+              "name": "1. Get Presigned URL (image)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:7071/api/upload/presigned-url",
+                  "host": [
+                    "localhost:7071"
+                  ],
+                  "path": [
+                    "api",
+                    "upload",
+                    "presigned-url"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"folder\": \"properties/images\",\n  \"fileName\": \"test-photo.jpg\",\n  \"contentType\": \"image/jpeg\",\n  \"expiryMinutes\": 15\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Returns a presigned PUT URL for a JPEG image in properties/images.\nRun this first — the Tests script saves uploadUrl + contentType + fileKey + publicUrl into collection variables.\n\nNo auth needed locally (SKIP_AUTH=true).",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var data = pm.response.json();",
+                      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"uploadUrl present\", () => pm.expect(data.uploadUrl).to.be.a('string'));",
+                      "",
+                      "// Trim whitespace/newlines — a stray character at the end corrupts the SigV4 signature.",
+                      "var uploadUrl = (data.uploadUrl || \"\").trim();",
+                      "pm.collectionVariables.set(\"r2_uploadUrl\",     uploadUrl);",
+                      "pm.collectionVariables.set(\"r2_contentType\",   (data.contentType || \"\").trim());",
+                      "pm.collectionVariables.set(\"r2_fileKey\",       (data.fileKey    || \"\").trim());",
+                      "pm.collectionVariables.set(\"r2_publicUrl\",     (data.publicUrl  || \"\").trim());",
+                      "",
+                      "console.log(\"Presigned URL captured — expires:\", data.expiresAt);",
+                      "console.log(\"PUT to:\", uploadUrl);",
+                      "console.log(\"Content-Type:\", data.contentType);",
+                      "console.log(\"Public URL (after upload):\", data.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "1b. Get Presigned URL (PDF document)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:7071/api/upload/presigned-url",
+                  "host": [
+                    "localhost:7071"
+                  ],
+                  "path": [
+                    "api",
+                    "upload",
+                    "presigned-url"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"folder\": \"applications/documents\",\n  \"fileName\": \"national-id.pdf\",\n  \"contentType\": \"application/pdf\",\n  \"expiryMinutes\": 15\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Same as above but for a PDF in applications/documents.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var data = pm.response.json();",
+                      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"uploadUrl present\", () => pm.expect(data.uploadUrl).to.be.a('string'));",
+                      "",
+                      "// Trim whitespace/newlines — a stray character at the end corrupts the SigV4 signature.",
+                      "var uploadUrl = (data.uploadUrl || \"\").trim();",
+                      "pm.collectionVariables.set(\"r2_uploadUrl\",     uploadUrl);",
+                      "pm.collectionVariables.set(\"r2_contentType\",   (data.contentType || \"\").trim());",
+                      "pm.collectionVariables.set(\"r2_fileKey\",       (data.fileKey    || \"\").trim());",
+                      "pm.collectionVariables.set(\"r2_publicUrl\",     (data.publicUrl  || \"\").trim());",
+                      "",
+                      "console.log(\"Presigned URL captured — expires:\", data.expiresAt);",
+                      "console.log(\"PUT to:\", uploadUrl);",
+                      "console.log(\"Content-Type:\", data.contentType);",
+                      "console.log(\"Public URL (after upload):\", data.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "1c. Get Presigned URL (avatar)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:7071/api/upload/presigned-url",
+                  "host": [
+                    "localhost:7071"
+                  ],
+                  "path": [
+                    "api",
+                    "upload",
+                    "presigned-url"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"folder\": \"profiles/avatars\",\n  \"fileName\": \"profile-pic.jpg\",\n  \"contentType\": \"image/jpeg\",\n  \"expiryMinutes\": 15\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Same as above but for a profile avatar.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var data = pm.response.json();",
+                      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"uploadUrl present\", () => pm.expect(data.uploadUrl).to.be.a('string'));",
+                      "",
+                      "// Trim whitespace/newlines — a stray character at the end corrupts the SigV4 signature.",
+                      "var uploadUrl = (data.uploadUrl || \"\").trim();",
+                      "pm.collectionVariables.set(\"r2_uploadUrl\",     uploadUrl);",
+                      "pm.collectionVariables.set(\"r2_contentType\",   (data.contentType || \"\").trim());",
+                      "pm.collectionVariables.set(\"r2_fileKey\",       (data.fileKey    || \"\").trim());",
+                      "pm.collectionVariables.set(\"r2_publicUrl\",     (data.publicUrl  || \"\").trim());",
+                      "",
+                      "console.log(\"Presigned URL captured — expires:\", data.expiresAt);",
+                      "console.log(\"PUT to:\", uploadUrl);",
+                      "console.log(\"Content-Type:\", data.contentType);",
+                      "console.log(\"Public URL (after upload):\", data.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "2. PUT File to R2 (presigned — direct to R2, no API involved)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "{{r2_contentType}}"
+                  }
+                ],
+                "body": {
+                  "mode": "file",
+                  "file": {
+                    "src": ""
+                  }
+                },
+                "url": {
+                  "raw": "{{r2_uploadUrl}}"
+                },
+                "description": "PUT the file directly to R2 using the presigned URL from Step 1.\n\nIn Postman:\n  Body tab → binary → click 'Select File' and pick any image or PDF.\n\nThe Content-Type header is auto-filled from Step 1 ({{r2_contentType}}).\nDO NOT add an Authorization header — R2 presigned URLs are self-contained.\n\nR2 returns 200 (no body) on success."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Upload succeeded (200 or 204)\", () => {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                      "});",
+                      "console.log(\"✅ File uploaded directly to R2. Public URL:\", pm.collectionVariables.get(\"r2_publicUrl\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "3. Verify — Get Public URL by File Key",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:7071/api/upload/url?key={{r2_fileKey}}",
+                  "host": [
+                    "localhost:7071"
+                  ],
+                  "path": [
+                    "api",
+                    "upload",
+                    "url"
+                  ],
+                  "query": [
+                    {
+                      "key": "key",
+                      "value": "{{r2_fileKey}}"
+                    }
+                  ]
+                },
+                "description": "Resolves the public URL for a file already stored in R2.\nThe {{r2_fileKey}} variable is populated automatically after Step 1 or the multipart upload.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var data = pm.response.json();",
+                      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"publicUrl present\", () => pm.expect(data.publicUrl).to.be.a('string'));",
+                      "console.log(\"✅ Public URL resolved:\", data.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Pattern B — Server-Proxied Upload (Multipart)",
+          "description": {
+            "content": "Single request — POST multipart/form-data to the API. The API forwards bytes to R2.\nSimpler for testing but less efficient for large files.",
+            "type": "text/plain"
+          },
+          "item": [
+            {
+              "name": "Upload File via API (properties/images)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "folder",
+                      "value": "properties/images",
+                      "type": "text",
+                      "description": "Target folder in R2"
+                    },
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "",
+                      "description": "Click 'Select Files' and pick any image or PDF"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "http://localhost:7071/api/upload/file",
+                  "host": [
+                    "localhost:7071"
+                  ],
+                  "path": [
+                    "api",
+                    "upload",
+                    "file"
+                  ]
+                },
+                "description": "API receives the file and uploads it to R2 server-side.\n\nIn Postman:\n  Body tab → form-data\n  Row 1: key=folder (Text), value=applications/documents\n  Row 2: key=file (File), click 'Select Files' and pick a file\n\nDO NOT set Content-Type manually — Postman adds multipart/form-data with the correct boundary.\n\nReturns 201 with { fileKey, publicUrl }.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var data = pm.response.json();",
+                      "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"publicUrl present\", () => pm.expect(data.publicUrl).to.be.a('string'));",
+                      "pm.collectionVariables.set(\"r2_fileKey\",   data.fileKey);",
+                      "pm.collectionVariables.set(\"r2_publicUrl\", data.publicUrl);",
+                      "console.log(\"✅ Server-proxied upload complete\");",
+                      "console.log(\"   File key:\", data.fileKey);",
+                      "console.log(\"   Public URL:\", data.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Upload File via API (applications/documents)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "folder",
+                      "value": "applications/documents",
+                      "type": "text",
+                      "description": "Target folder in R2"
+                    },
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "",
+                      "description": "Click 'Select Files' and pick any image or PDF"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "http://localhost:7071/api/upload/file",
+                  "host": [
+                    "localhost:7071"
+                  ],
+                  "path": [
+                    "api",
+                    "upload",
+                    "file"
+                  ]
+                },
+                "description": "API receives the file and uploads it to R2 server-side.\n\nIn Postman:\n  Body tab → form-data\n  Row 1: key=folder (Text), value=applications/documents\n  Row 2: key=file (File), click 'Select Files' and pick a file\n\nDO NOT set Content-Type manually — Postman adds multipart/form-data with the correct boundary.\n\nReturns 201 with { fileKey, publicUrl }.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var data = pm.response.json();",
+                      "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"publicUrl present\", () => pm.expect(data.publicUrl).to.be.a('string'));",
+                      "pm.collectionVariables.set(\"r2_fileKey\",   data.fileKey);",
+                      "pm.collectionVariables.set(\"r2_publicUrl\", data.publicUrl);",
+                      "console.log(\"✅ Server-proxied upload complete\");",
+                      "console.log(\"   File key:\", data.fileKey);",
+                      "console.log(\"   Public URL:\", data.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Upload File via API (profiles/avatars)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "folder",
+                      "value": "profiles/avatars",
+                      "type": "text",
+                      "description": "Target folder in R2"
+                    },
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "",
+                      "description": "Click 'Select Files' and pick any image or PDF"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "http://localhost:7071/api/upload/file",
+                  "host": [
+                    "localhost:7071"
+                  ],
+                  "path": [
+                    "api",
+                    "upload",
+                    "file"
+                  ]
+                },
+                "description": "API receives the file and uploads it to R2 server-side.\n\nIn Postman:\n  Body tab → form-data\n  Row 1: key=folder (Text), value=applications/documents\n  Row 2: key=file (File), click 'Select Files' and pick a file\n\nDO NOT set Content-Type manually — Postman adds multipart/form-data with the correct boundary.\n\nReturns 201 with { fileKey, publicUrl }.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var data = pm.response.json();",
+                      "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"publicUrl present\", () => pm.expect(data.publicUrl).to.be.a('string'));",
+                      "pm.collectionVariables.set(\"r2_fileKey\",   data.fileKey);",
+                      "pm.collectionVariables.set(\"r2_publicUrl\", data.publicUrl);",
+                      "console.log(\"✅ Server-proxied upload complete\");",
+                      "console.log(\"   File key:\", data.fileKey);",
+                      "console.log(\"   Public URL:\", data.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PRODUCTION — APIM (Bearer token required)",
+      "description": {
+        "content": "Hits the live R2 bucket through APIM.\nSet the 'token' collection variable to a valid JWT before running.\n\nStep 2 (PUT to R2) does NOT send the Authorization header — the presigned URL is self-signed.",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "name": "Pattern A — Presigned URL",
+          "item": [
+            {
+              "name": "1. Get Presigned URL (image)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "https://apim-dev-5c27bcf3.azure-api.net/property/upload/presigned-url",
+                  "host": [
+                    "apim-dev-5c27bcf3.azure-api.net"
+                  ],
+                  "path": [
+                    "property",
+                    "upload",
+                    "presigned-url"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"folder\": \"properties/images\",\n  \"fileName\": \"test-photo.jpg\",\n  \"contentType\": \"image/jpeg\",\n  \"expiryMinutes\": 15\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Requires Bearer token in the collection auth. Run first."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var data = pm.response.json();",
+                      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"uploadUrl present\", () => pm.expect(data.uploadUrl).to.be.a('string'));",
+                      "",
+                      "// Trim whitespace/newlines — a stray character at the end corrupts the SigV4 signature.",
+                      "var uploadUrl = (data.uploadUrl || \"\").trim();",
+                      "pm.collectionVariables.set(\"r2_uploadUrl\",     uploadUrl);",
+                      "pm.collectionVariables.set(\"r2_contentType\",   (data.contentType || \"\").trim());",
+                      "pm.collectionVariables.set(\"r2_fileKey\",       (data.fileKey    || \"\").trim());",
+                      "pm.collectionVariables.set(\"r2_publicUrl\",     (data.publicUrl  || \"\").trim());",
+                      "",
+                      "console.log(\"Presigned URL captured — expires:\", data.expiresAt);",
+                      "console.log(\"PUT to:\", uploadUrl);",
+                      "console.log(\"Content-Type:\", data.contentType);",
+                      "console.log(\"Public URL (after upload):\", data.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "2. PUT File to R2 (direct — NO auth header)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "{{r2_contentType}}"
+                  }
+                ],
+                "body": {
+                  "mode": "file",
+                  "file": {
+                    "src": ""
+                  }
+                },
+                "url": {
+                  "raw": "{{r2_uploadUrl}}"
+                },
+                "description": "PUT the file directly to R2 using the presigned URL from Step 1.\n\nIn Postman:\n  Body tab → binary → click 'Select File' and pick any image or PDF.\n\nThe Content-Type header is auto-filled from Step 1 ({{r2_contentType}}).\nDO NOT add an Authorization header — R2 presigned URLs are self-contained.\n\nR2 returns 200 (no body) on success."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Upload succeeded (200 or 204)\", () => {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                      "});",
+                      "console.log(\"✅ File uploaded directly to R2. Public URL:\", pm.collectionVariables.get(\"r2_publicUrl\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "3. Verify — Get Public URL by File Key",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://apim-dev-5c27bcf3.azure-api.net/property/upload/url?key={{r2_fileKey}}",
+                  "host": [
+                    "apim-dev-5c27bcf3.azure-api.net"
+                  ],
+                  "path": [
+                    "property",
+                    "upload",
+                    "url"
+                  ],
+                  "query": [
+                    {
+                      "key": "key",
+                      "value": "{{r2_fileKey}}"
+                    }
+                  ]
+                },
+                "description": "Resolves the public URL for a file already stored in R2.\nThe {{r2_fileKey}} variable is populated automatically after Step 1 or the multipart upload."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var data = pm.response.json();",
+                      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"publicUrl present\", () => pm.expect(data.publicUrl).to.be.a('string'));",
+                      "console.log(\"✅ Public URL resolved:\", data.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Pattern B — Server-Proxied Upload",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "folder",
+                  "value": "properties/images",
+                  "type": "text",
+                  "description": "Target folder in R2"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Click 'Select Files' and pick any image or PDF"
+                }
+              ]
+            },
+            "url": {
+              "raw": "https://apim-dev-5c27bcf3.azure-api.net/property/upload/file",
+              "host": [
+                "apim-dev-5c27bcf3.azure-api.net"
+              ],
+              "path": [
+                "property",
+                "upload",
+                "file"
+              ]
+            },
+            "description": "API receives the file and uploads it to R2 server-side.\n\nIn Postman:\n  Body tab → form-data\n  Row 1: key=folder (Text), value=applications/documents\n  Row 2: key=file (File), click 'Select Files' and pick a file\n\nDO NOT set Content-Type manually — Postman adds multipart/form-data with the correct boundary.\n\nReturns 201 with { fileKey, publicUrl }."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var data = pm.response.json();",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"publicUrl present\", () => pm.expect(data.publicUrl).to.be.a('string'));",
+                  "pm.collectionVariables.set(\"r2_fileKey\",   data.fileKey);",
+                  "pm.collectionVariables.set(\"r2_publicUrl\", data.publicUrl);",
+                  "console.log(\"✅ Server-proxied upload complete\");",
+                  "console.log(\"   File key:\", data.fileKey);",
+                  "console.log(\"   Public URL:\", data.publicUrl);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve Public URL by Key",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://apim-dev-5c27bcf3.azure-api.net/property/upload/url?key={{r2_fileKey}}",
+              "host": [
+                "apim-dev-5c27bcf3.azure-api.net"
+              ],
+              "path": [
+                "property",
+                "upload",
+                "url"
+              ],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "{{r2_fileKey}}"
+                }
+              ]
+            },
+            "description": "Resolves the public URL for a file already stored in R2.\nThe {{r2_fileKey}} variable is populated automatically after Step 1 or the multipart upload."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var data = pm.response.json();",
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"publicUrl present\", () => pm.expect(data.publicUrl).to.be.a('string'));",
+                  "console.log(\"✅ Public URL resolved:\", data.publicUrl);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

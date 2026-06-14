@@ -1,0 +1,1379 @@
+StayHere_Mobile_Guide_Presentation.html<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StayHere — Mobile Implementation Guide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--g:#c9a227;--gl:#e8b84b;--t:#0d9488;--tl:#5eead4;--dk:#0c1222;--dk2:#111827;--dk3:#1a2535;--dk4:#243050;--mu:rgba(255,255,255,.4);--cb:rgba(255,255,255,.04);--cbr:rgba(255,255,255,.08)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#080e1e;color:#fff;overflow:hidden;height:100vh;width:100vw}
+.pres{width:100%;height:100vh;position:relative}
+.slide{position:absolute;inset:0;display:none;background:#080e1e}
+.slide.active{display:flex;flex-direction:column;animation:si .35s cubic-bezier(.16,1,.3,1)}
+@keyframes si{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+/* Progress */
+#prog{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);z-index:200}
+#pf{height:100%;background:linear-gradient(90deg,#c9a227,#0d9488);transition:width .3s}
+/* Nav */
+#nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.07);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:50px;padding:8px 18px;z-index:100}
+.nbtn{background:none;border:none;color:#fff;cursor:pointer;font-size:18px;padding:4px 10px;border-radius:20px;transition:background .2s}
+.nbtn:hover{background:rgba(255,255,255,.1)}
+#ctr{color:rgba(255,255,255,.4);font-size:12px;min-width:55px;text-align:center}
+/* Layouts */
+.si{display:flex;height:100%;overflow:hidden}
+.sl{flex:1;display:flex;flex-direction:column;justify-content:center;padding:40px 32px 40px 64px;overflow:hidden}
+.sr{width:380px;display:flex;align-items:center;justify-content:center;padding:20px 48px 20px 20px;flex-shrink:0}
+.sf{padding:40px 64px 60px;display:flex;flex-direction:column;height:100%;overflow:hidden}
+/* Phone */
+.ph{width:220px;height:450px;background:#111827;border-radius:34px;border:4px solid #1e2d4a;overflow:hidden;position:relative;box-shadow:0 30px 70px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04);flex-shrink:0}
+.ph::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60px;height:16px;background:#111827;border-radius:0 0 12px 12px;border-bottom:2px solid #1e2d4a;z-index:20}
+.scr{height:100%;background:var(--dk);display:flex;flex-direction:column;font-size:9px}
+/* Screen parts */
+.sb{height:22px;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:space-between;padding:0 10px 3px;font-size:7px;color:rgba(255,255,255,.5);flex-shrink:0}
+.sn{background:rgba(12,18,34,.97);border-bottom:1px solid rgba(255,255,255,.06);padding:7px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.snt{font-size:11px;font-weight:700;color:#fff}
+.sc{flex:1;overflow:hidden;padding:8px;display:flex;flex-direction:column;gap:5px}
+.sbt{height:40px;background:#111827;border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-around;align-items:center;flex-shrink:0;padding:0 4px}
+.stab{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:6px;color:rgba(255,255,255,.3)}
+.stab.on{color:var(--g)}
+.stab span:first-child{font-size:13px;line-height:1}
+/* Screen elements */
+.si-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px;flex-shrink:0}
+.si-inp{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 8px;font-size:8px;color:rgba(255,255,255,.4);width:100%;flex-shrink:0}
+.si-lbl{font-size:7px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.si-btn{border-radius:9px;padding:6px;font-size:8px;font-weight:700;text-align:center;flex-shrink:0}
+.bg-g{background:linear-gradient(135deg,#c9a227,#e8b84b);color:var(--dk)}
+.bg-t{background:linear-gradient(135deg,#0d9488,#0fb8a8);color:#fff}
+.bg-gh{border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6)}
+.si-img{background:linear-gradient(135deg,#1a2545,#243060);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tag{border-radius:20px;padding:2px 6px;font-size:7px;font-weight:600;display:inline-block}
+.tg{background:rgba(201,162,39,.15);color:#c9a227;border:1px solid rgba(201,162,39,.3)}
+.tt{background:rgba(13,148,136,.15);color:#5eead4;border:1px solid rgba(13,148,136,.3)}
+.te{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.tr{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+.to{background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3)}
+/* Info styles */
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.22);border-radius:20px;padding:4px 14px;font-size:11px;font-weight:600;color:var(--g);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px}
+.stitle{font-size:32px;font-weight:800;line-height:1.1;margin-bottom:10px}
+.ssub{font-size:14px;color:rgba(255,255,255,.45);line-height:1.5;margin-bottom:20px;max-width:460px}
+.api{margin-bottom:12px}
+.am{display:inline-block;padding:3px 9px;border-radius:6px;font-size:10px;font-weight:700;font-family:monospace;margin-right:6px}
+.get{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.post{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
+.patch{background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3)}
+.put{background:rgba(167,139,250,.15);color:#c4b5fd;border:1px solid rgba(167,139,250,.3)}
+.aurl{font-family:monospace;font-size:12px;color:rgba(255,255,255,.8)}
+.aurl b{color:var(--g)}
+.adesc{font-size:11px;color:rgba(255,255,255,.38);margin-top:2px}
+.hr{height:1px;background:rgba(255,255,255,.07);margin:14px 0}
+.ic{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:13px 16px;margin-top:4px}
+.ict{font-size:12px;font-weight:700;color:#fff;margin-bottom:5px}
+.icd{font-size:11px;color:rgba(255,255,255,.45);line-height:1.5}
+code{color:var(--tl);font-size:10px;background:rgba(94,234,212,.08);padding:1px 4px;border-radius:3px}
+.cb{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 14px;font-family:monospace;font-size:10px;color:rgba(255,255,255,.7);line-height:1.6;white-space:pre;overflow:hidden;margin-top:8px}
+.ck{color:#5eead4}.cs{color:#fbbf24}.cn{color:#f472b6}.cb2{color:#60a5fa}
+/* Cover */
+.cover{background:linear-gradient(135deg,#080e1e 0%,#0d1428 50%,#091520 100%);align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden}
+.cover::before{content:'';position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(201,162,39,.07) 0%,transparent 70%);top:-250px;right:-250px;pointer-events:none}
+.cover::after{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.08) 0%,transparent 70%);bottom:-150px;left:-150px;pointer-events:none}
+.clogo{font-size:56px;font-weight:900;background:linear-gradient(135deg,#c9a227,#e8b84b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-2px;position:relative;z-index:1}
+.csub{font-size:13px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-top:4px;position:relative;z-index:1}
+.ctitle{font-size:24px;font-weight:300;color:#fff;margin:28px 0 6px;position:relative;z-index:1}
+.cdesc{font-size:13px;color:rgba(255,255,255,.35);max-width:520px;line-height:1.6;margin-bottom:32px;position:relative;z-index:1}
+.chips{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;position:relative;z-index:1}
+.chip{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:6px 16px;font-size:12px;color:rgba(255,255,255,.5)}
+/* Arch slide */
+.sbox{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-left:3px solid;border-radius:10px;padding:11px 14px;margin-bottom:9px}
+.sbn{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px}
+.sbu{font-family:monospace;font-size:10px;color:rgba(255,255,255,.45)}
+.sbd{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px}
+/* Rental flow slide */
+.fsteps{display:flex;align-items:flex-start;gap:0;margin:24px 0}
+.fstep{flex:1;display:flex;flex-direction:column;align-items:center;position:relative}
+.fstep:not(:last-child)::after{content:'';position:absolute;top:18px;left:calc(50% + 18px);right:calc(-50% + 18px);height:2px;background:rgba(255,255,255,.1)}
+.fsc{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;margin-bottom:8px;flex-shrink:0}
+.fsl{font-size:11px;color:rgba(255,255,255,.5);text-align:center;line-height:1.3;max-width:80px}
+.fsa{color:rgba(255,255,255,.3);font-size:12px;margin-top:4px;text-align:center}
+/* step pills on phone */
+.spills{display:flex;gap:2px;align-items:center;padding:5px 6px;background:rgba(0,0,0,.2);flex-shrink:0}
+.sp{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:6px;font-weight:700}
+.sp.dn{background:#10b981;color:#fff}
+.sp.ac{background:var(--g);color:var(--dk)}
+.sp.pn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.3)}
+.spl{flex:1;height:1px;background:rgba(255,255,255,.1)}
+.spl.dn{background:rgba(16,185,129,.4)}
+/* Table */
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl th{background:rgba(201,162,39,.1);color:var(--g);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:7px 10px;text-align:left;border-bottom:1px solid rgba(201,162,39,.2)}
+.tbl td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(255,255,255,.7);font-family:monospace;font-size:10px}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+/* Business rule chips */
+.rc{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;margin-bottom:7px}
+.ri{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.rt{font-size:12px;font-weight:700;color:#fff;margin-bottom:2px}
+.rd{font-size:11px;color:rgba(255,255,255,.45);line-height:1.4}
+/* OTP boxes */
+.otp{display:flex;gap:4px;justify-content:center;margin:6px 0}
+.ob{width:26px;height:30px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--g)}
+/* Chat bubbles */
+.bu{align-self:flex-end;background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.18);border-radius:10px 10px 2px 10px;padding:5px 7px;font-size:7px;color:rgba(255,255,255,.85);max-width:80%}
+.ba{align-self:flex-start;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px 10px 10px 2px;padding:5px 7px;font-size:7px;color:rgba(255,255,255,.85);max-width:85%}
+.bl{font-size:6px;color:var(--tl);font-weight:700;text-transform:uppercase;margin-bottom:2px}
+/* flex helpers */
+.row{display:flex;align-items:center}.col{display:flex;flex-direction:column}.g4{gap:4px}.g8{gap:8px}.g12{gap:12px}.jb{justify-content:space-between}.sb2{justify-content:space-between}.fw{width:100%}.mu{color:rgba(255,255,255,.4)}.go{color:var(--g)}.tl{color:var(--tl)}.sm{font-size:8px}.xs{font-size:7px}.bd{font-weight:700}.mt4{margin-top:4px}.mt8{margin-top:8px}
+/* Scrollable full slide */
+.sf .sc2{flex:1;overflow-y:auto;padding-right:4px}.sf .sc2::-webkit-scrollbar{width:3px}.sf .sc2::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+/* two phones */
+.tph{display:flex;gap:24px;align-items:flex-start}
+.ph-sm{width:190px;height:390px;background:#111827;border-radius:30px;border:4px solid #1e2d4a;overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.6);flex-shrink:0}
+.ph-sm::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:50px;height:14px;background:#111827;border-radius:0 0 10px 10px;border-bottom:2px solid #1e2d4a;z-index:20}
+</style>
+</head>
+<body>
+<div id="prog"><div id="pf"></div></div>
+<div class="pres">
+
+<!-- ═══════════════ SLIDE 1: COVER ═══════════════ -->
+<div class="slide active cover">
+  <div class="clogo">StayHere</div>
+  <div class="csub">Kenya's #1 Rental Platform</div>
+  <div class="ctitle">Mobile App — Implementation Guide</div>
+  <div class="cdesc">Screen-by-screen breakdown for mobile developers.<br>Production API endpoints · Request/Response samples · Business rules · UI references.</div>
+  <div class="chips">
+    <div class="chip">📱 20 Screens</div>
+    <div class="chip">🔗 25+ API Endpoints</div>
+    <div class="chip">🔐 JWT Auth (Tenant only)</div>
+    <div class="chip">💳 M-Pesa STK Push</div>
+    <div class="chip">🤖 Sage AI Chat</div>
+    <div class="chip">☁️ Cloudflare R2 Uploads</div>
+  </div>
+  <div style="position:absolute;bottom:70px;font-size:11px;color:rgba(255,255,255,.25);letter-spacing:.5px">Base URL: https://apim-dev-5c27bcf3.azure-api.net &nbsp;|&nbsp; Use arrow keys or buttons to navigate</div>
+</div>
+
+<!-- ═══════════════ SLIDE 2: ARCHITECTURE ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl" style="padding-right:24px">
+      <div class="badge">🏗 Architecture</div>
+      <h2 class="stitle">API Services</h2>
+      <p class="ssub">All services are fronted by Azure API Management (APIM). Prefix every endpoint with the base URL below.</p>
+      <div style="font-family:monospace;font-size:12px;background:rgba(201,162,39,.08);border:1px solid rgba(201,162,39,.2);border-radius:8px;padding:9px 14px;margin-bottom:16px;color:var(--g)">https://apim-dev-5c27bcf3.azure-api.net</div>
+      <div class="sbox" style="border-left-color:#c9a227"><div class="sbn">Auth Service</div><div class="sbu">/auth → /auth/signup, /auth/login, /auth/verify-otp</div><div class="sbd">OTP-based passwordless login · JWT tokens</div></div>
+      <div class="sbox" style="border-left-color:#0d9488"><div class="sbn">Property Service</div><div class="sbu">/property → /listings, /bookings, /applications, /upload</div><div class="sbd">Listings, rental flow, document upload, terms, payments</div></div>
+      <div class="sbox" style="border-left-color:#60a5fa"><div class="sbn">Customer Service</div><div class="sbu">/customers → /customers/{id}</div><div class="sbd">Customer profile, saved properties, rented properties</div></div>
+      <div class="sbox" style="border-left-color:#a78bfa"><div class="sbn">AI Agent Service</div><div class="sbu">/aiagent → /aiagent/chat, /aiagent/listings</div><div class="sbd">Sage AI chat + semantic property search</div></div>
+      <div class="sbox" style="border-left-color:#f472b6"><div class="sbn">Static Data Service</div><div class="sbu">/staticdata → /counties, /amenities, /property-types</div><div class="sbd">Drop-down / filter reference data</div></div>
+    </div>
+    <div class="sr" style="flex-direction:column;gap:12px;width:340px;padding:40px 40px 40px 0">
+      <div class="ic">
+        <div class="ict">🔐 Auth Flow</div>
+        <div style="margin-top:10px;font-size:12px;color:rgba(255,255,255,.6);line-height:1.8">
+          1. <span style="color:var(--g)">POST /auth/signup</span> (once)<br>
+          2. <span style="color:var(--g)">POST /auth/login</span> → OTP sent via email<br>
+          3. <span style="color:var(--g)">POST /auth/verify-otp</span> → JWT<br>
+          4. Store <code>token</code>, <code>userId</code>, <code>role</code><br>
+          5. Check <code>role === "Tenant"</code> — reject others<br>
+          6. Attach <code>Authorization: Bearer &lt;token&gt;</code>
+        </div>
+      </div>
+      <div class="ic">
+        <div class="ict">📦 Token Storage</div>
+        <div class="icd">Store JWT securely using <code>flutter_secure_storage</code> (Flutter) or <code>Keychain/Keystore</code>. Never store in plain SharedPreferences. Include <code>customerId</code> from verify-otp response for all customer-specific calls.</div>
+      </div>
+      <div class="ic">
+        <div class="ict">🌐 Request Headers</div>
+        <div class="cb" style="font-size:10px"><span class="ck">Authorization</span>: Bearer &lt;jwt&gt;
+<span class="ck">Content-Type</span>: application/json
+<span class="ck">Accept</span>: application/json</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 3: SIGN UP ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">📱 Screen 1</div>
+      <h2 class="stitle">Sign Up</h2>
+      <p class="ssub">New users create an account with name, email, and optional phone. No auth required.</p>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/auth/signup</span></div>
+        <div class="adesc">Create a new Tenant account</div>
+      </div>
+      <div class="cb"><span class="cs">// Request body</span>
+{
+  <span class="ck">"fullName"</span>: <span class="cs">"Jane Wambui"</span>,
+  <span class="ck">"email"</span>: <span class="cs">"jane@example.com"</span>,
+  <span class="ck">"phoneNumber"</span>: <span class="cs">"+254700000000"</span> <span class="cs">// optional</span>
+}
+
+<span class="cs">// Response 200</span>
+{ <span class="ck">"message"</span>: <span class="cs">"Account created successfully"</span> }
+
+<span class="cs">// Errors</span>
+<span class="cn">409</span> — email already in use
+<span class="cn">400</span> — validation error</div>
+      <div class="hr"></div>
+      <div class="ic">
+        <div class="ict">💡 On Success</div>
+        <div class="icd">Navigate to Login screen. No token is returned from signup — user must then log in via OTP to get their JWT.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sc" style="padding-top:20px;align-items:center">
+            <div style="font-size:18px;font-weight:900;background:linear-gradient(135deg,#c9a227,#e8b84b);-webkit-background-clip:text;-webkit-text-fill-color:transparent">StayHere</div>
+            <div style="width:40px;height:40px;background:rgba(13,148,136,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:8px 0">👤</div>
+            <div style="font-size:12px;font-weight:700;color:#fff">Create Account</div>
+            <div style="font-size:7px;color:rgba(255,255,255,.35);margin-bottom:8px">Join thousands finding their home</div>
+            <div class="fw col g4" style="margin-bottom:2px">
+              <div class="si-lbl">Full Name *</div>
+              <div class="si-inp">Jane Wambui</div>
+            </div>
+            <div class="fw col g4" style="margin-bottom:2px">
+              <div class="si-lbl">Email *</div>
+              <div class="si-inp">jane@example.com</div>
+            </div>
+            <div class="fw col g4" style="margin-bottom:6px">
+              <div class="si-lbl">Phone (optional)</div>
+              <div class="si-inp">+254 700 000 000</div>
+            </div>
+            <div class="si-btn bg-g fw">Create Account →</div>
+            <div style="font-size:7px;color:rgba(255,255,255,.35);margin-top:6px">Already have an account? <span style="color:var(--g)">Sign in</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 4: LOGIN ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">📱 Screen 2</div>
+      <h2 class="stitle">Login — 2-Step OTP</h2>
+      <p class="ssub">Passwordless auth. User enters email/phone → OTP sent → verify to get JWT.</p>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/auth/login</span></div>
+        <div class="adesc">Step 1: Request OTP — accepts email or phone</div>
+      </div>
+      <div class="cb"><span class="cs">// Send ONE of these (Pascal-case!)</span>
+{ <span class="ck">"Email"</span>: <span class="cs">"jane@example.com"</span> }
+<span class="cs">// OR</span>
+{ <span class="ck">"PhoneNumber"</span>: <span class="cs">"+254700000000"</span> }
+
+<span class="cs">// Response 200</span>
+{ <span class="ck">"message"</span>: <span class="cs">"OTP sent to your email"</span> }</div>
+      <div class="hr"></div>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/auth/verify-otp</span></div>
+        <div class="adesc">Step 2: Submit 6-digit OTP → receive JWT</div>
+      </div>
+      <div class="cb">{ <span class="ck">"Email"</span>: <span class="cs">"jane@example.com"</span>, <span class="ck">"Otp"</span>: <span class="cs">"482916"</span> }
+
+<span class="cs">// Response 200</span>
+{
+  <span class="ck">"token"</span>: <span class="cs">"eyJhbGci..."</span>,
+  <span class="ck">"role"</span>: <span class="cs">"Tenant"</span>,
+  <span class="ck">"userId"</span>: <span class="cs">"usr_abc123"</span>,
+  <span class="ck">"customerId"</span>: <span class="cs">"cust_xyz789"</span>
+}
+<span class="cs">// ⚠️  Reject if role !== "Tenant"</span></div>
+    </div>
+    <div class="sr">
+      <div class="tph">
+        <!-- Step 1 phone -->
+        <div class="ph-sm">
+          <div class="scr">
+            <div class="sb"><span>9:41</span><span>◼◼ 📶</span></div>
+            <div class="sc" style="padding-top:18px;align-items:center">
+              <div style="font-size:14px;font-weight:900;background:linear-gradient(135deg,#c9a227,#e8b84b);-webkit-background-clip:text;-webkit-text-fill-color:transparent">StayHere</div>
+              <div style="font-size:10px;font-weight:700;color:#fff;margin:10px 0 2px">Welcome Back 👋</div>
+              <div style="font-size:6px;color:rgba(255,255,255,.35);margin-bottom:10px">Enter your email to receive a code</div>
+              <div class="fw col g4">
+                <div class="si-lbl">Email or Phone</div>
+                <div class="si-inp">jane@example.com</div>
+              </div>
+              <div class="si-btn bg-g fw" style="margin-top:8px">Continue →</div>
+              <div style="font-size:6px;color:rgba(255,255,255,.3);margin-top:8px">New here? <span style="color:var(--g)">Create account</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- Step 2 phone -->
+        <div class="ph-sm">
+          <div class="scr">
+            <div class="sb"><span>9:41</span><span>◼◼ 📶</span></div>
+            <div class="sc" style="padding-top:18px;align-items:center">
+              <div style="font-size:20px;margin-bottom:6px">📨</div>
+              <div style="font-size:10px;font-weight:700;color:#fff">Check your email</div>
+              <div style="font-size:6px;color:rgba(255,255,255,.35);margin-bottom:12px;text-align:center">We sent a 6-digit code to<br><span style="color:#fff">jane@example.com</span></div>
+              <div class="otp">
+                <div class="ob">4</div><div class="ob">8</div><div class="ob">2</div>
+                <div class="ob" style="border-color:var(--g);box-shadow:0 0 6px rgba(201,162,39,.3)">_</div>
+                <div class="ob" style="opacity:.4">·</div><div class="ob" style="opacity:.4">·</div>
+              </div>
+              <div style="font-size:6px;color:rgba(255,255,255,.3);margin:8px 0">Didn't get it? <span style="color:var(--g)">Resend (58s)</span></div>
+              <div class="si-btn bg-g fw">Verify Code</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 5: HOME ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">📱 Screen 3</div>
+      <h2 class="stitle">Home Screen</h2>
+      <p class="ssub">Discovery hub. Load featured + available listings in parallel on mount.</p>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/property/listings/featured<b>?limit=6</b></span></div>
+        <div class="adesc">Carousel of featured/promoted properties</div>
+      </div>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/property/listings/available<b>?page=1&pageSize=6</b></span></div>
+        <div class="adesc">Recent available listings grid section</div>
+      </div>
+      <div class="cb"><span class="cs">// Listing object (both endpoints)</span>
+{
+  <span class="ck">"id"</span>: <span class="cs">"list_abc"</span>,
+  <span class="ck">"title"</span>: <span class="cs">"Modern 2BR, Westlands"</span>,
+  <span class="ck">"primaryImageUrl"</span>: <span class="cs">"https://pub-89..."</span>,
+  <span class="ck">"images"</span>: [<span class="cs">"https://..."</span>],
+  <span class="ck">"price"</span>: <span class="cn">45000</span>,
+  <span class="ck">"bedrooms"</span>: <span class="cn">2</span>,
+  <span class="ck">"location"</span>: <span class="cs">"Westlands, Nairobi"</span>,
+  <span class="ck">"listingType"</span>: <span class="cs">"Rent"</span>,
+  <span class="ck">"isFeatured"</span>: <span class="cb2">true</span>
+}</div>
+      <div class="ic" style="margin-top:8px">
+        <div class="ict">💡 Images</div>
+        <div class="icd">Use <code>primaryImageUrl</code> for card thumbnail. Fall back to <code>images[0]</code>. R2 public URL — no auth header needed to load images.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn">
+            <div style="font-size:12px;font-weight:900;color:var(--g)">StayHere</div>
+            <div class="row g4"><span style="font-size:13px">🔔</span><span style="font-size:13px">👤</span></div>
+          </div>
+          <div class="sc">
+            <div style="font-size:7px;color:rgba(255,255,255,.35)">Kenya's #1 Rental Platform</div>
+            <div style="font-size:13px;font-weight:800;color:#fff;line-height:1.2">Find Your <span style="color:var(--g)">Perfect Home</span></div>
+            <div class="row g4">
+              <div style="background:var(--g);color:var(--dk);border-radius:8px;padding:3px 9px;font-size:7px;font-weight:700">Rent</div>
+              <div style="border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);border-radius:8px;padding:3px 9px;font-size:7px">Buy</div>
+              <div style="border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);border-radius:8px;padding:3px 9px;font-size:7px">AirBnB</div>
+            </div>
+            <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:6px 8px;display:flex;align-items:center;gap:5px">
+              <span style="font-size:10px">🔍</span>
+              <span style="font-size:7px;color:rgba(255,255,255,.3)">Search city, area, amenity…</span>
+              <div style="margin-left:auto;background:var(--g);color:var(--dk);border-radius:6px;padding:2px 7px;font-size:7px;font-weight:700">Go</div>
+            </div>
+            <div class="row g4">
+              <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px;text-align:center;flex:1"><div style="font-size:12px">🏢</div><div style="font-size:6px;color:rgba(255,255,255,.4)">Apt</div></div>
+              <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px;text-align:center;flex:1"><div style="font-size:12px">🏠</div><div style="font-size:6px;color:rgba(255,255,255,.4)">House</div></div>
+              <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px;text-align:center;flex:1"><div style="font-size:12px">🛏</div><div style="font-size:6px;color:rgba(255,255,255,.4)">Studio</div></div>
+              <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px;text-align:center;flex:1"><div style="font-size:12px">🏖</div><div style="font-size:6px;color:rgba(255,255,255,.4)">Villa</div></div>
+            </div>
+            <div style="font-size:8px;font-weight:700;color:#fff">⭐ Featured</div>
+            <div class="si-card" style="padding:0;overflow:hidden">
+              <div class="si-img" style="height:56px;position:relative"><span style="font-size:22px">🏢</span>
+                <div style="position:absolute;bottom:4px;left:6px;display:flex;gap:3px"><span class="tag tt">Rent</span><span class="tag tg">Featured</span></div>
+                <div style="position:absolute;top:4px;right:6px;font-size:12px">♡</div>
+              </div>
+              <div style="padding:6px">
+                <div style="font-size:9px;font-weight:700;color:#fff">Modern 2BR, Westlands</div>
+                <div style="font-size:7px;color:rgba(255,255,255,.35)">📍 Westlands, Nairobi</div>
+                <div class="row jb" style="margin-top:3px">
+                  <span style="font-size:10px;font-weight:800;color:var(--g)">KES 45,000<span style="font-size:6px;color:rgba(255,255,255,.35)">/mo</span></span>
+                  <span style="font-size:7px;color:rgba(255,255,255,.35)">🛏2  🚿2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sbt">
+            <div class="stab on"><span>🏠</span><span>Home</span></div>
+            <div class="stab"><span>🔍</span><span>Explore</span></div>
+            <div class="stab"><span>♡</span><span>Saved</span></div>
+            <div class="stab"><span>📋</span><span>Apply</span></div>
+            <div class="stab"><span>👤</span><span>Me</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 6: EXPLORE ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">📱 Screen 4</div>
+      <h2 class="stitle">Explore / Search</h2>
+      <p class="ssub">Browse all properties. Switches to filtered search when query or filters are active.</p>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/property/listings/available<b>?page=1&pageSize=10</b></span></div>
+        <div class="adesc">Default load — no filters. Infinite scroll: increment page on scroll end.</div>
+      </div>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/property/listings/search</span></div>
+        <div class="adesc">Filtered/keyword search — fire when any filter is active</div>
+      </div>
+      <div class="cb"><span class="cs">// POST /property/listings/search body</span>
+{
+  <span class="ck">"query"</span>: <span class="cs">"2 bedroom Kilimani"</span>,
+  <span class="ck">"listingType"</span>: <span class="cs">"Rent"</span>,    <span class="cs">// Rent|Buy|AirBnB</span>
+  <span class="ck">"minPrice"</span>: <span class="cn">20000</span>,
+  <span class="ck">"maxPrice"</span>: <span class="cn">80000</span>,
+  <span class="ck">"bedrooms"</span>: <span class="cn">2</span>,
+  <span class="ck">"county"</span>: <span class="cs">"Nairobi"</span>,
+  <span class="ck">"page"</span>: <span class="cn">1</span>, <span class="ck">"pageSize"</span>: <span class="cn">10</span>
+}</div>
+      <div class="hr"></div>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/staticdata/counties</span></div>
+        <div class="adesc">County list for filter dropdown (load once, cache)</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn"><div class="snt">Explore</div><span style="font-size:13px">⚙️</span></div>
+          <div class="sc">
+            <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:6px 8px;display:flex;align-items:center;gap:5px">
+              <span style="font-size:10px">🔍</span>
+              <span style="font-size:7px;color:rgba(255,255,255,.3)">2 bedroom Kilimani…</span>
+              <div style="margin-left:auto;background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.25);border-radius:6px;padding:2px 7px;font-size:7px;color:var(--g);font-weight:700">Filter</div>
+            </div>
+            <div class="row g4">
+              <div style="background:var(--g);color:var(--dk);border-radius:20px;padding:3px 9px;font-size:7px;font-weight:700">All</div>
+              <div style="border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);border-radius:20px;padding:3px 9px;font-size:7px">Rent</div>
+              <div style="border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);border-radius:20px;padding:3px 9px;font-size:7px">Buy</div>
+              <div style="border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);border-radius:20px;padding:3px 9px;font-size:7px">AirBnB</div>
+            </div>
+            <div style="font-size:8px;font-weight:700;color:#fff">128 Properties Found</div>
+            <!-- Card 1 -->
+            <div class="si-card" style="padding:0;overflow:hidden">
+              <div class="si-img" style="height:52px"><span style="font-size:20px">🏠</span></div>
+              <div style="padding:5px">
+                <div style="font-size:8px;font-weight:700;color:#fff">Spacious 3BR, Kilimani</div>
+                <div style="font-size:6px;color:rgba(255,255,255,.35)">📍 Kilimani, Nairobi</div>
+                <div class="row jb mt4"><span style="font-size:9px;font-weight:800;color:var(--g)">KES 70,000<span style="font-size:6px;color:rgba(255,255,255,.35)">/mo</span></span><span style="font-size:6px;color:rgba(255,255,255,.35)">🛏3 🚿2</span></div>
+              </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="si-card" style="padding:0;overflow:hidden">
+              <div class="si-img" style="height:52px"><span style="font-size:20px">🏢</span></div>
+              <div style="padding:5px">
+                <div style="font-size:8px;font-weight:700;color:#fff">Studio, Lavington</div>
+                <div style="font-size:6px;color:rgba(255,255,255,.35)">📍 Lavington, Nairobi</div>
+                <div class="row jb mt4"><span style="font-size:9px;font-weight:800;color:var(--g)">KES 28,000<span style="font-size:6px;color:rgba(255,255,255,.35)">/mo</span></span><span style="font-size:6px;color:rgba(255,255,255,.35)">🛏1 🚿1</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="sbt">
+            <div class="stab"><span>🏠</span><span>Home</span></div>
+            <div class="stab on"><span>🔍</span><span>Explore</span></div>
+            <div class="stab"><span>♡</span><span>Saved</span></div>
+            <div class="stab"><span>📋</span><span>Apply</span></div>
+            <div class="stab"><span>👤</span><span>Me</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 7: LISTING DETAIL ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">📱 Screen 5</div>
+      <h2 class="stitle">Listing Detail</h2>
+      <p class="ssub">Full property view with gallery, AI similar listings, and the entry point to the rental flow.</p>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/property/listings/<b>{listingId}</b></span></div>
+        <div class="adesc">Full listing details including images array, amenities, terms</div>
+      </div>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/property/listings/<b>{listingId}</b>/view</span></div>
+        <div class="adesc">Increment view count — fire once on mount, fire-and-forget</div>
+      </div>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/aiagent/listings<b>?query=…&topK=4</b></span></div>
+        <div class="adesc">AI-powered similar properties section at bottom</div>
+      </div>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/property/listings/<b>{listingId}</b>/rate</span></div>
+        <div class="adesc">Submit a 1-5 star rating — requires auth</div>
+      </div>
+      <div class="cb">{ <span class="ck">"rating"</span>: <span class="cn">5</span> }   <span class="cs">// 1 to 5</span></div>
+      <div class="hr"></div>
+      <div class="ic">
+        <div class="ict">🚀 Start Rental Flow</div>
+        <div class="icd">Tapping "Start Rental Process" navigates to the Rental Flow screen, passing <code>listingId</code>. User must be authenticated — redirect to Login if no token stored.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="si-img" style="height:100px;border-radius:0;flex-shrink:0">
+            <span style="font-size:30px">🏢</span>
+            <div style="position:absolute;top:8px;left:8px;font-size:12px;background:rgba(0,0,0,.4);width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center">←</div>
+            <div style="position:absolute;bottom:8px;right:8px;font-size:12px;background:rgba(0,0,0,.4);width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center">♡</div>
+            <div style="position:absolute;bottom:6px;left:8px;font-size:7px;background:rgba(0,0,0,.5);padding:2px 6px;border-radius:4px;color:#fff">1 / 5</div>
+          </div>
+          <div class="sc" style="padding-top:6px">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#fff">Modern 2BR Apartment</div>
+              <div style="font-size:7px;color:rgba(255,255,255,.4)">📍 Westlands, Nairobi</div>
+              <div class="row jb mt4">
+                <div style="font-size:12px;font-weight:800;color:var(--g)">KES 45,000<span style="font-size:7px;color:rgba(255,255,255,.35)">/mo</span></div>
+                <div class="row g4"><span class="tag te">Available</span></div>
+              </div>
+            </div>
+            <div class="row g8" style="flex-shrink:0">
+              <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:5px 8px;text-align:center;flex:1;font-size:8px;color:rgba(255,255,255,.7)">🛏<br><span style="font-weight:700;color:#fff">2</span> Bed</div>
+              <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:5px 8px;text-align:center;flex:1;font-size:8px;color:rgba(255,255,255,.7)">🚿<br><span style="font-weight:700;color:#fff">2</span> Bath</div>
+              <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:5px 8px;text-align:center;flex:1;font-size:8px;color:rgba(255,255,255,.7)">📐<br><span style="font-weight:700;color:#fff">85</span> m²</div>
+            </div>
+            <div style="font-size:7px;color:rgba(255,255,255,.4);line-height:1.4">Modern finishes, open-plan kitchen, great natural light. Secure building with 24hr security…</div>
+            <div style="display:flex;gap:3px;flex-wrap:wrap">
+              <span class="tag tt">🌐 WiFi</span><span class="tag tt">🅿️ Parking</span><span class="tag tt">🛡 Security</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;font-size:7px;color:rgba(255,255,255,.4)">⭐⭐⭐⭐☆ <span style="color:#fff;font-weight:700">4.2</span> (18 reviews)</div>
+            <div class="si-btn bg-g fw">Start Rental Process →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 8: RENTAL FLOW OVERVIEW ═══════════════ -->
+<div class="slide">
+  <div class="sf">
+    <div class="badge">🏘 Rental Flow</div>
+    <h2 class="stitle" style="font-size:26px">6-Step Rental Process</h2>
+    <p class="ssub" style="margin-bottom:24px">Each step corresponds to an API call that advances the application status. Guide the user linearly — each step unlocks when the previous one is complete.</p>
+    <div class="fsteps">
+      <div class="fstep">
+        <div class="fsc" style="background:rgba(201,162,39,.15);border:2px solid var(--g);color:var(--g)">1</div>
+        <div class="fsl" style="color:#fff;font-weight:700">Book Viewing</div>
+        <div class="fsa">POST /bookings</div>
+      </div>
+      <div class="fstep">
+        <div class="fsc" style="background:rgba(94,234,212,.1);border:2px solid var(--tl);color:var(--tl)">2</div>
+        <div class="fsl" style="color:#fff;font-weight:700">Apply</div>
+        <div class="fsa">POST /applications</div>
+      </div>
+      <div class="fstep">
+        <div class="fsc" style="background:rgba(96,165,250,.1);border:2px solid #60a5fa;color:#60a5fa">3</div>
+        <div class="fsl" style="color:#fff;font-weight:700">Upload Docs</div>
+        <div class="fsa">presigned-url + PUT</div>
+      </div>
+      <div class="fstep">
+        <div class="fsc" style="background:rgba(167,139,250,.1);border:2px solid #a78bfa;color:#a78bfa">4</div>
+        <div class="fsl" style="color:#fff;font-weight:700">Review Terms</div>
+        <div class="fsa">PATCH accept-terms</div>
+      </div>
+      <div class="fstep">
+        <div class="fsc" style="background:rgba(244,114,182,.1);border:2px solid #f472b6;color:#f472b6">5</div>
+        <div class="fsl" style="color:#fff;font-weight:700">Payment</div>
+        <div class="fsa">M-Pesa STK Push</div>
+      </div>
+      <div class="fstep">
+        <div class="fsc" style="background:rgba(52,211,153,.1);border:2px solid #34d399;color:#34d399">6</div>
+        <div class="fsl" style="color:#fff;font-weight:700">Welcome</div>
+        <div class="fsa">GET /onboarding</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px">
+      <div class="ic"><div class="ict">Application Statuses</div><div class="icd" style="line-height:2;font-size:11px">
+        <span class="tag to">DocumentsPending</span> → <span class="tag tt">UnderReview</span><br>
+        → <span class="tag te">Approved</span> / <span class="tag tr">Rejected</span><br>
+        → <span class="tag tg">TermsAccepted</span><br>
+        → <span class="tag to">PaymentPending</span><br>
+        → <span class="tag te">Active ✓</span>
+      </div></div>
+      <div class="ic"><div class="ict">Resume Logic</div><div class="icd">From My Applications, users can continue any in-progress application.<br><br>Resumable statuses:<br>• <code>DocumentsPending</code> → Step 3<br>• <code>Approved</code> → Step 4<br>• <code>TermsAccepted</code> → Step 5<br>• <code>PaymentPending</code> → Step 5</div></div>
+      <div class="ic"><div class="ict">Key IDs to Track</div><div class="icd">Persist these throughout the flow:<br><br>• <code>listingId</code> — from listing detail<br>• <code>bookingId</code> — from Step 1<br>• <code>applicationId</code> — from Step 2<br>• <code>customerId</code> — from login<br><br>Pass <code>applicationId</code> to every Step 3-6 call.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 9: STEP 1 - BOOK VIEWING ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">🏘 Step 1 of 6</div>
+      <h2 class="stitle">Book a Viewing</h2>
+      <p class="ssub">User selects date, time, and viewing type. Creates a viewing booking linked to the listing.</p>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/property/bookings</span></div>
+        <div class="adesc">Create a viewing appointment — requires auth</div>
+      </div>
+      <div class="cb"><span class="cs">// Request</span>
+{
+  <span class="ck">"listingId"</span>: <span class="cs">"list_abc123"</span>,
+  <span class="ck">"customerId"</span>: <span class="cs">"cust_xyz789"</span>,
+  <span class="ck">"viewingDate"</span>: <span class="cs">"2026-06-20"</span>,
+  <span class="ck">"viewingTime"</span>: <span class="cs">"10:00"</span>,
+  <span class="ck">"viewingType"</span>: <span class="cs">"InPerson"</span>  <span class="cs">// InPerson | Virtual</span>
+}
+<span class="cs">// Response 201</span>
+{
+  <span class="ck">"bookingId"</span>: <span class="cs">"bk_def456"</span>,
+  <span class="ck">"status"</span>: <span class="cs">"Confirmed"</span>,
+  <span class="ck">"viewingDate"</span>: <span class="cs">"2026-06-20T10:00:00"</span>
+}</div>
+      <div class="hr"></div>
+      <div class="ic">
+        <div class="ict">💾 After success</div>
+        <div class="icd">Store <code>bookingId</code> in state. Advance to Step 2 (Apply). Show confirmation card with date/time before proceeding.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn"><div class="snt">Rental Process</div><span class="tag te" style="font-size:7px">Step 1/6</span></div>
+          <div class="spills">
+            <div class="sp ac">1</div><div class="spl"></div>
+            <div class="sp pn">2</div><div class="spl"></div>
+            <div class="sp pn">3</div><div class="spl"></div>
+            <div class="sp pn">4</div><div class="spl"></div>
+            <div class="sp pn">5</div><div class="spl"></div>
+            <div class="sp pn">6</div>
+          </div>
+          <div class="sc">
+            <div style="font-size:11px;font-weight:700;color:#fff">📅 Schedule Viewing</div>
+            <div style="font-size:7px;color:rgba(255,255,255,.4)">Modern 2BR, Westlands · KES 45,000/mo</div>
+            <div style="font-size:7px;color:rgba(255,255,255,.5);margin-bottom:2px">Viewing Type</div>
+            <div class="row g4">
+              <div style="flex:1;background:rgba(13,148,136,.15);border:1px solid var(--t);border-radius:8px;padding:5px;text-align:center;font-size:7px;color:var(--tl);font-weight:700">🏠 In-Person</div>
+              <div style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px;text-align:center;font-size:7px;color:rgba(255,255,255,.4)">💻 Virtual</div>
+            </div>
+            <div style="font-size:7px;color:rgba(255,255,255,.5)">Select Date</div>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px;display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">
+              <span style="font-size:6px;color:rgba(255,255,255,.3)">M</span><span style="font-size:6px;color:rgba(255,255,255,.3)">T</span><span style="font-size:6px;color:rgba(255,255,255,.3)">W</span><span style="font-size:6px;color:rgba(255,255,255,.3)">T</span><span style="font-size:6px;color:rgba(255,255,255,.3)">F</span><span style="font-size:6px;color:rgba(255,255,255,.3)">S</span><span style="font-size:6px;color:rgba(255,255,255,.3)">S</span>
+              <span style="font-size:7px;color:rgba(255,255,255,.5)">16</span><span style="font-size:7px;color:rgba(255,255,255,.5)">17</span><span style="font-size:7px;color:rgba(255,255,255,.5)">18</span><span style="font-size:7px;color:rgba(255,255,255,.5)">19</span><span style="font-size:7px;background:var(--g);color:var(--dk);border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;margin:auto">20</span><span style="font-size:7px;color:rgba(255,255,255,.5)">21</span><span style="font-size:7px;color:rgba(255,255,255,.3)">22</span>
+            </div>
+            <div style="font-size:7px;color:rgba(255,255,255,.5)">Select Time</div>
+            <div class="row g4" style="flex-wrap:wrap">
+              <div style="background:var(--g);color:var(--dk);border-radius:6px;padding:3px 8px;font-size:7px;font-weight:700">10:00 AM</div>
+              <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:3px 8px;font-size:7px;color:rgba(255,255,255,.5)">12:00 PM</div>
+              <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:3px 8px;font-size:7px;color:rgba(255,255,255,.5)">2:00 PM</div>
+            </div>
+            <div class="si-btn bg-g fw">Book Viewing →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 10: STEP 2 - APPLY ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">🏘 Step 2 of 6</div>
+      <h2 class="stitle">Submit Application</h2>
+      <p class="ssub">After confirming the viewing, the tenant formally applies with their employment and income details.</p>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/property/applications</span></div>
+        <div class="adesc">Submit a rental application — requires auth</div>
+      </div>
+      <div class="cb"><span class="cs">// Request</span>
+{
+  <span class="ck">"listingId"</span>: <span class="cs">"list_abc123"</span>,
+  <span class="ck">"customerId"</span>: <span class="cs">"cust_xyz789"</span>,
+  <span class="ck">"bookingId"</span>: <span class="cs">"bk_def456"</span>,
+  <span class="ck">"employmentType"</span>: <span class="cs">"Employed"</span>,
+  <span class="ck">"monthlyIncome"</span>: <span class="cn">120000</span>,
+  <span class="ck">"employer"</span>: <span class="cs">"Safaricom PLC"</span>
+}
+<span class="cs">// Response 201</span>
+{
+  <span class="ck">"applicationId"</span>: <span class="cs">"app_ghi012"</span>,
+  <span class="ck">"status"</span>: <span class="cs">"DocumentsPending"</span>
+}</div>
+      <div class="hr"></div>
+      <div class="ic">
+        <div class="ict">⚠️ Employment Types</div>
+        <div class="icd">Accepted values: <code>Employed</code>, <code>SelfEmployed</code>, <code>Unemployed</code>, <code>Student</code>. Provide a dropdown — don't use free text. Store <code>applicationId</code> — required for all subsequent steps.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn"><div class="snt">Rental Process</div><span class="tag te" style="font-size:7px">Step 2/6</span></div>
+          <div class="spills">
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp ac">2</div><div class="spl"></div>
+            <div class="sp pn">3</div><div class="spl"></div>
+            <div class="sp pn">4</div><div class="spl"></div>
+            <div class="sp pn">5</div><div class="spl"></div>
+            <div class="sp pn">6</div>
+          </div>
+          <div class="sc">
+            <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:8px;text-align:center">
+              <div style="font-size:16px;margin-bottom:3px">✅</div>
+              <div style="font-size:8px;font-weight:700;color:#34d399">Viewing Confirmed!</div>
+              <div style="font-size:7px;color:rgba(255,255,255,.4)">Fri Jun 20 · 10:00 AM · In-Person</div>
+            </div>
+            <div style="font-size:9px;font-weight:700;color:#fff">Submit Application</div>
+            <div class="fw col g4">
+              <div class="si-lbl">Employment Type</div>
+              <div class="si-inp" style="color:rgba(255,255,255,.7)">Employed ▾</div>
+            </div>
+            <div class="fw col g4">
+              <div class="si-lbl">Monthly Income (KES)</div>
+              <div class="si-inp" style="color:#fff">120,000</div>
+            </div>
+            <div class="fw col g4">
+              <div class="si-lbl">Employer / Business</div>
+              <div class="si-inp" style="color:#fff">Safaricom PLC</div>
+            </div>
+            <div class="si-btn bg-g fw">Submit Application →</div>
+            <div style="font-size:7px;color:rgba(255,255,255,.3);text-align:center">Your info is kept confidential</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 11: STEP 3 - UPLOAD DOCS ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">🏘 Step 3 of 6</div>
+      <h2 class="stitle">Upload Documents</h2>
+      <p class="ssub">Two-phase upload: get a presigned URL from the API, then PUT the file directly to Cloudflare R2. <strong style="color:var(--g)">Never send files to the API directly.</strong></p>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/property/upload/presigned-url</span></div>
+        <div class="adesc">Phase 1: get a time-limited R2 upload URL</div>
+      </div>
+      <div class="cb"><span class="cs">// Request</span>
+{ <span class="ck">"folder"</span>: <span class="cs">"applications/docs"</span>, <span class="ck">"fileName"</span>: <span class="cs">"id.pdf"</span>, <span class="ck">"contentType"</span>: <span class="cs">"application/pdf"</span> }
+<span class="cs">// Response</span>
+{ <span class="ck">"uploadUrl"</span>: <span class="cs">"https://stayhere...r2.cloudflarestorage.com/...?X-Amz-Signature=..."</span>,
+  <span class="ck">"publicUrl"</span>: <span class="cs">"https://pub-89021444cd6a4a81bacfa5c1dd0427ea.r2.dev/applications/docs/id.pdf"</span>,
+  <span class="ck">"contentType"</span>: <span class="cs">"application/pdf"</span> }</div>
+      <div class="api" style="margin-top:10px">
+        <div><span class="am put">PUT</span><span class="aurl">&lt;uploadUrl&gt; <span style="color:rgba(255,255,255,.3)">— directly to R2</span></span></div>
+        <div class="adesc">Phase 2: PUT raw file bytes. Header <code>Content-Type</code> must exactly match <code>contentType</code> from response.</div>
+      </div>
+      <div class="api" style="margin-top:6px">
+        <div><span class="am patch">PATCH</span><span class="aurl">/property/applications/<b>{id}</b>/documents</span></div>
+        <div class="adesc">Phase 3: Submit the collected publicUrls + signature to the application</div>
+      </div>
+      <div class="cb">{ <span class="ck">"idDocumentUrl"</span>: <span class="cs">"https://pub-89...r2.dev/..."</span>,
+  <span class="ck">"payslipUrls"</span>: [<span class="cs">"..."</span>],
+  <span class="ck">"bankStatementUrl"</span>: <span class="cs">"..."</span>,
+  <span class="ck">"signatureUrl"</span>: <span class="cs">"..."</span> }</div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn"><div class="snt">Rental Process</div><span class="tag te" style="font-size:7px">Step 3/6</span></div>
+          <div class="spills">
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp ac">3</div><div class="spl"></div>
+            <div class="sp pn">4</div><div class="spl"></div>
+            <div class="sp pn">5</div><div class="spl"></div>
+            <div class="sp pn">6</div>
+          </div>
+          <div class="sc">
+            <div style="font-size:9px;font-weight:700;color:#fff">Upload Documents</div>
+            <div style="font-size:7px;color:rgba(255,255,255,.4);margin-bottom:4px">Upload clear scans or photos</div>
+            <!-- Doc slot 1 -->
+            <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:7px;display:flex;align-items:center;gap:7px">
+              <span style="font-size:16px">📄</span>
+              <div style="flex:1"><div style="font-size:8px;font-weight:700;color:#34d399">ID / Passport ✓</div><div style="font-size:6px;color:rgba(255,255,255,.4)">id_front.pdf · 1.2 MB</div></div>
+            </div>
+            <!-- Doc slot 2 -->
+            <div style="background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);border-radius:10px;padding:7px;display:flex;align-items:center;gap:7px">
+              <span style="font-size:16px">📋</span>
+              <div style="flex:1"><div style="font-size:8px;font-weight:700;color:#fff">Payslips (3 months)</div><div style="font-size:6px;color:rgba(255,255,255,.35)">Tap to upload PDF or image</div></div>
+              <div style="background:var(--g);color:var(--dk);border-radius:6px;padding:3px 7px;font-size:7px;font-weight:700">+ Add</div>
+            </div>
+            <!-- Doc slot 3 -->
+            <div style="background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);border-radius:10px;padding:7px;display:flex;align-items:center;gap:7px">
+              <span style="font-size:16px">🏦</span>
+              <div style="flex:1"><div style="font-size:8px;font-weight:700;color:#fff">Bank Statement</div><div style="font-size:6px;color:rgba(255,255,255,.35)">Last 3 months</div></div>
+              <div style="background:var(--g);color:var(--dk);border-radius:6px;padding:3px 7px;font-size:7px;font-weight:700">+ Add</div>
+            </div>
+            <!-- Signature -->
+            <div style="background:rgba(201,162,39,.06);border:1px dashed rgba(201,162,39,.25);border-radius:10px;padding:8px;text-align:center">
+              <div style="font-size:11px;color:rgba(255,255,255,.2);font-style:italic;font-family:serif">~ Your Signature ~</div>
+              <div style="font-size:6px;color:rgba(255,255,255,.3);margin-top:3px">Draw or upload signature</div>
+            </div>
+            <div class="si-btn bg-g fw" style="opacity:.5">Submit Documents (1/4)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 12: STEP 4 - TERMS ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">🏘 Step 4 of 6</div>
+      <h2 class="stitle">Review & Accept Terms</h2>
+      <p class="ssub">Application was reviewed by the property manager. If approved, display the lease terms for the tenant to accept.</p>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/property/listings/<b>{listingId}</b>/terms</span></div>
+        <div class="adesc">Fetch the property's rental terms document</div>
+      </div>
+      <div class="cb"><span class="cs">// Response</span>
+{
+  <span class="ck">"termsId"</span>: <span class="cs">"terms_abc"</span>,
+  <span class="ck">"rentAmount"</span>: <span class="cn">45000</span>,
+  <span class="ck">"depositAmount"</span>: <span class="cn">90000</span>,
+  <span class="ck">"leaseDurationMonths"</span>: <span class="cn">12</span>,
+  <span class="ck">"moveInDate"</span>: <span class="cs">"2026-07-01"</span>,
+  <span class="ck">"termsContent"</span>: <span class="cs">"The tenant agrees to..."</span>
+}</div>
+      <div class="hr"></div>
+      <div class="api">
+        <div><span class="am patch">PATCH</span><span class="aurl">/property/applications/<b>{id}</b>/accept-terms</span></div>
+        <div class="adesc">User confirms they've read and accepted — no body needed</div>
+      </div>
+      <div class="cb"><span class="cs">// Response 200</span>
+{ <span class="ck">"status"</span>: <span class="cs">"TermsAccepted"</span> }
+<span class="cs">// Advance to Step 5 (Payment)</span></div>
+      <div class="ic" style="margin-top:10px">
+        <div class="ict">⚠️ Only show if Approved</div>
+        <div class="icd">Check <code>applicationStatus === "Approved"</code> before navigating here. If status is <code>UnderReview</code>, show a waiting screen. If <code>Rejected</code>, show rejection message with reason.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn"><div class="snt">Rental Process</div><span class="tag te" style="font-size:7px">Step 4/6</span></div>
+          <div class="spills">
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp ac">4</div><div class="spl"></div>
+            <div class="sp pn">5</div><div class="spl"></div>
+            <div class="sp pn">6</div>
+          </div>
+          <div class="sc">
+            <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:6px;text-align:center;flex-shrink:0">
+              <div style="font-size:10px;color:#34d399;font-weight:700">✅ Application Approved!</div>
+              <div style="font-size:6px;color:rgba(255,255,255,.4)">Review your lease terms below</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+              <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:5px;text-align:center"><div style="font-size:9px;font-weight:800;color:var(--g)">KES 45K</div><div style="font-size:6px;color:rgba(255,255,255,.35)">Monthly Rent</div></div>
+              <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:5px;text-align:center"><div style="font-size:9px;font-weight:800;color:var(--g)">KES 90K</div><div style="font-size:6px;color:rgba(255,255,255,.35)">Deposit</div></div>
+              <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:5px;text-align:center"><div style="font-size:9px;font-weight:800;color:#fff">12 mo</div><div style="font-size:6px;color:rgba(255,255,255,.35)">Duration</div></div>
+              <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:5px;text-align:center"><div style="font-size:9px;font-weight:800;color:#fff">Jul 1</div><div style="font-size:6px;color:rgba(255,255,255,.35)">Move-in</div></div>
+            </div>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:7px;flex:1;overflow:hidden">
+              <div style="font-size:7px;font-weight:700;color:#fff;margin-bottom:3px">Lease Terms</div>
+              <div style="font-size:7px;color:rgba(255,255,255,.4);line-height:1.5">The tenant agrees to pay rent on the 1st of each month. Late payments incur a 5% penalty. Subletting requires written consent. No structural modifications…</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.03);border-radius:8px;padding:6px">
+              <div style="width:14px;height:14px;background:var(--g);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0">✓</div>
+              <div style="font-size:7px;color:rgba(255,255,255,.6)">I have read and accept these terms</div>
+            </div>
+            <div class="si-btn bg-t fw">Accept Terms & Continue →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 13: STEP 5 - PAYMENT ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">🏘 Step 5 of 6</div>
+      <h2 class="stitle">M-Pesa Payment</h2>
+      <p class="ssub">STK Push to tenant's phone. Poll every 4 seconds until confirmed or failed.</p>
+      <div class="api">
+        <div><span class="am post">POST</span><span class="aurl">/property/applications/<b>{id}</b>/payment/initiate</span></div>
+        <div class="adesc">Trigger M-Pesa STK Push to tenant's number</div>
+      </div>
+      <div class="cb">{ <span class="ck">"phoneNumber"</span>: <span class="cs">"254712345678"</span>,  <span class="cs">// No + prefix</span>
+  <span class="ck">"amount"</span>: <span class="cn">45000</span> }
+<span class="cs">// Response 200</span>
+{ <span class="ck">"checkoutRequestId"</span>: <span class="cs">"ws_CO_..."</span>, <span class="ck">"message"</span>: <span class="cs">"STK Push sent"</span> }</div>
+      <div class="hr"></div>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/property/applications/<b>{id}</b>/payment/status</span></div>
+        <div class="adesc">Poll this every 4 seconds after initiating</div>
+      </div>
+      <div class="cb"><span class="cs">// Response</span>
+{ <span class="ck">"status"</span>: <span class="cs">"Pending"</span> | <span class="cs">"Completed"</span> | <span class="cs">"Failed"</span>,
+  <span class="ck">"mpesaReceiptNumber"</span>: <span class="cs">"QJX0YK2345"</span> }
+<span class="cs">// Stop polling when status !== "Pending"</span></div>
+      <div class="hr"></div>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/property/applications/<b>{id}</b>/onboarding</span></div>
+        <div class="adesc">After payment Completed — fetch welcome info for Step 6</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn"><div class="snt">Rental Process</div><span class="tag te" style="font-size:7px">Step 5/6</span></div>
+          <div class="spills">
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp dn">✓</div><div class="spl dn"></div>
+            <div class="sp ac">5</div><div class="spl"></div>
+            <div class="sp pn">6</div>
+          </div>
+          <div class="sc">
+            <div style="background:rgba(255,255,255,.04);border-radius:10px;padding:8px">
+              <div style="font-size:7px;color:rgba(255,255,255,.4)">Payment Summary</div>
+              <div class="row jb mt4"><span style="font-size:8px;color:rgba(255,255,255,.6)">First Month Rent</span><span style="font-size:8px;font-weight:700;color:#fff">KES 45,000</span></div>
+              <div class="row jb mt4"><span style="font-size:8px;color:rgba(255,255,255,.6)">Security Deposit</span><span style="font-size:8px;font-weight:700;color:#fff">KES 90,000</span></div>
+              <div style="height:1px;background:rgba(255,255,255,.08);margin:6px 0"></div>
+              <div class="row jb"><span style="font-size:9px;font-weight:700;color:#fff">Total Due</span><span style="font-size:11px;font-weight:800;color:var(--g)">KES 135,000</span></div>
+            </div>
+            <div style="font-size:7px;color:rgba(255,255,255,.5)">Payment Method</div>
+            <div style="background:rgba(13,148,136,.12);border:2px solid var(--t);border-radius:10px;padding:7px;display:flex;align-items:center;gap:7px">
+              <span style="font-size:16px">🟢</span>
+              <div><div style="font-size:9px;font-weight:700;color:var(--tl)">M-Pesa</div><div style="font-size:6px;color:rgba(255,255,255,.4)">STK Push to your phone</div></div>
+              <span style="margin-left:auto;color:var(--tl);font-size:12px">✓</span>
+            </div>
+            <div class="fw col g4">
+              <div class="si-lbl">M-Pesa Phone Number</div>
+              <div class="si-inp" style="color:#fff">254 712 345 678</div>
+            </div>
+            <div class="si-btn bg-t fw">Pay KES 135,000 via M-Pesa</div>
+            <div style="font-size:7px;color:rgba(255,255,255,.3);text-align:center">You'll receive a prompt on your phone</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 14: STEP 6 - WELCOME ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">🏘 Step 6 of 6</div>
+      <h2 class="stitle">Welcome Home!</h2>
+      <p class="ssub">Payment confirmed. Fetch onboarding details and celebrate — the tenant is now active.</p>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/property/applications/<b>{id}</b>/onboarding</span></div>
+        <div class="adesc">Fetch move-in instructions, access codes, and contacts</div>
+      </div>
+      <div class="cb"><span class="cs">// Response</span>
+{
+  <span class="ck">"applicationId"</span>: <span class="cs">"app_ghi012"</span>,
+  <span class="ck">"status"</span>: <span class="cs">"Active"</span>,
+  <span class="ck">"moveInDate"</span>: <span class="cs">"2026-07-01"</span>,
+  <span class="ck">"propertyAddress"</span>: <span class="cs">"Unit 4B, Westlands Apts"</span>,
+  <span class="ck">"accessInstructions"</span>: <span class="cs">"Collect keys from caretaker..."</span>,
+  <span class="ck">"emergencyContact"</span>: <span class="cs">"+254720000001"</span>,
+  <span class="ck">"leaseDocumentUrl"</span>: <span class="cs">"https://pub-89...r2.dev/..."</span>
+}</div>
+      <div class="hr"></div>
+      <div class="ic">
+        <div class="ict">🎉 After this step</div>
+        <div class="icd">Application status is <code>Active</code>. Clear the rental flow state. Navigate user to My Applications or Dashboard. Offer a "Download Lease" button using <code>leaseDocumentUrl</code>.</div>
+      </div>
+      <div class="ic" style="margin-top:8px">
+        <div class="ict">🔔 Push Notifications</div>
+        <div class="icd">Recommended: subscribe to payment confirmation and application status changes via your push notification service (FCM/APNs). Poll <code>/payment/status</code> in the app while foreground; use push for background.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn" style="border-bottom:none"><div class="snt"></div></div>
+          <div class="sc" style="align-items:center;justify-content:center;text-align:center;padding:16px 12px">
+            <div style="font-size:40px;margin-bottom:8px">🎉</div>
+            <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px">Welcome Home!</div>
+            <div style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:12px">Your rental is confirmed</div>
+            <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px;width:100%;margin-bottom:10px">
+              <div style="font-size:8px;color:#34d399;font-weight:700;margin-bottom:5px">📋 Move-in Details</div>
+              <div class="row jb" style="margin-bottom:3px"><span style="font-size:7px;color:rgba(255,255,255,.4)">Address</span><span style="font-size:7px;color:#fff;font-weight:700">Unit 4B, Westlands</span></div>
+              <div class="row jb" style="margin-bottom:3px"><span style="font-size:7px;color:rgba(255,255,255,.4)">Move-in</span><span style="font-size:7px;color:#fff;font-weight:700">July 1, 2026</span></div>
+              <div class="row jb"><span style="font-size:7px;color:rgba(255,255,255,.4)">Receipt</span><span style="font-size:7px;color:var(--g);font-weight:700">QJX0YK2345</span></div>
+            </div>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:8px;width:100%;text-align:left;margin-bottom:10px">
+              <div style="font-size:7px;font-weight:700;color:#fff;margin-bottom:3px">🔑 Access Instructions</div>
+              <div style="font-size:7px;color:rgba(255,255,255,.4);line-height:1.4">Collect keys from caretaker (James — 0720000001) on move-in day between 8am–5pm.</div>
+            </div>
+            <div class="si-btn bg-g fw" style="margin-bottom:5px">📄 Download Lease</div>
+            <div class="si-btn bg-gh fw">🏠 View My Dashboard</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 15: MY APPLICATIONS ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl">
+      <div class="badge">📱 Screen 6</div>
+      <h2 class="stitle">My Applications</h2>
+      <p class="ssub">Lists all rental applications for the logged-in customer with status and a resume button for in-progress ones.</p>
+      <div class="api">
+        <div><span class="am get">GET</span><span class="aurl">/property/applications/customer/<b>{customerId}</b></span></div>
+        <div class="adesc">All applications for this tenant — requires auth</div>
+      </div>
+      <div class="cb"><span class="cs">// Response — array of:</span>
+{
+  <span class="ck">"applicationId"</span>: <span class="cs">"app_ghi012"</span>,
+  <span class="ck">"status"</span>: <span class="cs">"UnderReview"</span>,
+  <span class="ck">"listing"</span>: { <span class="ck">"title"</span>: <span class="cs">"Modern 2BR, Westlands"</span>,
+               <span class="ck">"price"</span>: <span class="cn">45000</span>,
+               <span class="ck">"primaryImageUrl"</span>: <span class="cs">"https://..."</span> },
+  <span class="ck">"appliedAt"</span>: <span class="cs">"2026-06-13T09:30:00Z"</span>
+}</div>
+      <div class="hr"></div>
+      <div class="ic">
+        <div class="ict">📊 Status → Progress Bar</div>
+        <div class="icd" style="font-size:10px;line-height:1.8">
+          <code>DocumentsPending</code> → 16%<br>
+          <code>UnderReview</code> → 33%<br>
+          <code>Approved</code> → 50%<br>
+          <code>TermsAccepted</code> → 66%<br>
+          <code>PaymentPending</code> → 83%<br>
+          <code>Active</code> → 100%
+        </div>
+      </div>
+      <div class="ic" style="margin-top:8px">
+        <div class="ict">▶️ Resume Button</div>
+        <div class="icd">Show "Continue" for statuses: <code>DocumentsPending</code>, <code>Approved</code>, <code>TermsAccepted</code>, <code>PaymentPending</code>. Navigate to Rental Flow at the correct step.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn"><div class="snt">My Applications</div><span style="font-size:13px">🔔</span></div>
+          <div class="sc">
+            <!-- App card 1 - Active -->
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:8px;overflow:hidden">
+              <div class="row g8">
+                <div style="width:36px;height:36px;background:linear-gradient(135deg,#1a2545,#243060);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏢</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:8px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Modern 2BR, Westlands</div>
+                  <div style="font-size:6px;color:rgba(255,255,255,.35)">KES 45,000/mo</div>
+                  <div class="row g4 mt4"><span class="tag te" style="font-size:6px">Active ✓</span></div>
+                </div>
+              </div>
+              <div style="margin-top:7px">
+                <div class="row jb" style="margin-bottom:3px"><span style="font-size:6px;color:rgba(255,255,255,.4)">Progress</span><span style="font-size:6px;color:#34d399;font-weight:700">100%</span></div>
+                <div style="background:rgba(255,255,255,.08);border-radius:4px;height:5px;overflow:hidden"><div style="width:100%;height:100%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
+              </div>
+            </div>
+            <!-- App card 2 - Under Review -->
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;overflow:hidden">
+              <div class="row g8">
+                <div style="width:36px;height:36px;background:linear-gradient(135deg,#1a2545,#243060);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏠</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:8px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Spacious 3BR, Kilimani</div>
+                  <div style="font-size:6px;color:rgba(255,255,255,.35)">KES 70,000/mo</div>
+                  <div class="row g4 mt4"><span class="tag to" style="font-size:6px">Under Review</span></div>
+                </div>
+              </div>
+              <div style="margin-top:7px">
+                <div class="row jb" style="margin-bottom:3px"><span style="font-size:6px;color:rgba(255,255,255,.4)">Progress</span><span style="font-size:6px;color:#fb923c;font-weight:700">33%</span></div>
+                <div style="background:rgba(255,255,255,.08);border-radius:4px;height:5px;overflow:hidden"><div style="width:33%;height:100%;background:linear-gradient(90deg,#fb923c,#fbbf24)"></div></div>
+              </div>
+              <div class="si-btn bg-gh fw" style="margin-top:6px;padding:4px;font-size:7px">Awaiting Review…</div>
+            </div>
+            <!-- App card 3 - Docs pending -->
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(201,162,39,.2);border-radius:10px;padding:8px;overflow:hidden">
+              <div class="row g8">
+                <div style="width:36px;height:36px;background:linear-gradient(135deg,#1a2545,#243060);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏖</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:8px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Beach Villa, Nyali</div>
+                  <div style="font-size:6px;color:rgba(255,255,255,.35)">KES 120,000/mo</div>
+                  <div class="row g4 mt4"><span class="tag tg" style="font-size:6px">Docs Pending</span></div>
+                </div>
+              </div>
+              <div style="margin-top:7px">
+                <div class="row jb" style="margin-bottom:3px"><span style="font-size:6px;color:rgba(255,255,255,.4)">Progress</span><span style="font-size:6px;color:var(--g);font-weight:700">16%</span></div>
+                <div style="background:rgba(255,255,255,.08);border-radius:4px;height:5px;overflow:hidden"><div style="width:16%;height:100%;background:linear-gradient(90deg,var(--g),var(--gl))"></div></div>
+              </div>
+              <div class="si-btn bg-g fw" style="margin-top:6px;padding:4px;font-size:7px">Continue →</div>
+            </div>
+          </div>
+          <div class="sbt">
+            <div class="stab"><span>🏠</span><span>Home</span></div>
+            <div class="stab"><span>🔍</span><span>Explore</span></div>
+            <div class="stab"><span>♡</span><span>Saved</span></div>
+            <div class="stab on"><span>📋</span><span>Apply</span></div>
+            <div class="stab"><span>👤</span><span>Me</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 16: AI — RECOMMEND & RESPOND ═══════════════ -->
+<div class="slide">
+  <div class="si">
+    <div class="sl" style="padding-right:20px">
+      <div class="badge">🤖 Screen 7</div>
+      <h2 class="stitle">Sage AI — Two Modes</h2>
+      <p class="ssub">Sage AI has two distinct interaction modes. Present them as tabs in the UI.</p>
+
+      <div style="background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.2);border-radius:12px;padding:12px 16px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--g);margin-bottom:6px">① Respond &amp; Recommend <span style="font-size:10px;font-weight:400;color:rgba(255,255,255,.4)">(Primary — show first)</span></div>
+        <div class="api" style="margin-bottom:6px">
+          <div><span class="am post">POST</span><span class="aurl">/aiagent/respondandrecommend</span> <span style="font-size:10px;color:rgba(255,255,255,.35)">Bearer required</span></div>
+          <div class="adesc">AI generates a natural language response + ranked listing recommendations. Maintains conversation via <code>conversationId</code>.</div>
+        </div>
+        <div class="cb" style="font-size:9px"><span class="cs">// Request</span>
+{ <span class="ck">"query"</span>: <span class="cs">"2 bedroom under 100k in westlands"</span>,
+  <span class="ck">"conversationId"</span>: <span class="cb2">null</span>,  <span class="cs">// pass returned ID on follow-ups</span>
+  <span class="ck">"maxResults"</span>: <span class="cn">5</span>,
+  <span class="ck">"temperature"</span>: <span class="cn">0.7</span> }
+
+<span class="cs">// Response  status "000" = success</span>
+{ <span class="ck">"status"</span>: <span class="cs">"000"</span>,
+  <span class="ck">"message"</span>: <span class="cs">"Nairobi's vibrant atmosphere..."</span>,  <span class="cs">// AI reply — display as text</span>
+  <span class="ck">"data"</span>: {
+    <span class="ck">"recommendedListings"</span>: [{
+      <span class="ck">"listingId"</span>: <span class="cs">"494e8739-..."</span>, <span class="ck">"listingCode"</span>: <span class="cs">"L1001"</span>,
+      <span class="ck">"title"</span>: <span class="cs">"2BR apartment"</span>, <span class="ck">"location"</span>: <span class="cs">"Kasarani, Nairobi"</span>,
+      <span class="ck">"price"</span>: <span class="cn">85000</span>, <span class="ck">"bedrooms"</span>: <span class="cn">2</span>, <span class="ck">"bathrooms"</span>: <span class="cn">2</span>,
+      <span class="ck">"amenities"</span>: [<span class="cs">"Parking"</span>, <span class="cs">"Balcony"</span>],
+      <span class="ck">"matchScore"</span>: <span class="cn">0.65</span>,  <span class="cs">// → show as % badge</span>
+      <span class="ck">"listingUrl"</span>: <span class="cs">"https://apim-.../property/listings/{id}"</span>
+    }],
+    <span class="ck">"conversationId"</span>: <span class="cs">"584119fa-..."</span>,  <span class="cs">// store — pass on next query</span>
+    <span class="ck">"confidence"</span>: <span class="cn">0.65</span>,
+    <span class="ck">"extractedIntent"</span>: { <span class="ck">"locations"</span>: <span class="cs">"nairobi"</span>, <span class="ck">"maxPrice"</span>: <span class="cb2">null</span> }
+  }
+}</div>
+      </div>
+
+      <div style="background:rgba(13,148,136,.07);border:1px solid rgba(13,148,136,.2);border-radius:12px;padding:10px 16px">
+        <div style="font-size:13px;font-weight:700;color:var(--tl);margin-bottom:5px">② Chat with Sage <span style="font-size:10px;font-weight:400;color:rgba(255,255,255,.4)">(Secondary — second tab)</span></div>
+        <div class="api" style="margin-bottom:5px">
+          <div><span class="am post">POST</span><span class="aurl">/aiagent/chat</span> <span style="font-size:10px;color:rgba(255,255,255,.35)">Bearer required</span></div>
+        </div>
+        <div class="cb" style="font-size:9px">{ <span class="ck">"message"</span>: <span class="cs">"What areas are good for families?"</span>,
+  <span class="ck">"conversationHistory"</span>: [
+    { <span class="ck">"role"</span>: <span class="cs">"user"</span>, <span class="ck">"content"</span>: <span class="cs">"..."</span> },
+    { <span class="ck">"role"</span>: <span class="cs">"assistant"</span>, <span class="ck">"content"</span>: <span class="cs">"..."</span> }
+  ] }
+<span class="cs">// Response: { "reply": "...", "listings": [...] }</span></div>
+      </div>
+    </div>
+    <div class="sr" style="width:290px;padding:20px 32px 20px 12px">
+      <div class="ph">
+        <div class="scr">
+          <div class="sb"><span>9:41</span><span>◼◼◼ 📶</span></div>
+          <div class="sn">
+            <div class="col"><div class="snt">Sage AI</div><div style="font-size:6px;color:var(--tl)">● Online · Powered by Groq</div></div>
+          </div>
+          <div style="display:flex;background:rgba(0,0,0,.3);padding:3px;margin:5px 8px 0;border-radius:10px;gap:2px;flex-shrink:0">
+            <div style="flex:1;background:linear-gradient(135deg,#c9a227,#e8b84b);color:var(--dk);border-radius:8px;padding:4px;text-align:center;font-size:7px;font-weight:700">🔍 Recommend</div>
+            <div style="flex:1;color:rgba(255,255,255,.4);padding:4px;text-align:center;font-size:7px">💬 Chat</div>
+          </div>
+          <div class="sc" style="gap:5px;padding-top:7px">
+            <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px 8px;display:flex;align-items:center;gap:5px">
+              <span style="font-size:10px">🔍</span>
+              <span style="font-size:7px;color:rgba(255,255,255,.3)">2 bedroom under 100k in westlands</span>
+            </div>
+            <!-- AI message response -->
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:6px;font-size:7px;color:rgba(255,255,255,.7);line-height:1.4">
+              <div style="font-size:6px;color:var(--tl);font-weight:700;margin-bottom:3px">SAGE · AI Response</div>
+              Nairobi's vibrant atmosphere offers great options. Kasarani provides convenient access to the city center. Tap L1001 to view details.
+            </div>
+            <div style="font-size:7px;font-weight:700;color:rgba(255,255,255,.5)">RECOMMENDED · 1 match</div>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:9px;overflow:hidden">
+              <div style="height:40px;background:linear-gradient(135deg,#1a2545,#243060);display:flex;align-items:center;justify-content:center;font-size:18px;position:relative">🏢
+                <div style="position:absolute;top:3px;right:4px;background:rgba(201,162,39,.2);border:1px solid rgba(201,162,39,.3);border-radius:4px;padding:1px 5px;font-size:6px;color:var(--g);font-weight:700">65% match</div>
+                <div style="position:absolute;bottom:3px;left:4px;background:rgba(0,0,0,.5);border-radius:3px;padding:1px 5px;font-size:6px;color:#fff">L1001</div>
+              </div>
+              <div style="padding:5px">
+                <div style="font-size:8px;font-weight:700;color:#fff">2BR Apartment · Kasarani</div>
+                <div class="row jb" style="margin-top:2px">
+                  <span style="font-size:7px;color:var(--g);font-weight:700">KES 85,000/mo</span>
+                  <span style="font-size:6px;color:rgba(255,255,255,.35)">🛏2 🚿2</span>
+                </div>
+                <div style="display:flex;gap:3px;margin-top:3px">
+                  <span class="tag tt" style="font-size:6px">Parking</span>
+                  <span class="tag tt" style="font-size:6px">Balcony</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px">
+              <div style="flex:1;background:var(--g);color:var(--dk);border-radius:8px;padding:5px;text-align:center;font-size:7px;font-weight:700">View Listing →</div>
+              <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 8px;font-size:7px;color:rgba(255,255,255,.5)">Refine</div>
+            </div>
+          </div>
+          <div style="background:#111827;border-top:1px solid rgba(255,255,255,.07);padding:5px 8px;display:flex;gap:5px;align-items:center;flex-shrink:0">
+            <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:4px 9px;font-size:7px;color:rgba(255,255,255,.3)">Describe what you're looking for…</div>
+            <div style="width:22px;height:22px;background:var(--g);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;color:var(--dk)">➤</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 17: FULL API REFERENCE ═══════════════ -->
+<div class="slide">
+  <div class="sf" style="padding-bottom:70px">
+    <div style="margin-bottom:14px">
+      <div class="badge">📋 Reference</div>
+      <h2 class="stitle" style="font-size:24px;margin-bottom:4px">Full API Reference</h2>
+      <div style="font-family:monospace;font-size:11px;color:rgba(255,255,255,.4)">Base: <span style="color:var(--g)">https://apim-dev-5c27bcf3.azure-api.net</span></div>
+    </div>
+    <div class="sc2" style="flex:1;overflow-y:auto">
+      <table class="tbl">
+        <thead><tr><th>Method</th><th>Endpoint</th><th>Screen</th><th>Auth</th></tr></thead>
+        <tbody>
+          <tr><td><span class="am post">POST</span></td><td>/auth/signup</td><td>Sign Up</td><td><span class="tag to" style="font-size:8px">Pre-auth</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/auth/login</td><td>Login Step 1</td><td><span class="tag to" style="font-size:8px">Pre-auth</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/auth/verify-otp</td><td>Login Step 2</td><td><span class="tag to" style="font-size:8px">Pre-auth</span></td></tr>
+          <tr><td><span class="am get">GET</span></td><td>/property/listings/featured?limit=6</td><td>Home</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am get">GET</span></td><td>/property/listings/available?page=1&pageSize=10</td><td>Home / Explore</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/property/listings/search</td><td>Explore</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am get">GET</span></td><td>/property/listings/{id}</td><td>Listing Detail</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/property/listings/{id}/view</td><td>Listing Detail</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/property/listings/{id}/rate</td><td>Listing Detail</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am get">GET</span></td><td>/staticdata/counties</td><td>Explore Filters</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/property/bookings</td><td>Step 1</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/property/applications</td><td>Step 2</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/property/upload/presigned-url</td><td>Step 3</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am put">PUT</span></td><td>&lt;presigned R2 uploadUrl&gt;</td><td>Step 3</td><td><span class="tag tt" style="font-size:8px">SigV4*</span></td></tr>
+          <tr><td><span class="am patch">PATCH</span></td><td>/property/applications/{id}/documents</td><td>Step 3</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am get">GET</span></td><td>/property/listings/{id}/terms</td><td>Step 4</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am patch">PATCH</span></td><td>/property/applications/{id}/accept-terms</td><td>Step 4</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/property/applications/{id}/payment/initiate</td><td>Step 5</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am get">GET</span></td><td>/property/applications/{id}/payment/status</td><td>Step 5</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am get">GET</span></td><td>/property/applications/{id}/onboarding</td><td>Step 6</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am get">GET</span></td><td>/property/applications/customer/{customerId}</td><td>My Applications</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am get">GET</span></td><td>/customers/{customerId}</td><td>Dashboard</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/aiagent/respondandrecommend</td><td>AI Recommend</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+          <tr><td><span class="am post">POST</span></td><td>/aiagent/chat</td><td>AI Chat</td><td><span class="tag tg" style="font-size:8px">Bearer</span></td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,.3)">* SigV4 = AWS Signature v4 embedded in the presigned URL itself — do NOT add an Authorization: Bearer header to this request. All other requests require <code style="color:var(--tl)">Authorization: Bearer &lt;jwt&gt;</code>. Pre-auth = token not yet available.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 18: BUSINESS RULES ═══════════════ -->
+<div class="slide">
+  <div class="sf" style="padding-bottom:70px">
+    <div class="badge">⚠️ Critical</div>
+    <h2 class="stitle" style="font-size:26px;margin-bottom:6px">Business Rules — Must Implement</h2>
+    <p class="ssub" style="margin-bottom:18px">These rules are enforced by the API. Violating them will cause errors or data corruption.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="rc"><div class="ri" style="background:rgba(239,68,68,.15)">🔐</div><div><div class="rt">Tenant-Only Access</div><div class="rd">After verify-otp, check <code>role === "Tenant"</code>. If <code>Admin</code>, <code>PropertyOwner</code>, or <code>PropertyManager</code> — show error and block entry. Do not store the token.</div></div></div>
+      <div class="rc"><div class="ri" style="background:rgba(201,162,39,.15)">📋</div><div><div class="rt">Sequential Flow</div><div class="rd">Users MUST complete steps in order: Booking → Application → Docs → Terms → Payment. The API rejects out-of-order actions.</div></div></div>
+      <div class="rc"><div class="ri" style="background:rgba(96,165,250,.15)">📤</div><div><div class="rt">R2 Upload — Content-Type</div><div class="rd">The PUT to R2 MUST use the exact <code>contentType</code> returned in the presigned URL response. A mismatch causes a 403 from Cloudflare (SigV4 signature includes the Content-Type).</div></div></div>
+      <div class="rc"><div class="ri" style="background:rgba(167,139,250,.15)">📞</div><div><div class="rt">M-Pesa Phone Format</div><div class="rd">Send phone as <code>254XXXXXXXXX</code> — no <code>+</code> prefix, no spaces. Convert <code>07XXXXXXXX</code> → <code>2547XXXXXXXX</code> before submitting.</div></div></div>
+      <div class="rc"><div class="ri" style="background:rgba(13,148,136,.15)">🔄</div><div><div class="rt">Payment Polling</div><div class="rd">Poll <code>/payment/status</code> every 4 seconds max after initiating STK Push. Stop when status is <code>Completed</code> or <code>Failed</code>. Show spinner + "Check M-Pesa on your phone".</div></div></div>
+      <div class="rc"><div class="ri" style="background:rgba(244,114,182,.15)">🔑</div><div><div class="rt">Pascal-Case Auth Fields</div><div class="rd">Login and verify-otp require <code>Email</code> and <code>PhoneNumber</code> (Pascal-case). Lowercase versions are silently ignored by the API, causing unexpected 400 errors.</div></div></div>
+      <div class="rc"><div class="ri" style="background:rgba(16,185,129,.15)">🔁</div><div><div class="rt">Resume Applications</div><div class="rd">Always check for existing in-progress applications before starting a new one for the same listing. Prompt the user to continue or abandon the existing one.</div></div></div>
+      <div class="rc"><div class="ri" style="background:rgba(251,146,60,.15)">🖼</div><div><div class="rt">Image Loading</div><div class="rd">R2 public images need no auth headers. Use <code>primaryImageUrl</code> first, fallback to <code>images[0]</code>. Cache images locally — same URL = same file (content-addressed).</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 19: ERROR HANDLING ═══════════════ -->
+<div class="slide">
+  <div class="sf" style="padding-bottom:70px">
+    <div class="badge">🛡 Error Handling</div>
+    <h2 class="stitle" style="font-size:26px;margin-bottom:6px">Common Errors & How to Handle</h2>
+    <p class="ssub" style="margin-bottom:18px">The API returns standard HTTP status codes. Map these to user-friendly messages in the app.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="ic"><div class="ict"><span style="color:#f87171">401 Unauthorized</span></div><div class="icd">Token expired or missing. Clear stored token and redirect to Login screen. Implement token refresh check on app resume.</div></div>
+      <div class="ic"><div class="ict"><span style="color:#fb923c">400 Bad Request</span></div><div class="icd">Validation error — usually missing field or wrong format. Show the error message from the response body. Common cause: lowercase auth fields or missing <code>bookingId</code>.</div></div>
+      <div class="ic"><div class="ict"><span style="color:#f87171">409 Conflict</span></div><div class="icd">Duplicate record — e.g., email already registered, or application already exists for that listing. Show "You've already applied" message with option to view existing application.</div></div>
+      <div class="ic"><div class="ict"><span style="color:#a78bfa">403 R2 Upload Fail</span></div><div class="icd">Content-Type mismatch in the PUT request. Ensure you use exactly the <code>contentType</code> from the presigned URL response, not the file's MIME type independently.</div></div>
+      <div class="ic"><div class="ict"><span style="color:#fb923c">Payment Failed</span></div><div class="icd">M-Pesa STK timeout (user didn't approve in 30s) or insufficient funds. Show clear message, offer "Try Again" which re-initiates the STK Push — no new application needed.</div></div>
+      <div class="ic"><div class="ict"><span style="color:#60a5fa">Network / 5xx</span></div><div class="icd">Implement exponential backoff with 3 retries for GET requests. For POST/PATCH — check idempotency before retry to avoid duplicate applications or payments.</div></div>
+    </div>
+    <div class="ic" style="margin-top:12px;background:rgba(201,162,39,.05);border-color:rgba(201,162,39,.2)">
+      <div class="ict">🧪 Testing Notes</div>
+      <div class="icd">Use <code>+254742700000</code> for M-Pesa sandbox testing (Safaricom test number). OTPs in dev are logged server-side — check Azure Function logs. Presigned URLs expire in 15 minutes — don't cache them.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLIDE 20: CLOSING ═══════════════ -->
+<div class="slide cover" style="background:linear-gradient(135deg,#080e1e 0%,#0d1428 50%,#091520 100%)">
+  <div class="clogo">StayHere</div>
+  <div class="csub">Mobile Implementation Guide</div>
+  <div style="font-size:48px;margin:24px 0">🚀</div>
+  <div class="ctitle">You're Ready to Build</div>
+  <div class="cdesc" style="max-width:600px">All screens, endpoints, and business rules are documented. Start with Auth → Home → Explore, then tackle the Rental Flow. Sage AI and the API reference table are always here.</div>
+  <div class="chips" style="margin-bottom:28px">
+    <div class="chip" style="border-color:rgba(201,162,39,.3);color:var(--g)">Base URL: apim-dev-5c27bcf3.azure-api.net</div>
+    <div class="chip" style="border-color:rgba(13,148,136,.3);color:var(--tl)">R2 CDN: pub-89021444cd6a4a81bacfa5c1dd0427ea.r2.dev</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;max-width:700px;width:100%;position:relative;z-index:1">
+    <div class="ic" style="text-align:center"><div style="font-size:24px;margin-bottom:6px">📱</div><div class="ict">20 Screens</div><div class="icd">Auth · Browse · Rental Flow · Dashboard · AI Chat</div></div>
+    <div class="ic" style="text-align:center"><div style="font-size:24px;margin-bottom:6px">🔗</div><div class="ict">25 Endpoints</div><div class="icd">Across 5 Azure API Management routes</div></div>
+    <div class="ic" style="text-align:center"><div style="font-size:24px;margin-bottom:6px">🎯</div><div class="ict">Production Ready</div><div class="icd">Real URLs · Real payloads · Real business rules</div></div>
+  </div>
+</div>
+
+</div><!-- /pres -->
+<div id="nav">
+  <button class="nbtn" id="prev">←</button>
+  <span id="ctr">1 / 20</span>
+  <button class="nbtn" id="next">→</button>
+</div>
+<script>
+const slides=document.querySelectorAll('.slide');
+const pf=document.getElementById('pf');
+const ctr=document.getElementById('ctr');
+let cur=0;
+const total=slides.length;
+function go(n){
+  slides[cur].classList.remove('active');
+  cur=(n+total)%total;
+  slides[cur].classList.add('active');
+  pf.style.width=((cur+1)/total*100)+'%';
+  ctr.textContent=(cur+1)+' / '+total;
+}
+document.getElementById('next').onclick=()=>go(cur+1);
+document.getElementById('prev').onclick=()=>go(cur-1);
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')go(cur+1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')go(cur-1);
+});
+ctr.textContent='1 / '+total;
+pf.style.width=(1/total*100)+'%';
+</script>
+</body>
+</html>

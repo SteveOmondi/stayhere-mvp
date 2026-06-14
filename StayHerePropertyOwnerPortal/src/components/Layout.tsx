@@ -5,6 +5,7 @@ import {
   IcoDashboard, IcoBuilding, IcoListing, IcoUser, IcoTeam,
   IcoAnalytics, IcoNotice, IcoOnboard, IcoSettings,
   IcoBell, IcoLogout, IcoWallet, IcoX, IcoChevRight,
+  IcoCalendar, IcoClipboard, IcoTerms,
 } from "./icons";
 
 const NAV = [
@@ -12,6 +13,11 @@ const NAV = [
     { to: "/dashboard",   label: "Dashboard",     Icon: IcoDashboard },
     { to: "/properties",  label: "My Properties",  Icon: IcoBuilding  },
     { to: "/listings",    label: "Units & Listings",Icon: IcoListing   },
+  ]},
+  { group: "Rental Flow", items: [
+    { to: "/bookings",     label: "Viewings",          Icon: IcoCalendar  },
+    { to: "/applications", label: "Applications",      Icon: IcoClipboard },
+    { to: "/terms",        label: "Property Terms",    Icon: IcoTerms     },
   ]},
   { group: "People", items: [
     { to: "/tenants",    label: "Tenants",         Icon: IcoUser      },
@@ -29,6 +35,7 @@ const NAV = [
 
 const BREADCRUMBS: Record<string, string> = {
   "/dashboard": "Dashboard", "/properties": "My Properties", "/listings": "Units & Listings",
+  "/bookings": "Viewings", "/applications": "Applications", "/terms": "Property Terms",
   "/tenants": "Tenants", "/team": "My Team", "/onboarding": "Tenant Onboarding",
   "/analytics": "Analytics", "/noticeboard": "Notice Board", "/settings": "Settings",
 };

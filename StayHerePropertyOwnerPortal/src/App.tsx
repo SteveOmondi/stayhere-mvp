@@ -11,6 +11,9 @@ import { NoticeBoardPage } from "./pages/NoticeBoardPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { BookingsPage } from "./pages/BookingsPage";
+import { ApplicationsPage } from "./pages/ApplicationsPage";
+import { PropertyTermsPage } from "./pages/PropertyTermsPage";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useOwner();
@@ -37,8 +40,11 @@ function AppRoutes() {
         <Route path="/noticeboard" element={<NoticeBoardPage />} />
         <Route path="/onboarding"  element={<OnboardingPage />} />
         <Route path="/analytics"   element={<AnalyticsPage />} />
-        <Route path="/settings"    element={<SettingsPage />} />
-        <Route path="*"            element={<Navigate to="/dashboard" replace />} />
+        <Route path="/settings"      element={<SettingsPage />} />
+        <Route path="/bookings"     element={<BookingsPage />} />
+        <Route path="/applications" element={<ApplicationsPage />} />
+        <Route path="/terms"        element={<PropertyTermsPage />} />
+        <Route path="*"             element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
   );

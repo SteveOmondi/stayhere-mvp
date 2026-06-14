@@ -5,7 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Properties.Services;
-using StayHere.Infrastructure.Cloudflare;
 using StayHere.Domain.Repositories;
 using StayHere.Infrastructure.AiAgent;
 using StayHere.Infrastructure.Caching;
@@ -41,7 +40,8 @@ var host = new HostBuilder()
         services.AddScoped<IListingRepository, EfListingRepository>();
         services.AddScoped<IPropertyService, PropertyService>();
         services.AddScoped<IListingService, ListingService>();
-        services.AddHttpClient<IImageUploadService, CloudflareImagesService>();
+        services.AddR2Storage(config);
+        services.AddHttpClient(); // IHttpClientFactory for general HTTP calls
 
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
@@ -72,6 +72,15 @@ static async Task ApplyMigrationsAsync(IHost host)
     await using var scope = host.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<StayHereDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<StayHereDbContext>>();
+
+    // In production the DB must be reachable — crash fast so the deployment fails visibly.
+    // Locally (SKIP_MIGRATIONS=true or SKIP_AUTH=true) allow the host to start without a DB
+    // so developers can test non-database endpoints (e.g. R2 uploads) without running Postgres.
+    var skipMigrations = string.Equals(
+        Environment.GetEnvironmentVariable("SKIP_MIGRATIONS"), "true", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(
+        Environment.GetEnvironmentVariable("SKIP_AUTH"), "true", StringComparison.OrdinalIgnoreCase);
+
     try
     {
         var pending = await db.Database.GetPendingMigrationsAsync();
@@ -85,7 +94,16 @@ static async Task ApplyMigrationsAsync(IHost host)
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Database migration failed on startup.");
-        throw;
+        if (skipMigrations)
+        {
+            logger.LogWarning(ex,
+                "Database migration skipped — DB unreachable but SKIP_AUTH/SKIP_MIGRATIONS=true. " +
+                "Endpoints that require the database will fail until Postgres is available.");
+        }
+        else
+        {
+            logger.LogError(ex, "Database migration failed on startup.");
+            throw;
+        }
     }
 }

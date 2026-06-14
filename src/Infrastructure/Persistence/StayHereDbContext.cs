@@ -39,6 +39,11 @@ public class StayHereDbContext : DbContext
     public DbSet<Organization> Organizations => Set<Organization>();
     public DbSet<RoleDefinition> RoleDefinitions => Set<RoleDefinition>();
     public DbSet<UserTypeDefinition> UserTypeDefinitions => Set<UserTypeDefinition>();
+    public DbSet<ViewingBooking> ViewingBookings => Set<ViewingBooking>();
+    public DbSet<TenantApplication> TenantApplications => Set<TenantApplication>();
+    public DbSet<ApplicationDocument> ApplicationDocuments => Set<ApplicationDocument>();
+    public DbSet<PropertyTerms> PropertyTerms => Set<PropertyTerms>();
+    public DbSet<RentalPayment> RentalPayments => Set<RentalPayment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,6 +66,11 @@ public class StayHereDbContext : DbContext
         ConfigureOrganization(modelBuilder);
         ConfigureRoleDefinition(modelBuilder);
         ConfigureUserTypeDefinition(modelBuilder);
+        ConfigureViewingBooking(modelBuilder);
+        ConfigureTenantApplication(modelBuilder);
+        ConfigureApplicationDocument(modelBuilder);
+        ConfigurePropertyTerms(modelBuilder);
+        ConfigureRentalPayment(modelBuilder);
 
         SeedData(modelBuilder);
     }
@@ -580,6 +590,178 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.Name).IsUnique();
+        });
+    }
+
+    private static void ConfigureViewingBooking(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ViewingBooking>(entity =>
+        {
+            entity.ToTable("viewing_bookings");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ListingId).HasColumnName("listing_id");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.PreferredDate).HasColumnName("preferred_date");
+            entity.Property(e => e.PreferredTime).HasColumnName("preferred_time").HasMaxLength(10);
+            entity.Property(e => e.ViewingType).HasColumnName("viewing_type").HasMaxLength(20).HasDefaultValue("Physical");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("Pending");
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.OwnerNotes).HasColumnName("owner_notes");
+            entity.Property(e => e.MeetingLink).HasColumnName("meeting_link").HasMaxLength(500);
+            entity.Property(e => e.ContactPhone).HasColumnName("contact_phone").HasMaxLength(20);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.HasIndex(e => e.ListingId);
+            entity.HasIndex(e => e.CustomerId);
+            entity.HasIndex(e => e.Status);
+        });
+    }
+
+    private static void ConfigureTenantApplication(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TenantApplication>(entity =>
+        {
+            entity.ToTable("tenant_applications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ListingId).HasColumnName("listing_id");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.ViewingBookingId).HasColumnName("viewing_booking_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(40).HasDefaultValue("DocumentsPending");
+            entity.Property(e => e.RejectionReason).HasColumnName("rejection_reason");
+            entity.Property(e => e.ReviewedAt).HasColumnName("reviewed_at");
+            entity.Property(e => e.ReviewedBy).HasColumnName("reviewed_by").HasMaxLength(255);
+            entity.Property(e => e.TermsAcceptedAt).HasColumnName("terms_accepted_at");
+            entity.Property(e => e.DigitalSignatureUrl).HasColumnName("digital_signature_url").HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.HasIndex(e => e.ListingId);
+            entity.HasIndex(e => e.CustomerId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => new { e.ListingId, e.CustomerId });
+        });
+    }
+
+    private static void ConfigureApplicationDocument(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationDocument>(entity =>
+        {
+            entity.ToTable("application_documents");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ApplicationId).HasColumnName("application_id");
+            entity.Property(e => e.DocumentType).HasColumnName("document_type").HasMaxLength(50);
+            entity.Property(e => e.FileUrl).HasColumnName("file_url").HasMaxLength(500);
+            entity.Property(e => e.FileName).HasColumnName("file_name").HasMaxLength(255);
+            entity.Property(e => e.UploadedAt).HasColumnName("uploaded_at");
+            entity.HasIndex(e => e.ApplicationId);
+            entity.HasIndex(e => e.DocumentType);
+
+            entity.HasOne(e => e.Application)
+                .WithMany(a => a.Documents)
+                .HasForeignKey(e => e.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigurePropertyTerms(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PropertyTerms>(entity =>
+        {
+            entity.ToTable("property_terms");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ListingId).HasColumnName("listing_id");
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(255);
+            entity.Property(e => e.TermsContent).HasColumnName("terms_content");
+            entity.Property(e => e.HouseRules).HasColumnName("house_rules");
+            entity.Property(e => e.PaymentTerms).HasColumnName("payment_terms");
+            entity.Property(e => e.NoticePeriod).HasColumnName("notice_period").HasMaxLength(50);
+            entity.Property(e => e.PetPolicy).HasColumnName("pet_policy").HasMaxLength(500);
+            entity.Property(e => e.MaintenancePolicy).HasColumnName("maintenance_policy");
+            entity.Property(e => e.SecurityDepositTerms).HasColumnName("security_deposit_terms");
+            entity.Property(e => e.SecurityDeposit).HasColumnName("security_deposit").HasPrecision(18, 2);
+            entity.Property(e => e.AdminFee).HasColumnName("admin_fee").HasPrecision(18, 2);
+            entity.Property(e => e.Currency).HasColumnName("currency").HasMaxLength(3).HasDefaultValue("KES");
+            entity.Property(e => e.MpesaPaybill).HasColumnName("mpesa_paybill").HasMaxLength(20);
+            entity.Property(e => e.MpesaTill).HasColumnName("mpesa_till").HasMaxLength(20);
+            entity.Property(e => e.MpesaAccountNumber).HasColumnName("mpesa_account_number").HasMaxLength(50);
+            entity.Property(e => e.BankName).HasColumnName("bank_name").HasMaxLength(100);
+            entity.Property(e => e.BankAccountName).HasColumnName("bank_account_name").HasMaxLength(255);
+            entity.Property(e => e.BankAccountNumber).HasColumnName("bank_account_number").HasMaxLength(50);
+            entity.Property(e => e.BankBranch).HasColumnName("bank_branch").HasMaxLength(100);
+            entity.Property(e => e.PaymentInstructions).HasColumnName("payment_instructions");
+            entity.Property(e => e.OnboardingInstructions).HasColumnName("onboarding_instructions");
+            entity.Property(e => e.AccessInstructions).HasColumnName("access_instructions");
+            entity.Property(e => e.ItemsToCarry).HasColumnName("items_to_carry");
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.HasIndex(e => e.ListingId);
+            entity.HasIndex(e => new { e.ListingId, e.IsActive });
+        });
+    }
+
+    private static void ConfigureRentalPayment(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<RentalPayment>(entity =>
+        {
+            entity.ToTable("rental_payments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+
+            // ApplicationId is nullable: C2B payments may arrive before an application is matched
+            entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired(false);
+
+            entity.Property(e => e.PaymentType).HasColumnName("payment_type").HasMaxLength(40);
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2);
+            entity.Property(e => e.Currency).HasColumnName("currency").HasMaxLength(3).HasDefaultValue("KES");
+            entity.Property(e => e.Method).HasColumnName("method").HasMaxLength(30);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("Initiated");
+
+            // Transaction source discriminator
+            entity.Property(e => e.TransactionSource).HasColumnName("transaction_source").HasMaxLength(30);
+
+            // STK Push fields
+            entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20);
+            entity.Property(e => e.MerchantRequestId).HasColumnName("merchant_request_id").HasMaxLength(100);
+            entity.Property(e => e.MpesaCheckoutRequestId).HasColumnName("mpesa_checkout_request_id").HasMaxLength(100);
+            entity.Property(e => e.MpesaReceiptNumber).HasColumnName("mpesa_receipt_number").HasMaxLength(50);
+
+            // C2B / shared M-Pesa fields
+            entity.Property(e => e.MpesaTransactionId).HasColumnName("mpesa_transaction_id").HasMaxLength(50);
+            entity.Property(e => e.BusinessShortCode).HasColumnName("business_short_code").HasMaxLength(20);
+            entity.Property(e => e.BillRefNumber).HasColumnName("bill_ref_number").HasMaxLength(100);
+            entity.Property(e => e.InvoiceNumber).HasColumnName("invoice_number").HasMaxLength(100);
+            entity.Property(e => e.OrgAccountBalance).HasColumnName("org_account_balance").HasPrecision(18, 2);
+
+            // Payer identity from C2B
+            entity.Property(e => e.PayerFirstName).HasColumnName("payer_first_name").HasMaxLength(100);
+            entity.Property(e => e.PayerMiddleName).HasColumnName("payer_middle_name").HasMaxLength(100);
+            entity.Property(e => e.PayerLastName).HasColumnName("payer_last_name").HasMaxLength(100);
+            entity.Property(e => e.MpesaTransactionDate).HasColumnName("mpesa_transaction_date").HasMaxLength(20);
+
+            // General fields
+            entity.Property(e => e.Reference).HasColumnName("reference").HasMaxLength(100);
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.RawCallbackPayload).HasColumnName("raw_callback_payload");
+            entity.Property(e => e.InitiatedAt).HasColumnName("initiated_at");
+            entity.Property(e => e.ConfirmedAt).HasColumnName("confirmed_at");
+
+            entity.HasIndex(e => e.ApplicationId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.TransactionSource);
+            entity.HasIndex(e => e.MpesaCheckoutRequestId);
+            entity.HasIndex(e => e.MpesaTransactionId).IsUnique()
+                .HasFilter("mpesa_transaction_id IS NOT NULL");
+            entity.HasIndex(e => e.BillRefNumber);
+
+            entity.HasOne(e => e.Application)
+                .WithMany(a => a.Payments)
+                .HasForeignKey(e => e.ApplicationId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

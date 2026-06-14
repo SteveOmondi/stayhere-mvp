@@ -1,0 +1,3335 @@
+{
+  "info": {
+    "name": "StayHere Complete API Collection",
+    "_postman_id": "4e07bfdf-c112-4b0d-8fd3-1b0e5185c149",
+    "description": "Complete API collection for StayHere MVP \u2014 all function apps.\n\nBase URL: https://apim-dev-5c27bcf3.azure-api.net\n\nAll endpoints require a Bearer token (Authorization header) unless marked:\n  [Public]  \u2014 anonymous, no auth required\n  [Webhook] \u2014 called by Safaricom, no auth\n  [Admin]   \u2014 requires Admin role\n\nSet the 'token' collection variable with a valid JWT before using.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://apim-dev-5c27bcf3.azure-api.net",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ownerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "listingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "propertyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "termId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "caretakerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "checkoutRequestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth Service",
+      "item": [
+        {
+          "name": "[Public] Register + Onboard (One Step)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FullName\": \"Jane Doe\",\n  \"Email\": \"jane@example.com\",\n  \"PhoneNumber\": \"+254712345678\",\n  \"Role\": \"Tenant\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Signup (Auth Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FullName\": \"Jane Doe\",\n  \"Email\": \"jane@example.com\",\n  \"PhoneNumber\": \"+254712345678\",\n  \"Password\": \"Password123!\",\n  \"UserType\": \"Tenant\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Email\": \"jane@example.com\",\n  \"PhoneNumber\": null,\n  \"EntraToken\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Verify OTP (Phone)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verifyotp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verifyotp"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"PhoneNumber\": \"+254712345678\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Verify OTP (Email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verifyotp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verifyotp"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"PhoneNumber\": \"jane@example.com\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profiles/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "profiles",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile/update",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "profile",
+                "update"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FullName\": \"Jane Doe Updated\",\n  \"ProfilePictureUrl\": \"https://pub.r2.stayhere.com/profiles/avatars/photo.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Onboard User (Separate Step)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/onboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "onboard"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"UserId\": \"{{userId}}\",\n  \"Role\": \"Tenant\",\n  \"FullName\": \"Jane Doe\",\n  \"Phone\": \"+254712345678\",\n  \"Email\": \"jane@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Property Service",
+      "item": [
+        {
+          "name": "Listings",
+          "item": [
+            {
+              "name": "Create Listing",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"PropertyId\": \"{{propertyId}}\",\n  \"UnitNumber\": \"A101\",\n  \"FloorNumber\": 1,\n  \"Title\": \"Modern 2BR Apartment in Westlands\",\n  \"Description\": \"Spacious and well-lit 2-bedroom apartment with modern finishes.\",\n  \"Price\": 45000,\n  \"PriceCurrency\": \"KES\",\n  \"PropertyType\": \"Apartment\",\n  \"ListingType\": \"Rental\",\n  \"Bedrooms\": 2,\n  \"Bathrooms\": 1,\n  \"IsFurnished\": false,\n  \"Location\": {\n    \"Country\": \"Kenya\",\n    \"County\": \"Nairobi\",\n    \"City\": \"Nairobi\",\n    \"Suburb\": \"Westlands\",\n    \"Street\": \"Waiyaki Way\",\n    \"Latitude\": -1.2676,\n    \"Longitude\": 36.8062\n  },\n  \"Amenities\": [\n    \"WiFi\",\n    \"Parking\",\n    \"Security\",\n    \"Water\"\n  ],\n  \"Images\": [],\n  \"SizeSqft\": 850,\n  \"YearBuilt\": 2020,\n  \"Developer\": \"Acacia Developers\",\n  \"Owner\": {\n    \"Name\": \"Michael Otieno\",\n    \"Phone\": \"+254712345678\",\n    \"Email\": \"owner@example.com\"\n  },\n  \"Agent\": null,\n  \"PrimaryImageUrl\": \"https://pub.r2.stayhere.com/properties/images/unit.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listings by Property",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/properties/{{propertyId}}/listings",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "properties",
+                    "{{propertyId}}",
+                    "listings"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listing by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listing by Code",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/code/LST-001",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "code",
+                    "LST-001"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Admin] Get All Listings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listings by Property ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/property/{{propertyId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "property",
+                    "{{propertyId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listings by Owner",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/owner/{{ownerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "owner",
+                    "{{ownerId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listings by City",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/city/Nairobi",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "city",
+                    "Nairobi"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listings by County",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/county/Nairobi",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "county",
+                    "Nairobi"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listings by Location",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/by-location?location=Westlands Nairobi",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "by-location"
+                  ],
+                  "query": [
+                    {
+                      "key": "location",
+                      "value": "Westlands Nairobi"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listings by Property Type",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/type/Apartment",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "type",
+                    "Apartment"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listings by Listing Type",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/listing-type/Rental",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "listing-type",
+                    "Rental"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Featured Listings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/featured",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "featured"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Available Listings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/available",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "available"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Listings",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/search",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"City\": \"Nairobi\",\n  \"County\": \"Nairobi\",\n  \"PropertyType\": \"Apartment\",\n  \"ListingType\": \"Rental\",\n  \"MinPrice\": 20000,\n  \"MaxPrice\": 60000,\n  \"MinBedrooms\": 2,\n  \"MaxBedrooms\": 3,\n  \"IsFurnished\": null,\n  \"AvailabilityStatus\": \"Available\",\n  \"Page\": 1,\n  \"PageSize\": 20\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Listing",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"PropertyId\": \"{{propertyId}}\",\n  \"UnitNumber\": \"A101\",\n  \"FloorNumber\": 1,\n  \"Title\": \"Modern 2BR Apartment in Westlands\",\n  \"Description\": \"Spacious and well-lit 2-bedroom apartment with modern finishes.\",\n  \"Price\": 45000,\n  \"PriceCurrency\": \"KES\",\n  \"PropertyType\": \"Apartment\",\n  \"ListingType\": \"Rental\",\n  \"Bedrooms\": 2,\n  \"Bathrooms\": 1,\n  \"IsFurnished\": false,\n  \"Location\": {\n    \"Country\": \"Kenya\",\n    \"County\": \"Nairobi\",\n    \"City\": \"Nairobi\",\n    \"Suburb\": \"Westlands\",\n    \"Street\": \"Waiyaki Way\",\n    \"Latitude\": -1.2676,\n    \"Longitude\": 36.8062\n  },\n  \"Amenities\": [\n    \"WiFi\",\n    \"Parking\",\n    \"Security\",\n    \"Water\"\n  ],\n  \"Images\": [],\n  \"SizeSqft\": 850,\n  \"YearBuilt\": 2020,\n  \"Developer\": \"Acacia Developers\",\n  \"Owner\": {\n    \"Name\": \"Michael Otieno\",\n    \"Phone\": \"+254712345678\",\n    \"Email\": \"owner@example.com\"\n  },\n  \"Agent\": null,\n  \"PrimaryImageUrl\": \"https://pub.r2.stayhere.com/properties/images/unit.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Admin] Generate Listing Embedding",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/embedding",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "embedding"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Listing Availability",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/availability",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "availability"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"AvailabilityStatus\": \"Available\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Listing Rating",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/rating",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "rating"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"NewRating\": 4.5\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Record Listing View",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/view",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "view"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Toggle Listing Featured",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/featured",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "featured"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"IsFeatured\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Assign Agent to Listing",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/agent",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "agent"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"AgentId\": \"{{agentId}}\",\n  \"AgentName\": \"Sales Agent\",\n  \"AgentPhone\": \"+254712345678\",\n  \"AgentEmail\": \"agent@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Agent from Listing",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/agent",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "agent"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Assign Caretaker to Listing",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/caretaker",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "caretaker"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"CaretakerId\": \"{{caretakerId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Caretaker from Listing",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/caretaker",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "caretaker"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Admin] Delete Listing",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Properties",
+          "item": [
+            {
+              "name": "Create Property",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/properties",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "properties"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"BuildingName\": \"Sunshine Apartments\",\n  \"Description\": \"Modern apartment complex in Nairobi\",\n  \"TotalUnits\": 24,\n  \"TotalFloors\": 6,\n  \"Location\": {\n    \"Country\": \"Kenya\",\n    \"County\": \"Nairobi\",\n    \"City\": \"Nairobi\",\n    \"Suburb\": \"Westlands\",\n    \"Street\": \"Waiyaki Way\",\n    \"Latitude\": -1.2676,\n    \"Longitude\": 36.8062\n  },\n  \"PrimaryImageUrl\": \"https://pub.r2.stayhere.com/properties/images/main.jpg\",\n  \"Images\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Property by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/properties/{{propertyId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "properties",
+                    "{{propertyId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Property by Code",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/properties/code/PROP-001",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "properties",
+                    "code",
+                    "PROP-001"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Admin] Get All Properties",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/properties",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "properties"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Properties by Owner",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/properties/owner/{{ownerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "properties",
+                    "owner",
+                    "{{ownerId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Property",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/properties/{{propertyId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "properties",
+                    "{{propertyId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"BuildingName\": \"Sunshine Apartments\",\n  \"Description\": \"Modern apartment complex in Nairobi\",\n  \"TotalUnits\": 24,\n  \"TotalFloors\": 6,\n  \"Location\": {\n    \"Country\": \"Kenya\",\n    \"County\": \"Nairobi\",\n    \"City\": \"Nairobi\",\n    \"Suburb\": \"Westlands\",\n    \"Street\": \"Waiyaki Way\",\n    \"Latitude\": -1.2676,\n    \"Longitude\": 36.8062\n  },\n  \"PrimaryImageUrl\": \"https://pub.r2.stayhere.com/properties/images/main.jpg\",\n  \"Images\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Admin] Delete Property",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/properties/{{propertyId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "properties",
+                    "{{propertyId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Viewing Bookings",
+          "item": [
+            {
+              "name": "Create Viewing Booking",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/bookings",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "bookings"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ListingId\": \"{{listingId}}\",\n  \"CustomerId\": \"{{customerId}}\",\n  \"PreferredDate\": \"2026-07-15T00:00:00Z\",\n  \"PreferredTime\": \"10:00 AM\",\n  \"ViewingType\": \"InPerson\",\n  \"Notes\": \"Please show the parking area\",\n  \"ContactPhone\": \"+254712345678\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Booking by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/bookings/{{bookingId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "bookings",
+                    "{{bookingId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Bookings by Customer",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/bookings/customer/{{customerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "bookings",
+                    "customer",
+                    "{{customerId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Bookings by Listing",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/bookings/listing/{{listingId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "bookings",
+                    "listing",
+                    "{{listingId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Bookings by Owner",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/bookings/owner/{{ownerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "bookings",
+                    "owner",
+                    "{{ownerId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Confirm Booking",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/bookings/{{bookingId}}/confirm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "bookings",
+                    "{{bookingId}}",
+                    "confirm"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"OwnerNotes\": \"Please bring your national ID\",\n  \"MeetingLink\": \"https://meet.google.com/abc-defg-hij\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel Booking",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/bookings/{{bookingId}}/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "bookings",
+                    "{{bookingId}}",
+                    "cancel"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"OwnerNotes\": \"Please bring your national ID\",\n  \"MeetingLink\": \"https://meet.google.com/abc-defg-hij\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Complete Booking",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/bookings/{{bookingId}}/complete",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "bookings",
+                    "{{bookingId}}",
+                    "complete"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"OwnerNotes\": \"Please bring your national ID\",\n  \"MeetingLink\": \"https://meet.google.com/abc-defg-hij\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Applications",
+          "item": [
+            {
+              "name": "Create Application",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ListingId\": \"{{listingId}}\",\n  \"CustomerId\": \"{{customerId}}\",\n  \"ViewingBookingId\": \"{{bookingId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Application by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/{{applicationId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "{{applicationId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Applications by Customer",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/customer/{{customerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "customer",
+                    "{{customerId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Applications by Listing",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/listing/{{listingId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "listing",
+                    "{{listingId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Applications by Owner",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/owner/{{ownerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "owner",
+                    "{{ownerId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Document to Application",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/{{applicationId}}/documents",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "{{applicationId}}",
+                    "documents"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"DocumentType\": \"NationalID\",\n  \"FileUrl\": \"https://pub.r2.stayhere.com/applications/documents/national_id.pdf\",\n  \"FileName\": \"national_id.pdf\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Submit Application",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/{{applicationId}}/submit",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "{{applicationId}}",
+                    "submit"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Review Application",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/{{applicationId}}/review",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "{{applicationId}}",
+                    "review"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"Decision\": \"Approved\",\n  \"Reason\": \"Applicant meets all requirements\",\n  \"ReviewerEmail\": \"owner@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Accept Terms",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/{{applicationId}}/accept-terms",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "{{applicationId}}",
+                    "accept-terms"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"SignatureUrl\": \"https://pub.r2.stayhere.com/profiles/documents/signature.png\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel Application",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/{{applicationId}}/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "{{applicationId}}",
+                    "cancel"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Application Onboarding",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/applications/{{applicationId}}/onboarding",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "applications",
+                    "{{applicationId}}",
+                    "onboarding"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Property Terms",
+          "item": [
+            {
+              "name": "Create Property Terms",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/terms",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "terms"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"Title\": \"Standard Lease Agreement\",\n  \"TermsContent\": \"By signing this agreement, the tenant agrees to abide by all house rules...\",\n  \"HouseRules\": \"No pets allowed. No smoking indoors. Visitors must leave by 10 PM.\",\n  \"SecurityDeposit\": 45000,\n  \"AdminFee\": 5000,\n  \"Currency\": \"KES\",\n  \"MpesaPaybill\": \"400200\",\n  \"MpesaTill\": null,\n  \"BankName\": \"Equity Bank\",\n  \"BankAccountNumber\": \"0123456789\",\n  \"OnboardingInstructions\": \"Please bring originals of all documents on signing day.\",\n  \"AccessInstructions\": \"Gate code is 1234. Ask caretaker John for keys.\",\n  \"ItemsToCarry\": \"National ID, KRA PIN, 3 months payslips, passport photo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Property Terms",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/terms/{{termId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "terms",
+                    "{{termId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"Title\": \"Standard Lease Agreement\",\n  \"TermsContent\": \"By signing this agreement, the tenant agrees to abide by all house rules...\",\n  \"HouseRules\": \"No pets allowed. No smoking indoors. Visitors must leave by 10 PM.\",\n  \"SecurityDeposit\": 45000,\n  \"AdminFee\": 5000,\n  \"Currency\": \"KES\",\n  \"MpesaPaybill\": \"400200\",\n  \"MpesaTill\": null,\n  \"BankName\": \"Equity Bank\",\n  \"BankAccountNumber\": \"0123456789\",\n  \"OnboardingInstructions\": \"Please bring originals of all documents on signing day.\",\n  \"AccessInstructions\": \"Gate code is 1234. Ask caretaker John for keys.\",\n  \"ItemsToCarry\": \"National ID, KRA PIN, 3 months payslips, passport photo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Terms by Listing",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/listings/{{listingId}}/terms",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "listings",
+                    "{{listingId}}",
+                    "terms"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Terms by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/terms/{{termId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "terms",
+                    "{{termId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Terms",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/terms/{{termId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "terms",
+                    "{{termId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "File Upload",
+          "item": [
+            {
+              "name": "Get Presigned Upload URL",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/property/upload/presigned-url",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "upload",
+                    "presigned-url"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"Folder\": \"applications/documents\",\n  \"FileName\": \"national_id.pdf\",\n  \"ContentType\": \"application/pdf\",\n  \"ExpiryMinutes\": 15\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Upload File (multipart)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/upload/file",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "upload",
+                    "file"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": ""
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get File URL by Key",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/property/upload/url?key=applications/documents/national_id.pdf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "property",
+                    "upload",
+                    "url"
+                  ],
+                  "query": [
+                    {
+                      "key": "key",
+                      "value": "applications/documents/national_id.pdf"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Customer Service",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Email\": \"tenant@example.com\",\n  \"Phone\": \"+254712345678\",\n  \"FirstName\": \"Jane\",\n  \"LastName\": \"Doe\",\n  \"DisplayName\": \"Jane Doe\",\n  \"CountryId\": \"{{categoryId}}\",\n  \"CityId\": \"{{categoryId}}\",\n  \"PreferredLanguage\": \"en\",\n  \"PreferredCurrency\": \"KES\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] List All Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "list"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Get Customer by Phone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/by-phone/254712345678",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "by-phone",
+                "254712345678"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Profile (with filters)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/profile?countryId={{categoryId}}&cityId={{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "countryId",
+                  "value": "{{categoryId}}"
+                },
+                {
+                  "key": "cityId",
+                  "value": "{{categoryId}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customers by Owner",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/by-owner/{{ownerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "by-owner",
+                "{{ownerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customers by Property",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/by-property/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "by-property",
+                "{{propertyId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customers by Listing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/listings/{{listingId}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "listings",
+                "{{listingId}}",
+                "customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FirstName\": \"Jane\",\n  \"LastName\": \"Doe\",\n  \"DisplayName\": \"Jane Doe\",\n  \"AddressLine\": \"123 Main Street, Westlands\",\n  \"DateOfBirth\": \"1995-06-15T00:00:00Z\",\n  \"IdType\": \"NationalID\",\n  \"IdNumber\": \"12345678\",\n  \"PreferredLanguage\": \"en\",\n  \"PreferredCurrency\": \"KES\",\n  \"ProfilePhotoUrl\": \"https://pub.r2.stayhere.com/profiles/avatars/photo.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Customer",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/deactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "deactivate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Property to Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "properties"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"PropertyId\": \"{{propertyId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "properties"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Customer Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "documents"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"EntityType\": \"Customer\",\n  \"EntityId\": \"{{customerId}}\",\n  \"DocumentType\": \"NationalID\",\n  \"FileUrl\": \"https://pub.r2.stayhere.com/profiles/documents/id.pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "documents"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Property Owner Service",
+      "item": [
+        {
+          "name": "Create Property Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FullName\": \"Michael Otieno\",\n  \"Phone\": \"+254712345678\",\n  \"Email\": \"owner@example.com\",\n  \"UserId\": \"{{userId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owner by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/{{ownerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "{{ownerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owner by User ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/user/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "user",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owner by Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/email/owner%40example.com",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "email",
+                "owner%40example.com"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Property Owner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/{{ownerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "{{ownerId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FullName\": \"Michael Otieno\",\n  \"Phone\": \"+254712345678\",\n  \"Email\": \"owner@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owner Wallet",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/{{ownerId}}/wallet",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "{{ownerId}}",
+                "wallet"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owner Properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/{{ownerId}}/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "{{ownerId}}",
+                "properties"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owner Listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/{{ownerId}}/listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "{{ownerId}}",
+                "listings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Portal Directory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/portal-directory",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "portal-directory"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Get All Owners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Agent to Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/{{ownerId}}/agents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "{{ownerId}}",
+                "agents"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FullName\": \"Sales Agent\",\n  \"Phone\": \"+254712345678\",\n  \"Email\": \"agent@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Agent by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/agents/{{agentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "agents",
+                "{{agentId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owner Agents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/{{ownerId}}/agents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "{{ownerId}}",
+                "agents"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Caretaker to Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/{{ownerId}}/caretakers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "{{ownerId}}",
+                "caretakers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FullName\": \"John Caretaker\",\n  \"Phone\": \"+254712345678\",\n  \"Email\": \"caretaker@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Caretaker by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/caretakers/{{caretakerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "caretakers",
+                "{{caretakerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owner Caretakers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/propertyowner/owners/{{ownerId}}/caretakers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "propertyowner",
+                "owners",
+                "{{ownerId}}",
+                "caretakers"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Static Data Service",
+      "item": [
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/user-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "user-types"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/user-roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "user-roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories",
+                "{{categoryId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Categories by City",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories/city/Nairobi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories",
+                "city",
+                "Nairobi"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Categories by Country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories/country/Kenya",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories",
+                "country",
+                "Kenya"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Name\": \"Apartments\",\n  \"Description\": \"Apartment-style listings\",\n  \"Type\": \"PropertyType\",\n  \"City\": \"Nairobi\",\n  \"Country\": \"Kenya\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories",
+                "{{categoryId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Name\": \"Apartments Updated\",\n  \"Description\": \"Updated description\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories",
+                "{{categoryId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create User Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/user-roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "user-roles"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Name\": \"Agent\",\n  \"Description\": \"A listing agent role\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create User Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/user-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "user-types"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Name\": \"PropertyOwner\",\n  \"Description\": \"A property owner account\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Agent Service",
+      "item": [
+        {
+          "name": "Chat with AI Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "chat"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Query\": \"I need a 2 bedroom apartment in Nairobi under 40000 KES\",\n  \"ConversationId\": \"{{conversationId}}\",\n  \"UserId\": \"{{userId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Respond & Recommend",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/respondandrecommend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "respondandrecommend"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Query\": \"Show me affordable listings in Westlands with parking\",\n  \"ConversationId\": \"{{conversationId}}\",\n  \"UserId\": \"{{userId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Knowledge Base Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/knowledge/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "knowledge",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Search Listings (AI)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/listings?listing_id=&listing_code=&location=Westlands&amenity=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "listings"
+              ],
+              "query": [
+                {
+                  "key": "listing_id",
+                  "value": ""
+                },
+                {
+                  "key": "listing_code",
+                  "value": ""
+                },
+                {
+                  "key": "location",
+                  "value": "Westlands"
+                },
+                {
+                  "key": "amenity",
+                  "value": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments Service",
+      "item": [
+        {
+          "name": "M-Pesa STK Push",
+          "item": [
+            {
+              "name": "Initiate STK Push",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/mpesa/stk/initiate",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "mpesa",
+                    "stk",
+                    "initiate"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ApplicationId\": \"{{applicationId}}\",\n  \"PhoneNumber\": \"254712345678\",\n  \"PaymentType\": \"SecurityDeposit\",\n  \"Amount\": 45000\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Webhook] STK Callback",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/mpesa/stk/callback",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "mpesa",
+                    "stk",
+                    "callback"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Admin] Query STK Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/mpesa/stk/query/{{checkoutRequestId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "mpesa",
+                    "stk",
+                    "query",
+                    "{{checkoutRequestId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "M-Pesa C2B",
+          "item": [
+            {
+              "name": "[Admin] Register C2B URLs",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/mpesa/c2b/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "mpesa",
+                    "c2b",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Webhook] C2B Validate",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/mpesa/c2b/validate",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "mpesa",
+                    "c2b",
+                    "validate"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Webhook] C2B Confirm",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/mpesa/c2b/confirm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "mpesa",
+                    "c2b",
+                    "confirm"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Payment Queries",
+          "item": [
+            {
+              "name": "Get Payment by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/{{paymentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "{{paymentId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Payments by Application",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/application/{{applicationId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "application",
+                    "{{applicationId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Admin] Get Unmatched Payments",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/unmatched",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "unmatched"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Manual Confirm Payment",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/{{paymentId}}/manual-confirm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "{{paymentId}}",
+                    "manual-confirm"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"Reference\": \"REF12345\",\n  \"Notes\": \"Confirmed via bank statement reference\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "[Admin] Match Payment to Application",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/{{paymentId}}/match/{{applicationId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "{{paymentId}}",
+                    "match",
+                    "{{applicationId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

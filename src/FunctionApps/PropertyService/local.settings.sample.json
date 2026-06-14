@@ -3,17 +3,28 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-    "DB_HOST": "localhost",
+
+    "DB_HOST": "your-azure-postgres.postgres.database.azure.com",
     "DB_PORT": "5432",
     "DB_NAME": "stayhere",
-    "DB_USER": "postgres",
-    "DB_PASSWORD": "your-postgres-password",
-    "DB_SSL_MODE": "Prefer",
-    "REDIS_CONNECTION": "localhost:6379",
+    "DB_USER": "your-db-user",
+    "DB_PASSWORD": "your-db-password",
+    "DB_SSL_MODE": "Require",
+
+    "REDIS_CONNECTION": "your-redis.redis.cache.windows.net:6380,password=...,ssl=True",
+
+    "SKIP_AUTH": "false",
     "JWT_SECRET": "your-base64-encoded-jwt-secret",
+
     "Google__ApiKey": "YOUR_GOOGLE_AI_STUDIO_API_KEY",
-    "Google__EmbeddingModel": "text-embedding-004",
+    "Google__EmbeddingModel": "gemini-embedding-2-preview",
     "Google__MaxRetries": "4",
-    "Google__EmbeddingCacheMinutes": "60"
+    "Google__EmbeddingCacheMinutes": "60",
+
+    "R2__AccountId": "YOUR_CLOUDFLARE_ACCOUNT_ID",
+    "R2__AccessKeyId": "YOUR_R2_ACCESS_KEY_ID",
+    "R2__SecretAccessKey": "YOUR_R2_SECRET_ACCESS_KEY",
+    "R2__BucketName": "stayhere",
+    "R2__PublicBaseUrl": "https://pub-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.r2.dev"
   }
 }

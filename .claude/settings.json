@@ -1,0 +1,22 @@
+{
+  "env": {
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "128000"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(python generate_pptx.py)",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import os; f='d:/Projects/StayHereProject_MVP/stayhere-mvp/StayHere_Mobile_Implementation_Guide.pptx'; print\\(f'File exists: {os.path.exists\\(f\\)}'\\); print\\(f'Size: {os.path.getsize\\(f\\):,} bytes'\\) if os.path.exists\\(f\\) else None\")",
+      "Bash(python -c \"import sys; sys.stdout.buffer.write\\(sys.stdin.buffer.read\\(\\)\\)\")",
+      "Bash(python -c \"import os; p='d:/Projects/StayHereProject_MVP/stayhere-mvp/StayHere_Mobile_Implementation_Guide.pptx'; print\\(os.path.getsize\\(p\\), 'bytes,', os.path.getmtime\\(p\\)\\)\")",
+      "Bash(python generate_postman.py)",
+      "Bash(python generate_r2_test_collection.py)",
+      "Bash(func start *)",
+      "Bash(Start-Sleep -Seconds 18)",
+      "Bash(Get-Content \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Projects-StayHereProject-MVP-stayhere-mvp\\\\06050994-2ed3-42ee-8d37-868db83404b4\\\\tasks\\\\bxtd7dpnc.output\" -Tail 60)",
+      "Bash(dotnet \"bin/output/StayHere.PropertyService.dll\")",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Projects-StayHereProject-MVP-stayhere-mvp\\\\06050994-2ed3-42ee-8d37-868db83404b4\\\\tasks\\\\br084m6ah.output\"\\).Count)"
+    ]
+  }
+}
