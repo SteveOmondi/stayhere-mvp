@@ -245,3 +245,43 @@ resource "azurerm_api_management_named_value" "onfon_sender_id" {
   display_name        = "ONFON_SENDER_ID"
   value               = var.onfon_sender_id
 }
+
+resource "azurerm_api_management_policy" "global" {
+  api_management_id = azurerm_api_management.main.id
+
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <cors allow-credentials="true">
+            <allowed-origins>
+                <origin>${trimsuffix(var.admin_portal_url, "/")}</origin>
+                <origin>${trimsuffix(var.owner_portal_url, "/")}</origin>
+                <origin>http://localhost:5100</origin>
+                <origin>http://localhost:5101</origin>
+                <origin>http://localhost:5173</origin>
+                <origin>http://localhost:5174</origin>
+            </allowed-origins>
+            <allowed-methods preflight-result-max-age="300">
+                <method>GET</method>
+                <method>POST</method>
+                <method>PUT</method>
+                <method>DELETE</method>
+                <method>OPTIONS</method>
+                <method>PATCH</method>
+            </allowed-methods>
+            <allowed-headers>
+                <header>*</header>
+            </allowed-headers>
+            <expose-headers>
+                <header>*</header>
+            </expose-headers>
+        </cors>
+    </inbound>
+    <backend>
+        <forward-request />
+    </backend>
+    <outbound />
+    <on-error />
+</policies>
+XML
+}

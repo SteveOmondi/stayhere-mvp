@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { listingsApi, ownerApi, propertiesApi, uploadApi, uploadToR2, ApiError } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
-import { IcoListing, IcoPlus, IcoMapPin, IcoCheck, IcoX, IcoLoader, IcoEdit, IcoTeam, IcoUser, IcoSearch, IcoRefresh, IcoVacant } from "../components/icons";
+import { IcoPlus, IcoMapPin, IcoCheck, IcoX, IcoLoader, IcoEdit, IcoTeam, IcoUser, IcoSearch, IcoRefresh, IcoVacant } from "../components/icons";
 
 type Listing = {
   id: string;

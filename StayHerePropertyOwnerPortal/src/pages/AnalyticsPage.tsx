@@ -61,7 +61,7 @@ function BarChart({ data, label }: { data: { name: string; value: number }[]; la
 }
 
 export function AnalyticsPage() {
-  const { owner, userId, toast } = useOwner();
+  const { userId, toast } = useOwner();
   const [loading, setLoading] = useState(true);
   const [propCount, setPropCount] = useState(0);
   const [listingCount, setListingCount] = useState(0);

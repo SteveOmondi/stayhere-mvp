@@ -46,11 +46,11 @@ export function OnboardingPage() {
   function load() {
     setLoading(true);
     customersApi.list()
-      .then(data => {
+      .then((data: any) => {
         const arr = Array.isArray(data) ? data : (asPaginated<unknown>(data)?.items ?? []);
         setTenants(arr.map(mapTenant).filter(Boolean) as Tenant[]);
       })
-      .catch(e => toast(e instanceof ApiError ? e.message : "Failed to load tenants", "error"))
+      .catch((e: any) => toast(e instanceof ApiError ? e.message : "Failed to load tenants", "error"))
       .finally(() => setLoading(false));
   }
 

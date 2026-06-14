@@ -32,7 +32,7 @@ export function NoticeBoardPage() {
         const arr = Array.isArray(data) ? data : ((data as Record<string, unknown>)?.items as unknown[] ?? []);
         setTenants(arr.map(mapTenant).filter(Boolean) as Tenant[]);
       })
-      .catch(e => toast(e instanceof ApiError ? e.message : "Failed to load tenants", "error"))
+      .catch((e: any) => toast(e instanceof ApiError ? e.message : "Failed to load tenants", "error"))
       .finally(() => setLoading(false));
     const stored = localStorage.getItem(`sh_notices_${owner.id}`);
     if (stored) { try { setNotices(JSON.parse(stored)); } catch { /* */ } }
