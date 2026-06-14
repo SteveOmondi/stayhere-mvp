@@ -5,6 +5,7 @@ const LS = {
   staticApi:     "sh_mgmt_static_api",
   authApi:       "sh_mgmt_auth_api",
   aiApi:         "sh_mgmt_ai_api",
+  paymentsApi:   "sh_mgmt_payments_api",
   xUserId:       "sh_mgmt_x_user_id",
   staticBearer:  "sh_mgmt_static_bearer",
   authToken:     "sh_mgmt_auth_token",
@@ -17,17 +18,19 @@ const DEV_PROXY = {
   staticApiBase:        "/stayhere-api/static",
   authApiBase:          "/stayhere-api/auth",
   aiAgentApiBase:       "/stayhere-api/ai",
+  paymentsApiBase:      "/stayhere-api/payments",
 } as const;
 
 const APIM_ROOT = "https://apim-dev-5c27bcf3.azure-api.net";
 
 const PROD_DEFAULTS = {
   propertyOwnerApiBase: import.meta.env.VITE_PROPERTY_OWNER_API ?? `${APIM_ROOT}/propertyowner`,
-  propertyApiBase:      import.meta.env.VITE_PROPERTY_API      ?? `${APIM_ROOT}/property`,
-  customerApiBase:      import.meta.env.VITE_CUSTOMER_API      ?? `${APIM_ROOT}/customers`,
-  staticApiBase:        import.meta.env.VITE_STATIC_API        ?? `${APIM_ROOT}/staticdata`,
-  authApiBase:          import.meta.env.VITE_AUTH_API          ?? `${APIM_ROOT}/auth`,
-  aiAgentApiBase:       import.meta.env.VITE_AI_API            ?? `${APIM_ROOT}/aiagent`,
+  propertyApiBase:      import.meta.env.VITE_PROPERTY_API       ?? `${APIM_ROOT}/property`,
+  customerApiBase:      import.meta.env.VITE_CUSTOMER_API       ?? `${APIM_ROOT}/customers`,
+  staticApiBase:        import.meta.env.VITE_STATIC_API         ?? `${APIM_ROOT}/staticdata`,
+  authApiBase:          import.meta.env.VITE_AUTH_API           ?? `${APIM_ROOT}/auth`,
+  aiAgentApiBase:       import.meta.env.VITE_AI_API             ?? `${APIM_ROOT}/aiagent`,
+  paymentsApiBase:      import.meta.env.VITE_PAYMENTS_API       ?? `${APIM_ROOT}/payments`,
 };
 
 function isCrossOriginLocalhost(url: string | null): boolean {
@@ -57,6 +60,7 @@ export type PortalConfig = {
   staticApiBase:        string;
   authApiBase:          string;
   aiAgentApiBase:       string;
+  paymentsApiBase:      string;
   defaultOwnerUserId:   string;
   staticDataBearer:     string;
   authToken:            string;
@@ -69,7 +73,8 @@ export function loadConfig(): PortalConfig {
     customerApiBase:      readBase(LS.customerApi, "customerApiBase",      DEV_PROXY.customerApiBase),
     staticApiBase:        readBase(LS.staticApi,   "staticApiBase",        DEV_PROXY.staticApiBase),
     authApiBase:          readBase(LS.authApi,     "authApiBase",          DEV_PROXY.authApiBase),
-    aiAgentApiBase:       readBase(LS.aiApi,       "aiAgentApiBase",       DEV_PROXY.aiAgentApiBase),
+    aiAgentApiBase:       readBase(LS.aiApi,       "aiAgentApiBase",  DEV_PROXY.aiAgentApiBase),
+    paymentsApiBase:      readBase(LS.paymentsApi, "paymentsApiBase", DEV_PROXY.paymentsApiBase),
     defaultOwnerUserId:   localStorage.getItem(LS.xUserId)      ?? "",
     staticDataBearer:     localStorage.getItem(LS.staticBearer) ?? "mock-jwt-token",
     authToken:            localStorage.getItem(LS.authToken)    ?? "",

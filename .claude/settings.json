@@ -16,7 +16,9 @@
       "Bash(Start-Sleep -Seconds 18)",
       "Bash(Get-Content \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Projects-StayHereProject-MVP-stayhere-mvp\\\\06050994-2ed3-42ee-8d37-868db83404b4\\\\tasks\\\\bxtd7dpnc.output\" -Tail 60)",
       "Bash(dotnet \"bin/output/StayHere.PropertyService.dll\")",
-      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Projects-StayHereProject-MVP-stayhere-mvp\\\\06050994-2ed3-42ee-8d37-868db83404b4\\\\tasks\\\\br084m6ah.output\"\\).Count)"
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Projects-StayHereProject-MVP-stayhere-mvp\\\\06050994-2ed3-42ee-8d37-868db83404b4\\\\tasks\\\\br084m6ah.output\"\\).Count)",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\StayHereProject_MVP\\\\stayhere-mvp\\\\StayHereMainManagementPortal\", \"d:\\\\Projects\\\\StayHereProject_MVP\\\\stayhere-mvp\\\\StayHerePropertyOwnerPortal\", \"d:\\\\Projects\\\\StayHereProject_MVP\\\\stayhere-mvp\\\\StayHereClientApp\" -Filter \".env*\" -Force)",
+      "Bash(xargs grep -l \"\")"
     ]
   }
 }

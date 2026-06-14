@@ -17,16 +17,18 @@ const DEV_PROXY = {
   customerApiBase: "/api/customer",
   staticApiBase:   "/api/static",
   aiApiBase:       "/api/ai",
+  paymentsApiBase: "/api/payments",
 } as const;
 
 const APIM_ROOT = "https://apim-dev-5c27bcf3.azure-api.net";
 
 const PROD_DEFAULTS = {
-  authApiBase:     import.meta.env.VITE_AUTH_API     ?? `${APIM_ROOT}/auth`,
-  propertyApiBase: import.meta.env.VITE_PROPERTY_API ?? `${APIM_ROOT}/property`,
-  customerApiBase: import.meta.env.VITE_CUSTOMER_API ?? `${APIM_ROOT}/customers`,
-  staticApiBase:   import.meta.env.VITE_STATIC_API   ?? `${APIM_ROOT}/staticdata`,
-  aiApiBase:       import.meta.env.VITE_AI_API       ?? `${APIM_ROOT}/aiagent`,
+  authApiBase:     import.meta.env.VITE_AUTH_API      ?? `${APIM_ROOT}/auth`,
+  propertyApiBase: import.meta.env.VITE_PROPERTY_API  ?? `${APIM_ROOT}/property`,
+  customerApiBase: import.meta.env.VITE_CUSTOMER_API  ?? `${APIM_ROOT}/customers`,
+  staticApiBase:   import.meta.env.VITE_STATIC_API    ?? `${APIM_ROOT}/staticdata`,
+  aiApiBase:       import.meta.env.VITE_AI_API        ?? `${APIM_ROOT}/aiagent`,
+  paymentsApiBase: import.meta.env.VITE_PAYMENTS_API  ?? `${APIM_ROOT}/payments`,
 } as const;
 
 function readBase(prodKey: keyof typeof PROD_DEFAULTS, devProxy: string): string {
@@ -41,6 +43,7 @@ export type AppConfig = {
   customerApiBase: string;
   staticApiBase:   string;
   aiApiBase:       string;
+  paymentsApiBase: string;
   authToken:       string;
 };
 
@@ -50,7 +53,8 @@ export function loadConfig(): AppConfig {
     propertyApiBase: readBase("propertyApiBase", DEV_PROXY.propertyApiBase),
     customerApiBase: readBase("customerApiBase", DEV_PROXY.customerApiBase),
     staticApiBase:   readBase("staticApiBase",   DEV_PROXY.staticApiBase),
-    aiApiBase:       readBase("aiApiBase",        DEV_PROXY.aiApiBase),
+    aiApiBase:       readBase("aiApiBase",       DEV_PROXY.aiApiBase),
+    paymentsApiBase: readBase("paymentsApiBase", DEV_PROXY.paymentsApiBase),
     authToken:       localStorage.getItem(LS.authToken) ?? "",
   };
 }

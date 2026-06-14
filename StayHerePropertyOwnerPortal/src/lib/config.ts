@@ -7,9 +7,20 @@ const LS = {
   customerApi:  "sh_owner_customer_api",
   staticApi:    "sh_owner_static_api",
   aiApi:        "sh_owner_ai_api",
+  paymentsApi:  "sh_owner_payments_api",
 } as const;
 
 const APIM = "https://apim-dev-5c27bcf3.azure-api.net";
+
+const PROD_DEFAULTS = {
+  authApiBase:     import.meta.env.VITE_AUTH_API          ?? `${APIM}/auth`,
+  ownerApiBase:    import.meta.env.VITE_PROPERTY_OWNER_API ?? `${APIM}/propertyowner`,
+  propertyApiBase: import.meta.env.VITE_PROPERTY_API      ?? `${APIM}/property`,
+  customerApiBase: import.meta.env.VITE_CUSTOMER_API      ?? `${APIM}/customers`,
+  staticApiBase:   import.meta.env.VITE_STATIC_API        ?? `${APIM}/staticdata`,
+  aiApiBase:       import.meta.env.VITE_AI_API            ?? `${APIM}/aiagent`,
+  paymentsApiBase: import.meta.env.VITE_PAYMENTS_API      ?? `${APIM}/payments`,
+};
 
 export type OwnerPortalConfig = {
   authApiBase:     string;
@@ -18,22 +29,27 @@ export type OwnerPortalConfig = {
   customerApiBase: string;
   staticApiBase:   string;
   aiApiBase:       string;
+  paymentsApiBase: string;
   authToken:       string;
 };
 
 export function loadConfig(): OwnerPortalConfig {
-  const stored = (key: string, devProxy: string, prodDefault: string) => {
-    const s = localStorage.getItem(key);
-    if (import.meta.env.DEV) return devProxy;
-    return s?.trim() || prodDefault;
+  const resolve = (lsKey: string, devProxy: string, prodKey: keyof typeof PROD_DEFAULTS) => {
+    if (import.meta.env.DEV) {
+      const overridden = localStorage.getItem(lsKey)?.trim();
+      if (overridden) return overridden;
+      return devProxy;
+    }
+    return localStorage.getItem(lsKey)?.trim() || PROD_DEFAULTS[prodKey];
   };
   return {
-    authApiBase:     stored(LS.authApi,     "/api/auth",     `${APIM}/auth`),
-    ownerApiBase:    stored(LS.ownerApi,    "/api/owner",    `${APIM}/propertyowner`),
-    propertyApiBase: stored(LS.propertyApi, "/api/property", `${APIM}/property`),
-    customerApiBase: stored(LS.customerApi, "/api/customer", `${APIM}/customers`),
-    staticApiBase:   stored(LS.staticApi,   "/api/static",   `${APIM}/staticdata`),
-    aiApiBase:       stored(LS.aiApi,       "/api/ai",       `${APIM}/aiagent`),
+    authApiBase:     resolve(LS.authApi,     "/api/auth",     "authApiBase"),
+    ownerApiBase:    resolve(LS.ownerApi,    "/api/owner",    "ownerApiBase"),
+    propertyApiBase: resolve(LS.propertyApi, "/api/property", "propertyApiBase"),
+    customerApiBase: resolve(LS.customerApi, "/api/customer", "customerApiBase"),
+    staticApiBase:   resolve(LS.staticApi,   "/api/static",   "staticApiBase"),
+    aiApiBase:       resolve(LS.aiApi,       "/api/ai",       "aiApiBase"),
+    paymentsApiBase: resolve(LS.paymentsApi, "/api/payments", "paymentsApiBase"),
     authToken:       localStorage.getItem(LS.authToken) ?? "",
   };
 }
