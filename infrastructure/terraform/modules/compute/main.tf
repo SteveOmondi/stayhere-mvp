@@ -286,6 +286,56 @@ resource "azurerm_linux_function_app" "aiagent" {
   }
 }
 
+resource "azurerm_linux_function_app" "payments" {
+  name                = "func-${var.environment}-payments-${var.suffix}"
+  resource_group_name = var.rg_name
+  location            = var.location
+
+  storage_account_name       = azurerm_storage_account.main.name
+  storage_account_access_key = azurerm_storage_account.main.primary_access_key
+  service_plan_id            = azurerm_service_plan.main.id
+
+  site_config {
+    application_stack {
+      dotnet_version              = "9.0"
+      use_dotnet_isolated_runtime = true
+    }
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "AzureWebJobsStorage"            = azurerm_storage_account.main.primary_connection_string
+    "DB_HOST"                        = var.psql_host
+    "DB_PORT"                        = "5432"
+    "DB_NAME"                        = var.psql_database_name
+    "DB_USER"                        = var.psql_admin_login
+    "DB_PASSWORD"                    = var.psql_admin_password
+    "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
+    "REDIS_CONNECTION_STRING"        = var.redis_connection_string
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "FUNCTIONS_EXTENSION_VERSION"    = "~4"
+    "SKIP_AUTH"                      = var.skip_auth
+    "AzureWebJobs.Http.RoutePrefix"  = ""
+    "WEBSITE_RUN_FROM_PACKAGE"       = "1"
+    "Mpesa__ConsumerKey"             = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/mpesa-consumer-key)"
+    "Mpesa__ConsumerSecret"          = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/mpesa-consumer-secret)"
+    "Mpesa__ShortCode"               = var.mpesa_shortcode
+    "Mpesa__PassKey"                 = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/mpesa-passkey)"
+    "Mpesa__Environment"             = var.mpesa_environment
+    "Mpesa__StkCallbackUrl"          = "https://apim-${var.environment}-${var.suffix}.azure-api.net/payments/mpesa/stk/callback"
+    "Mpesa__C2bValidationUrl"        = "https://apim-${var.environment}-${var.suffix}.azure-api.net/payments/mpesa/c2b/validate"
+    "Mpesa__C2bConfirmationUrl"      = "https://apim-${var.environment}-${var.suffix}.azure-api.net/payments/mpesa/c2b/confirm"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    Service = "PaymentsService"
+  }
+}
+
 resource "azurerm_storage_account" "main" {
   name                     = "st${var.environment}${var.suffix}"
   resource_group_name      = var.rg_name
@@ -392,6 +442,14 @@ variable "onfon_sender_id" {
   type = string
 }
 
+variable "mpesa_shortcode" {
+  type = string
+}
+
+variable "mpesa_environment" {
+  type = string
+}
+
 output "auth_function_name" {
   value = azurerm_linux_function_app.auth.name
 }
@@ -442,4 +500,16 @@ output "aiagent_function_host" {
 
 output "auth_principal_id" {
   value = azurerm_linux_function_app.auth.identity[0].principal_id
+}
+
+output "payments_function_name" {
+  value = azurerm_linux_function_app.payments.name
+}
+
+output "payments_function_host" {
+  value = azurerm_linux_function_app.payments.default_hostname
+}
+
+output "payments_principal_id" {
+  value = azurerm_linux_function_app.payments.identity[0].principal_id
 }
