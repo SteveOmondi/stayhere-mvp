@@ -28,23 +28,18 @@ public sealed class R2Options
 {
     public const string Section = "R2";
 
-    [Required]
     public string AccountId { get; set; } = string.Empty;
 
-    [Required]
     public string AccessKeyId { get; set; } = string.Empty;
 
-    [Required]
     public string SecretAccessKey { get; set; } = string.Empty;
 
-    [Required]
     public string BucketName { get; set; } = string.Empty;
 
     /// <summary>
     /// Base URL used to compute public file URLs, without a trailing slash.
     /// Example: "https://pub-abc123.r2.dev" or "https://assets.stayhere.co.ke"
     /// </summary>
-    [Required]
     public string PublicBaseUrl { get; set; } = string.Empty;
 
     /// <summary>Default presigned URL lifetime. Can be overridden per call.</summary>
