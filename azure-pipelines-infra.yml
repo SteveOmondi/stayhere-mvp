@@ -53,6 +53,11 @@ stages:
           -var="onfon_api_key=$(ONFON_API_KEY)"
           -var="onfon_base_url=$(ONFON_BASE_URL)"
           -var="onfon_sender_id=$(ONFON_SENDER_ID)"
+          -var="mpesa_consumer_key=$(MPESA_CONSUMER_KEY)"
+          -var="mpesa_consumer_secret=$(MPESA_CONSUMER_SECRET)"
+          -var="mpesa_passkey=$(MPESA_PASSKEY)"
+          -var="mpesa_shortcode=$(MPESA_SHORTCODE)"
+          -var="mpesa_environment=$(MPESA_ENVIRONMENT)"
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
 
     - task: PublishPipelineArtifact@1

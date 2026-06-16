@@ -3,7 +3,7 @@ import { bookingApi, type ViewingBooking } from "../lib/api";
 import { useOwner } from "../context/OwnerContext";
 import {
   IcoCalendar, IcoCheck, IcoChevRight, IcoLoader, IcoPhone, IcoUser, IcoX,
-  IcoRefresh, IcoEye, IcoMapPin,
+  IcoRefresh, IcoEye,
 } from "../components/icons";
 
 const STATUS_STYLES: Record<string, { dot: string; text: string; badge: string }> = {

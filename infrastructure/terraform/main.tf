@@ -95,6 +95,9 @@ module "compute" {
   onfon_client_id  = var.onfon_client_id
   onfon_base_url   = var.onfon_base_url
   onfon_sender_id  = var.onfon_sender_id
+
+  mpesa_shortcode   = var.mpesa_shortcode
+  mpesa_environment = var.mpesa_environment
 }
 
 # --- SECURITY MODULE ---
@@ -108,7 +111,13 @@ module "security" {
   # Entra ID credentials from root
   entra_client_secret_value = azuread_application_password.main.value
   auth_app_principal_id     = module.compute.auth_principal_id
+  payments_app_principal_id = module.compute.payments_principal_id
+  
   onfon_api_key_value       = var.onfon_api_key
+
+  mpesa_consumer_key_value    = var.mpesa_consumer_key
+  mpesa_consumer_secret_value = var.mpesa_consumer_secret
+  mpesa_passkey_value         = var.mpesa_passkey
 }
 
 # --- FRONTEND STATIC SITES ---
@@ -134,6 +143,7 @@ module "apim" {
   propertyowner_function_host = module.compute.propertyowner_function_host
   staticdata_function_host    = module.compute.staticdata_function_host
   aiagent_function_host       = module.compute.aiagent_function_host
+  payments_function_host      = module.compute.payments_function_host
 
   entra_client_id             = azuread_application.main.client_id
   entra_tenant_id             = data.azurerm_client_config.current.tenant_id

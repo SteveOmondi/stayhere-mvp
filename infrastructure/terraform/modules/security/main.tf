@@ -28,6 +28,16 @@ resource "azurerm_key_vault" "main" {
       secret_permissions = ["Get"]
     }
   }
+
+  # 3. Payments App Identity
+  dynamic "access_policy" {
+    for_each = var.payments_app_principal_id != null ? [1] : []
+    content {
+      tenant_id = data.azurerm_client_config.current.tenant_id
+      object_id = var.payments_app_principal_id
+      secret_permissions = ["Get"]
+    }
+  }
 }
 
 resource "azurerm_key_vault_secret" "entra_client_secret" {
@@ -39,6 +49,24 @@ resource "azurerm_key_vault_secret" "entra_client_secret" {
 resource "azurerm_key_vault_secret" "onfon_api_key" {
   name         = "onfon-api-key"
   value        = var.onfon_api_key_value
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+resource "azurerm_key_vault_secret" "mpesa_consumer_key" {
+  name         = "mpesa-consumer-key"
+  value        = var.mpesa_consumer_key_value
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+resource "azurerm_key_vault_secret" "mpesa_consumer_secret" {
+  name         = "mpesa-consumer-secret"
+  value        = var.mpesa_consumer_secret_value
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+resource "azurerm_key_vault_secret" "mpesa_passkey" {
+  name         = "mpesa-passkey"
+  value        = var.mpesa_passkey_value
   key_vault_id = azurerm_key_vault.main.id
 }
 
@@ -57,6 +85,26 @@ variable "entra_client_secret_value" {
 }
 
 variable "onfon_api_key_value" {
+  type      = string
+  sensitive = true
+}
+
+variable "payments_app_principal_id" {
+  type    = string
+  default = null
+}
+
+variable "mpesa_consumer_key_value" {
+  type      = string
+  sensitive = true
+}
+
+variable "mpesa_consumer_secret_value" {
+  type      = string
+  sensitive = true
+}
+
+variable "mpesa_passkey_value" {
   type      = string
   sensitive = true
 }

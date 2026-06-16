@@ -98,3 +98,33 @@ variable "onfon_sender_id" {
   description = "OnFon SMS Sender ID"
   default     = "STAYHERE"
 }
+
+variable "mpesa_consumer_key" {
+  type        = string
+  description = "Mpesa Consumer Key"
+  sensitive   = true
+}
+
+variable "mpesa_consumer_secret" {
+  type        = string
+  description = "Mpesa Consumer Secret"
+  sensitive   = true
+}
+
+variable "mpesa_passkey" {
+  type        = string
+  description = "Mpesa Lipa Na Mpesa Online PassKey"
+  sensitive   = true
+}
+
+variable "mpesa_shortcode" {
+  type        = string
+  description = "Mpesa Paybill/Till Number"
+  default     = "174379"
+}
+
+variable "mpesa_environment" {
+  type        = string
+  description = "Mpesa Environment (sandbox or production)"
+  default     = "sandbox"
+}

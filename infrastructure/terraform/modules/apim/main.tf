@@ -80,6 +80,18 @@ resource "azurerm_api_management_api" "aiagent" {
   subscription_required = false
 }
 
+resource "azurerm_api_management_api" "payments" {
+  name                = "payments-api"
+  resource_group_name = var.rg_name
+  api_management_name = azurerm_api_management.main.name
+  revision            = "1"
+  display_name        = "Payments API"
+  path                = "payments"
+  protocols           = ["https"]
+  service_url         = "https://${var.payments_function_host}/api"
+  subscription_required = false
+}
+
 # NOTICE: All API operations are managed dynamically by
 # scripts/sync-apim-operations.ps1 â€” which reads live Swagger specs and
 # auto-creates/deletes/secures operations in APIM on every deploy.
@@ -198,6 +210,22 @@ resource "azurerm_api_management_api_policy" "aiagent" {
     <inbound>
         <base />
         <set-header name="Host" exists-action="override"><value>${var.aiagent_function_host}</value></set-header>
+        <set-header name="X-Original-URL" exists-action="delete" />
+        <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
+    </inbound>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_policy" "payments" {
+  api_name            = azurerm_api_management_api.payments.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <base />
+        <set-header name="Host" exists-action="override"><value>${var.payments_function_host}</value></set-header>
         <set-header name="X-Original-URL" exists-action="delete" />
         <set-header name="X-WAWS-Unencoded-URL" exists-action="delete" />
     </inbound>
