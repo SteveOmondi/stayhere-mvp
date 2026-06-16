@@ -20,36 +20,83 @@ public sealed class StayHereDbContextFactory : IDesignTimeDbContextFactory<StayH
             using var conn = new NpgsqlConnection(connectionString);
             conn.Open();
 
-            var tableExists = false;
+            var historyTableExists = false;
             using (var cmd = new NpgsqlCommand("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '__EFMigrationsHistory')", conn))
             {
-                tableExists = (bool)(cmd.ExecuteScalar() ?? false);
+                historyTableExists = (bool)(cmd.ExecuteScalar() ?? false);
             }
 
-            if (tableExists)
+            if (historyTableExists)
             {
-                var hasOld = false;
-                using (var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns')", conn))
+                // Check if the property_terms table exists (meaning the schema was already applied in some form)
+                var propertyTermsTableExists = false;
+                using (var cmd = new NpgsqlCommand("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'property_terms')", conn))
                 {
-                    hasOld = Convert.ToInt32(cmd.ExecuteScalar() ?? 0) > 0;
+                    propertyTermsTableExists = (bool)(cmd.ExecuteScalar() ?? false);
                 }
 
-                if (hasOld)
+                if (propertyTermsTableExists)
                 {
-                    Console.WriteLine("StayHereDbContextFactory: Old migrations detected in DB. Aligning migration history table to consolidated migration...");
-                    using (var tx = conn.BeginTransaction())
+                    // Check if the consolidated migration is already in history
+                    var consolidatedExists = false;
+                    using (var cmd = new NpgsqlCommand("SELECT EXISTS (SELECT FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" = '20260616105508_AddRentalFlowAndMpesaPayments')", conn))
                     {
-                        using (var cmd = new NpgsqlCommand("DELETE FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns')", conn, tx))
-                        {
-                            cmd.ExecuteNonQuery();
-                        }
-                        using (var cmd = new NpgsqlCommand("INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ('20260616105508_AddRentalFlowAndMpesaPayments', '9.0.0') ON CONFLICT DO NOTHING", conn, tx))
-                        {
-                            cmd.ExecuteNonQuery();
-                        }
-                        tx.Commit();
+                        consolidatedExists = (bool)(cmd.ExecuteScalar() ?? false);
                     }
-                    Console.WriteLine("StayHereDbContextFactory: Migration history table aligned successfully.");
+
+                    if (!consolidatedExists)
+                    {
+                        Console.WriteLine("StayHereDbContextFactory: 'property_terms' table exists, but consolidated migration '20260616105508_AddRentalFlowAndMpesaPayments' is not marked as applied. Aligning history...");
+                        using (var tx = conn.BeginTransaction())
+                        {
+                            // Delete old/squashed/deleted migrations if they are there
+                            using (var cmd = new NpgsqlCommand("DELETE FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns', '20260615211547_SyncModelChanges')", conn, tx))
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                            // Insert consolidated migration to prevent EF Core from trying to create the tables
+                            using (var cmd = new NpgsqlCommand("INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ('20260616105508_AddRentalFlowAndMpesaPayments', '9.0.0') ON CONFLICT DO NOTHING", conn, tx))
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                            tx.Commit();
+                        }
+                        Console.WriteLine("StayHereDbContextFactory: Migration history table aligned successfully.");
+                    }
+                    else
+                    {
+                        // Consolidated exists, but let's still clean up old migration IDs just in case they're lingering
+                        using (var tx = conn.BeginTransaction())
+                        {
+                            using (var cmd = new NpgsqlCommand("DELETE FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns', '20260615211547_SyncModelChanges')", conn, tx))
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                            tx.Commit();
+                        }
+                    }
+                }
+                else
+                {
+                    // If property_terms doesn't exist, check if old migrations are in the history and clean them up
+                    var hasOld = false;
+                    using (var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns', '20260615211547_SyncModelChanges')", conn))
+                    {
+                        hasOld = Convert.ToInt32(cmd.ExecuteScalar() ?? 0) > 0;
+                    }
+
+                    if (hasOld)
+                    {
+                        Console.WriteLine("StayHereDbContextFactory: Old migrations detected in DB but tables are not created. Cleaning up old migration history entries to allow clean run...");
+                        using (var tx = conn.BeginTransaction())
+                        {
+                            using (var cmd = new NpgsqlCommand("DELETE FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns', '20260615211547_SyncModelChanges')", conn, tx))
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                            tx.Commit();
+                        }
+                    }
                 }
             }
         }
