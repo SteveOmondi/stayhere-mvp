@@ -18,7 +18,28 @@
       "Bash(dotnet \"bin/output/StayHere.PropertyService.dll\")",
       "PowerShell(\\(Get-Content \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Projects-StayHereProject-MVP-stayhere-mvp\\\\06050994-2ed3-42ee-8d37-868db83404b4\\\\tasks\\\\br084m6ah.output\"\\).Count)",
       "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\StayHereProject_MVP\\\\stayhere-mvp\\\\StayHereMainManagementPortal\", \"d:\\\\Projects\\\\StayHereProject_MVP\\\\stayhere-mvp\\\\StayHerePropertyOwnerPortal\", \"d:\\\\Projects\\\\StayHereProject_MVP\\\\stayhere-mvp\\\\StayHereClientApp\" -Filter \".env*\" -Force)",
-      "Bash(xargs grep -l \"\")"
+      "Bash(xargs grep -l \"\")",
+      "Bash(cd /d/Projects/StayHereProject_MVP/stayhere-mvp/src/FunctionApps/AuthService)",
+      "Bash(ls)",
+      "Bash(powershell -c \"Get-ChildItem 'D:\\\\Projects\\\\StayHereProject_MVP\\\\stayhere-mvp\\\\src\\\\FunctionApps\\\\AuthService'\")",
+      "Bash(cd \"/d/Projects/StayHereProject_MVP/stayhere-mvp/src/FunctionApps/AuthService/bin/output\" && find . -maxdepth 1 -name \"*.deps.json\")",
+      "Read(//d/d/Projects/StayHereProject_MVP/stayhere-mvp/src/FunctionApps/AuthService/bin/**)",
+      "Bash(export FUNCTIONS_WORKER_RUNTIME=dotnet-isolated)",
+      "Bash(export AzureWebJobsStorage=\"UseDevelopmentStorage=true\")",
+      "Bash(export DB_HOST=localhost)",
+      "Bash(export DB_PORT=5432)",
+      "Bash(export DB_NAME=stayhere)",
+      "Bash(cd \"/d/Projects/StayHereProject_MVP/stayhere-mvp\" && find . -path ./node_modules -prune -o -ipath \"*Persistence/Migrations*\" -print 2>/dev/null | grep -v \"/bin/\\\\|/obj/\")",
+      "Read(//d/d/Projects/StayHereProject_MVP/**)",
+      "Bash(export DB_HOST=localhost DB_PORT=5432 DB_NAME=stayhere DB_USER=postgres DB_PASSWORD=kelly985)",
+      "Bash(dotnet tool *)",
+      "Bash(PGPASSWORD=kelly985 psql -h localhost -U postgres -d stayhere -c \"select * from \\\\\"__EFMigrationsHistory\\\\\" order by \\\\\"MigrationId\\\\\";\")",
+      "Bash(cd \"/d/Projects/StayHereProject_MVP/stayhere-mvp\" && rm \"src/Infrastructure/Persistence/Migrations/20260610000000_AddRentalFlow.cs\" \"src/Infrastructure/Persistence/Migrations/20260611000000_AddMpesaPaymentColumns.cs\")",
+      "Bash(mv \"20260616105508_CheckPendingSnapshot.cs\" \"20260616105508_AddRentalFlowAndMpesaPayments.cs\")",
+      "Bash(mv \"20260616105508_CheckPendingSnapshot.Designer.cs\" \"20260616105508_AddRentalFlowAndMpesaPayments.Designer.cs\")"
+    ],
+    "additionalDirectories": [
+      "d:\\d\\Projects\\StayHereProject_MVP\\stayhere-mvp\\src\\Infrastructure\\Persistence\\Migrations"
     ]
   }
 }
