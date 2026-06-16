@@ -343,27 +343,6 @@ stages:
           # Force .NET to use IPv4. Azure DevOps Ubuntu agents now resolve IPv6 for Flexible Server,
           # but the Flexible Server firewall rules are IPv4 only, causing a TCP timeout.
           export DOTNET_SYSTEM_NET_DISABLEIPV6=1
-          export PGPASSWORD=$DB_PASSWORD
-          export PGSSLMODE=$DB_SSL_MODE
-          
-          # Align EF migrations history to prevent conflicts if old migrations were renamed/squashed
-          TABLE_EXISTS=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -A -c "
-            SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '__EFMigrationsHistory';
-          " 2>/dev/null || echo "0")
-          
-          if [ "$TABLE_EXISTS" -eq "1" ]; then
-            HAS_OLD=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -A -c "
-              SELECT COUNT(*) FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns');
-            " 2>/dev/null || echo "0")
-            
-            if [ "$HAS_OLD" -gt "0" ]; then
-              echo "Old migrations detected in DB. Aligning migration history table to consolidated migration..."
-              psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "
-                DELETE FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns');
-                INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ('20260616105508_AddRentalFlowAndMpesaPayments', '9.0.0') ON CONFLICT DO NOTHING;
-              "
-            fi
-          fi
           
           dotnet ef database update \
             --project src/Infrastructure \

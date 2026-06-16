@@ -14,6 +14,51 @@ public sealed class StayHereDbContextFactory : IDesignTimeDbContextFactory<StayH
     {
         var connectionString = ResolveConnectionString();
 
+        // Reconcile migration history table if old migrations were squashed/consolidated
+        try
+        {
+            using var conn = new NpgsqlConnection(connectionString);
+            conn.Open();
+
+            var tableExists = false;
+            using (var cmd = new NpgsqlCommand("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '__EFMigrationsHistory')", conn))
+            {
+                tableExists = (bool)(cmd.ExecuteScalar() ?? false);
+            }
+
+            if (tableExists)
+            {
+                var hasOld = false;
+                using (var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns')", conn))
+                {
+                    hasOld = Convert.ToInt32(cmd.ExecuteScalar() ?? 0) > 0;
+                }
+
+                if (hasOld)
+                {
+                    Console.WriteLine("StayHereDbContextFactory: Old migrations detected in DB. Aligning migration history table to consolidated migration...");
+                    using (var tx = conn.BeginTransaction())
+                    {
+                        using (var cmd = new NpgsqlCommand("DELETE FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" IN ('20260610000000_AddRentalFlow', '20260611000000_AddMpesaPaymentColumns')", conn, tx))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+                        using (var cmd = new NpgsqlCommand("INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ('20260616105508_AddRentalFlowAndMpesaPayments', '9.0.0') ON CONFLICT DO NOTHING", conn, tx))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+                        tx.Commit();
+                    }
+                    Console.WriteLine("StayHereDbContextFactory: Migration history table aligned successfully.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Logging but not crashing so that offline builds or migrations against a not-yet-created DB still function
+            Console.WriteLine($"StayHereDbContextFactory: Warning: Migration alignment check skipped due to exception: {ex.Message}");
+        }
+
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
         dataSourceBuilder.UseVector();
         var dataSource = dataSourceBuilder.Build();
