@@ -242,6 +242,110 @@ resource "azurerm_api_management_api_operation_policy" "pol_customer_getcustomer
 XML
 }
 
+resource "azurerm_api_management_api_operation" "op_customer_getcustomersbyowner" {
+  operation_id        = "GetCustomersByOwner"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetCustomersByOwner"
+  method              = "GET"
+  url_template        = "/by-owner/{ownerId}"
+  depends_on          = [azurerm_api_management_api_policy.customer]
+
+  template_parameter {
+    name     = "ownerId"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_customer_getcustomersbyowner" {
+  api_name            = azurerm_api_management_api_operation.op_customer_getcustomersbyowner.api_name
+  api_management_name = azurerm_api_management_api_operation.op_customer_getcustomersbyowner.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_customer_getcustomersbyowner.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_customer_getcustomersbyowner.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <rewrite-uri template="/customers/by-owner/{ownerId}" />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_customer_getcustomersbyproperty" {
+  operation_id        = "GetCustomersByProperty"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetCustomersByProperty"
+  method              = "GET"
+  url_template        = "/by-property/{propertyId}"
+  depends_on          = [azurerm_api_management_api_policy.customer]
+
+  template_parameter {
+    name     = "propertyId"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_customer_getcustomersbyproperty" {
+  api_name            = azurerm_api_management_api_operation.op_customer_getcustomersbyproperty.api_name
+  api_management_name = azurerm_api_management_api_operation.op_customer_getcustomersbyproperty.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_customer_getcustomersbyproperty.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_customer_getcustomersbyproperty.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <rewrite-uri template="/customers/by-property/{propertyId}" />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
 resource "azurerm_api_management_api_operation" "op_customer_getcustomersbylisting" {
   operation_id        = "GetCustomersByListing"
   api_name            = azurerm_api_management_api.customer.name
@@ -546,6 +650,96 @@ resource "azurerm_api_management_api_operation_policy" "pol_customer_getcustomer
     <inbound>
         <base />
         <rewrite-uri template="/customers/{customerId}/documents" />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_customer_writelog" {
+  operation_id        = "WriteLog"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "WriteLog"
+  method              = "POST"
+  url_template        = "/logs"
+  depends_on          = [azurerm_api_management_api_policy.customer]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_customer_writelog" {
+  api_name            = azurerm_api_management_api_operation.op_customer_writelog.api_name
+  api_management_name = azurerm_api_management_api_operation.op_customer_writelog.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_customer_writelog.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_customer_writelog.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_customer_readlog" {
+  operation_id        = "ReadLog"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "ReadLog"
+  method              = "GET"
+  url_template        = "/logs"
+  depends_on          = [azurerm_api_management_api_policy.customer]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_customer_readlog" {
+  api_name            = azurerm_api_management_api_operation.op_customer_readlog.api_name
+  api_management_name = azurerm_api_management_api_operation.op_customer_readlog.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_customer_readlog.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_customer_readlog.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
         <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
             <issuer-signing-keys>
                 <key>{{jwt-secret}}</key>

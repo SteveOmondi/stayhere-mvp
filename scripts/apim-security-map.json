@@ -35,6 +35,14 @@
     "access": "public"
   },
   {
+    "pattern": "POST:auth/register",
+    "access": "public"
+  },
+  {
+    "pattern": "POST:register",
+    "access": "public"
+  },
+  {
     "pattern": "POST:onboard",
     "access": "requires-jwt"
   },
@@ -362,6 +370,51 @@
   },
   {
     "pattern": "POST:user-roles",
+    "access": "requires-jwt"
+  },
+  {
+    "comment": "── Payments ──────────────────────────────────────────────────",
+    "pattern": "POST:payments/mpesa/stk/initiate",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "POST:payments/mpesa/stk/callback",
+    "access": "public"
+  },
+  {
+    "pattern": "GET:payments/mpesa/stk/query/*",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "GET:payments/application/*",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "GET:payments/unmatched",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "POST:payments/manual-confirm",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "POST:payments/match",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "POST:payments/mpesa/c2b/register",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "POST:payments/mpesa/c2b/validate",
+    "access": "public"
+  },
+  {
+    "pattern": "POST:payments/mpesa/c2b/confirm",
+    "access": "public"
+  },
+  {
+    "pattern": "GET:payments/*",
     "access": "requires-jwt"
   }
 ]

@@ -23,6 +23,7 @@ $map = @{
     'PropertyService' = 'property'
     'StaticDataService' = 'staticdata'
     'AiAgentService' = 'aiagent'
+    'PaymentsService' = 'payments'
 }
 
 $files = Get-ChildItem -Path "d:\samples\AG\repos\StayHereMVP\src\FunctionApps" -Recurse -Filter "*.cs"
@@ -65,6 +66,7 @@ foreach ($app in $map.Keys) {
                     'property' = 'property'
                     'staticdata' = 'staticdata'
                     'aiagent' = 'aiagent'
+                    'payments' = 'payments'
                 }
                 $apiPath = $apiPaths[$apiName]
                 

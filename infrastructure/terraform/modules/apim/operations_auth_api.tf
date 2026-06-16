@@ -203,6 +203,104 @@ resource "azurerm_api_management_api_operation_policy" "pol_auth_api_updateprofi
 XML
 }
 
+resource "azurerm_api_management_api_operation" "op_auth_api_getallusers" {
+  operation_id        = "GetAllUsers"
+  api_name            = azurerm_api_management_api.auth_api.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetAllUsers"
+  method              = "GET"
+  url_template        = "/users"
+  depends_on          = [azurerm_api_management_api_policy.auth]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_auth_api_getallusers" {
+  api_name            = azurerm_api_management_api_operation.op_auth_api_getallusers.api_name
+  api_management_name = azurerm_api_management_api_operation.op_auth_api_getallusers.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_auth_api_getallusers.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_auth_api_getallusers.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <rewrite-uri template="/auth/users" />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_auth_api_getuserbyid" {
+  operation_id        = "GetUserById"
+  api_name            = azurerm_api_management_api.auth_api.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetUserById"
+  method              = "GET"
+  url_template        = "/users/{id}"
+  depends_on          = [azurerm_api_management_api_policy.auth]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_auth_api_getuserbyid" {
+  api_name            = azurerm_api_management_api_operation.op_auth_api_getuserbyid.api_name
+  api_management_name = azurerm_api_management_api_operation.op_auth_api_getuserbyid.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_auth_api_getuserbyid.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_auth_api_getuserbyid.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <rewrite-uri template="/auth/users/{id}" />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
 resource "azurerm_api_management_api_operation" "op_auth_api_onboard" {
   operation_id        = "Onboard"
   api_name            = azurerm_api_management_api.auth_api.name
@@ -235,6 +333,41 @@ resource "azurerm_api_management_api_operation_policy" "pol_auth_api_onboard" {
                 <issuer>stayhere-auth-service</issuer>
             </issuers>
         </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_auth_api_signupandonboard" {
+  operation_id        = "SignupAndOnboard"
+  api_name            = azurerm_api_management_api.auth_api.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "SignupAndOnboard"
+  method              = "POST"
+  url_template        = "/register"
+  depends_on          = [azurerm_api_management_api_policy.auth]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_auth_api_signupandonboard" {
+  api_name            = azurerm_api_management_api_operation.op_auth_api_signupandonboard.api_name
+  api_management_name = azurerm_api_management_api_operation.op_auth_api_signupandonboard.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_auth_api_signupandonboard.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_auth_api_signupandonboard.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <rewrite-uri template="/auth/register" />
     </inbound>
     <backend>
         <base />

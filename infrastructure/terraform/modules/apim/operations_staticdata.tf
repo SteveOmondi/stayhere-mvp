@@ -33,6 +33,96 @@ resource "azurerm_api_management_api_operation" "op_staticdata_getuserroles" {
   depends_on          = [azurerm_api_management_api_policy.staticdata]
 }
 
+resource "azurerm_api_management_api_operation" "op_staticdata_createuserrole" {
+  operation_id        = "CreateUserRole"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "CreateUserRole"
+  method              = "POST"
+  url_template        = "/user-roles"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_staticdata_createuserrole" {
+  api_name            = azurerm_api_management_api_operation.op_staticdata_createuserrole.api_name
+  api_management_name = azurerm_api_management_api_operation.op_staticdata_createuserrole.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_staticdata_createuserrole.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_staticdata_createuserrole.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_staticdata_createusertype" {
+  operation_id        = "CreateUserType"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "CreateUserType"
+  method              = "POST"
+  url_template        = "/user-types"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_staticdata_createusertype" {
+  api_name            = azurerm_api_management_api_operation.op_staticdata_createusertype.api_name
+  api_management_name = azurerm_api_management_api_operation.op_staticdata_createusertype.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_staticdata_createusertype.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_staticdata_createusertype.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
 resource "azurerm_api_management_api_operation" "op_staticdata_getallcategories" {
   operation_id        = "GetAllCategories"
   api_name            = azurerm_api_management_api.staticdata.name
