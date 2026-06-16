@@ -9,6 +9,7 @@ using StayHere.Application.Onboarding.Models;
 using StayHere.Application.Onboarding.Services;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
+using StayHere.Shared.Attributes;
 
 namespace StayHere.AuthService.Functions;
 
@@ -31,6 +32,7 @@ public class SignupAndOnboardFunctions
     }
 
     [Function("SignupAndOnboard")]
+    [AllowAnonymous]
     [OpenApiOperation(
         operationId: "SignupAndOnboard",
         tags: new[] { "Auth" },
