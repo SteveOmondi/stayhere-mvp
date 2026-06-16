@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { listingsApi, termsApi, type PropertyTerms, type UpsertTermsBody } from "../lib/api";
 import { useOwner } from "../context/OwnerContext";
-import { IcoCheck, IcoEdit, IcoLoader, IcoPlus, IcoRefresh, IcoTerms, IcoTrash, IcoX } from "../components/icons";
+import { IcoCheck, IcoEdit, IcoLoader, IcoPlus, IcoTerms, IcoTrash, IcoX } from "../components/icons";
 
 type Listing = Record<string, unknown>;
 
