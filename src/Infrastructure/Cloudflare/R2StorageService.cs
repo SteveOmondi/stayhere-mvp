@@ -23,7 +23,7 @@ namespace StayHere.Infrastructure.Cloudflare;
 ///   e.g.  properties/images/a1b2c3d4-kitchen-view.jpg
 ///         applications/documents/f9e8d7c6-national-id.pdf
 /// </summary>
-public sealed class R2StorageService : IStorageService, IDisposable
+public sealed class R2StorageService : IStorageService
 {
     private readonly IAmazonS3 _s3;
     private readonly R2Options _opts;
@@ -47,6 +47,11 @@ public sealed class R2StorageService : IStorageService, IDisposable
         string contentType,
         TimeSpan? expiry = null)
     {
+        if (!_opts.IsConfigured)
+            throw new InvalidOperationException(
+                "Cloudflare R2 is not configured. Add the following to your Function App Application Settings: " +
+                "R2__AccountId, R2__AccessKeyId, R2__SecretAccessKey, R2__BucketName, R2__PublicBaseUrl.");
+
         var fileKey = BuildFileKey(folder, fileName);
         var lifetime = expiry ?? _opts.DefaultPresignedExpiry;
         var expiresAt = DateTimeOffset.UtcNow.Add(lifetime);
@@ -61,9 +66,7 @@ public sealed class R2StorageService : IStorageService, IDisposable
             Protocol = Protocol.HTTPS
         };
 
-        // GetPreSignedURL is synchronous in the AWS SDK but does not block I/O;
-        // wrap in Task.Run to keep the async chain consistent.
-        var presignedUrl = await Task.Run(() => _s3.GetPreSignedURL(request));
+        var presignedUrl = await _s3.GetPreSignedURLAsync(request);
 
         _log.LogInformation(
             "Presigned PUT URL generated — key: {Key}, expires: {Expiry}",
@@ -84,6 +87,10 @@ public sealed class R2StorageService : IStorageService, IDisposable
         string fileName,
         string contentType)
     {
+        if (!_opts.IsConfigured)
+            throw new InvalidOperationException(
+                "Cloudflare R2 is not configured. Add R2__AccountId, R2__AccessKeyId, R2__SecretAccessKey, R2__BucketName to App Settings.");
+
         var fileKey = BuildFileKey(folder, fileName);
 
         var request = new PutObjectRequest
@@ -146,5 +153,4 @@ public sealed class R2StorageService : IStorageService, IDisposable
         return $"{safeFolder}/{uid}-{safeBase}{ext}";
     }
 
-    public void Dispose() => _s3.Dispose();
 }

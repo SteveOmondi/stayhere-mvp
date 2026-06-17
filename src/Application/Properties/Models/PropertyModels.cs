@@ -69,8 +69,8 @@ public record CreateListingRequest(
     int? SizeSqft,
     int? YearBuilt,
     string? Developer,
-    OwnerContactDto Owner,
-    AgentContactDto? Agent,
+    OwnerContactDto? Owner = null,
+    AgentContactDto? Agent = null,
     string? PrimaryImageUrl = null
 );
 
@@ -92,8 +92,8 @@ public record CreateListingFromPropertyRequest(
     int? SizeSqft,
     int? YearBuilt,
     string? Developer,
-    OwnerContactDto Owner,
-    AgentContactDto? Agent,
+    OwnerContactDto? Owner = null,
+    AgentContactDto? Agent = null,
     string? PrimaryImageUrl = null
 );
 

@@ -3,6 +3,14 @@ import { ownerApi, ApiError } from "../lib/api";
 import { loadConfig, setAuthToken, clearAuthToken, saveOwnerProfile, loadOwnerProfile, decodeJwt } from "../lib/config";
 import { asPaginated } from "../lib/paginated";
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = decodeJwt(token);
+    const exp = typeof payload.exp === "number" ? payload.exp : 0;
+    return exp > 0 && Date.now() / 1000 > exp;
+  } catch { return false; }
+}
+
 export type OwnerProfile = {
   id: string;
   userId?: string;
@@ -44,7 +52,13 @@ let _toastSeq = 0;
 export function OwnerProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const t = loadConfig().authToken;
-    return Boolean(t && t.length > 10);
+    if (!t || t.length <= 10) return false;
+    if (isTokenExpired(t)) {
+      clearAuthToken();
+      localStorage.removeItem("sh_owner_auth_user");
+      return false;
+    }
+    return true;
   });
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
     try {
@@ -69,6 +83,19 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const bumpReload = useCallback(() => setReloadKey(k => k + 1), []);
+
+  // Auto-logout when any API call receives 401 (expired/invalid token)
+  useEffect(() => {
+    const handle = () => {
+      clearAuthToken();
+      localStorage.removeItem("sh_owner_auth_user");
+      setIsAuthenticated(false);
+      setAuthUser(null);
+      setOwner(null);
+    };
+    window.addEventListener("sh:unauthorized", handle);
+    return () => window.removeEventListener("sh:unauthorized", handle);
+  }, []);
 
   const toast = useCallback((msg: string, type: Toast["type"] = "info") => {
     const id = ++_toastSeq;

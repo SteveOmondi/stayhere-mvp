@@ -49,6 +49,7 @@ async function req<T>(base: string, path: string, opts: Opts = {}): Promise<T> {
   const parsed = await parseBody(res);
   logRes(method, url, res.status, parsed, Date.now() - t0);
   if (res.status === 204) return undefined as T;
+  if (res.status === 401) window.dispatchEvent(new CustomEvent("sh:unauthorized"));
   if (!res.ok) throw new ApiError(res.status, typeof parsed === "string" ? parsed : JSON.stringify(parsed));
   return parsed as T;
 }
