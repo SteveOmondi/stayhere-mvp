@@ -58,6 +58,11 @@ stages:
           -var="mpesa_passkey=$(MPESA_PASSKEY)"
           -var="mpesa_shortcode=$(MPESA_SHORTCODE)"
           -var="mpesa_environment=$(MPESA_ENVIRONMENT)"
+          -var="r2_account_id=$(R2_ACCOUNT_ID)"
+          -var="r2_access_key_id=$(R2_ACCESS_KEY_ID)"
+          -var="r2_secret_access_key=$(R2_SECRET_ACCESS_KEY)"
+          -var="r2_bucket_name=$(R2_BUCKET_NAME)"
+          -var="r2_public_base_url=$(R2_PUBLIC_BASE_URL)"
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
 
     - task: PublishPipelineArtifact@1

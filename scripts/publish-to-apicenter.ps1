@@ -15,7 +15,8 @@ $apiMap = @(
     @{ id = "customer-service"; title = "Customer Service"; tag = "CustomerService"; path = "customers" },
     @{ id = "propertyowner-service"; title = "Property Owner Service"; tag = "PropertyOwnerService"; path = "propertyowner" },
     @{ id = "staticdata-service"; title = "Static Data Service"; tag = "StaticDataService"; path = "staticdata" },
-    @{ id = "aiagent-service"; title = "AI Agent Service"; tag = "AiAgentService"; path = "aiagent" }
+    @{ id = "aiagent-service"; title = "AI Agent Service"; tag = "AiAgentService"; path = "aiagent" },
+    @{ id = "payments-service"; title = "Payments Service"; tag = "PaymentsService"; path = "payments" }
 )
 
 Write-Host "----------------------------------------------------"

@@ -98,6 +98,12 @@ module "compute" {
 
   mpesa_shortcode   = var.mpesa_shortcode
   mpesa_environment = var.mpesa_environment
+
+  r2_account_id        = var.r2_account_id
+  r2_access_key_id     = var.r2_access_key_id
+  r2_secret_access_key = var.r2_secret_access_key
+  r2_bucket_name       = var.r2_bucket_name
+  r2_public_base_url   = var.r2_public_base_url
 }
 
 # --- SECURITY MODULE ---

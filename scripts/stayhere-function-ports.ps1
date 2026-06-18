@@ -8,6 +8,7 @@ $script:StayHereFunctionApps = @(
     @{ Name = "PropertyOwnerService"; Port = 7103; RelativePath = "src\FunctionApps\PropertyOwnerService" }
     @{ Name = "StaticDataService";  Port = 7104; RelativePath = "src\FunctionApps\StaticDataService" }
     @{ Name = "AiAgentService";     Port = 7105; RelativePath = "src\FunctionApps\AiAgentService" }
+    @{ Name = "PaymentsService";     Port = 7106; RelativePath = "src\FunctionApps\PaymentsService" }
 )
 
 function Get-StayHereRepoRoot {

@@ -99,6 +99,11 @@ resource "azurerm_linux_function_app" "property" {
     "Google__EmbeddingCacheMinutes"  = "60"
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
+    "R2__AccountId"                  = var.r2_account_id
+    "R2__AccessKeyId"                = var.r2_access_key_id
+    "R2__SecretAccessKey"            = var.r2_secret_access_key
+    "R2__BucketName"                 = var.r2_bucket_name
+    "R2__PublicBaseUrl"              = var.r2_public_base_url
   }
 
   identity {
@@ -449,6 +454,33 @@ variable "mpesa_shortcode" {
 variable "mpesa_environment" {
   type = string
 }
+
+variable "r2_account_id" {
+  type    = string
+  default = ""
+}
+
+variable "r2_access_key_id" {
+  type    = string
+  default = ""
+}
+
+variable "r2_secret_access_key" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "r2_bucket_name" {
+  type    = string
+  default = "stayhere"
+}
+
+variable "r2_public_base_url" {
+  type    = string
+  default = ""
+}
+
 
 output "auth_function_name" {
   value = azurerm_linux_function_app.auth.name

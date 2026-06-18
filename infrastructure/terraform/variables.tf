@@ -128,3 +128,35 @@ variable "mpesa_environment" {
   description = "Mpesa Environment (sandbox or production)"
   default     = "sandbox"
 }
+
+variable "r2_account_id" {
+  type        = string
+  description = "Cloudflare R2 Account ID"
+  default     = ""
+}
+
+variable "r2_access_key_id" {
+  type        = string
+  description = "Cloudflare R2 Access Key ID"
+  default     = ""
+}
+
+variable "r2_secret_access_key" {
+  type        = string
+  description = "Cloudflare R2 Secret Access Key"
+  sensitive   = true
+  default     = ""
+}
+
+variable "r2_bucket_name" {
+  type        = string
+  description = "Cloudflare R2 Bucket Name"
+  default     = "stayhere"
+}
+
+variable "r2_public_base_url" {
+  type        = string
+  description = "Cloudflare R2 Public Base URL"
+  default     = ""
+}
+
