@@ -25,7 +25,11 @@ public static class ServiceCollectionExtensions
             return builder.Build();
         });
         services.AddDbContext<StayHereDbContext>((sp, options) =>
-            options.UseNpgsql(sp.GetRequiredService<NpgsqlDataSource>(), npgsql => npgsql.UseVector()));
+            options.UseNpgsql(sp.GetRequiredService<NpgsqlDataSource>(), npgsql =>
+            {
+                npgsql.UseVector();
+                npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorCodesToAdd: null);
+            }));
         return services;
     }
 
@@ -72,7 +76,7 @@ public static class ServiceCollectionExtensions
             return new AmazonS3Client(credentials, s3Config);
         });
 
-        services.AddScoped<IStorageService, R2StorageService>();
+        services.AddSingleton<IStorageService, R2StorageService>();
 
         return services;
     }

@@ -81,7 +81,9 @@ public class ListingService : IListingService
             YearBuilt = request.YearBuilt,
             Developer = request.Developer,
             AvailabilityStatus = AvailabilityStatus.Available,
-            Owner = new PropertyContact(request.Owner.Name, request.Owner.Phone, request.Owner.Email),
+            Owner = request.Owner != null
+                ? new PropertyContact(request.Owner.Name, request.Owner.Phone, request.Owner.Email)
+                : new PropertyContact(string.Empty, string.Empty, null),
             Agent = request.Agent != null ? new PropertyContact(request.Agent.Name, request.Agent.Phone, request.Agent.Email) : null,
             OwnerId = ownerId,
             AgentId = null,
@@ -144,7 +146,9 @@ public class ListingService : IListingService
             YearBuilt = request.YearBuilt,
             Developer = request.Developer,
             AvailabilityStatus = AvailabilityStatus.Available,
-            Owner = new PropertyContact(request.Owner.Name, request.Owner.Phone, request.Owner.Email),
+            Owner = request.Owner != null
+                ? new PropertyContact(request.Owner.Name, request.Owner.Phone, request.Owner.Email)
+                : new PropertyContact(string.Empty, string.Empty, null),
             Agent = request.Agent != null ? new PropertyContact(request.Agent.Name, request.Agent.Phone, request.Agent.Email) : null,
             OwnerId = ownerId,
             AgentId = null,

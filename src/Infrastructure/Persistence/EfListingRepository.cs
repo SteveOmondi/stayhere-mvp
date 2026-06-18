@@ -30,6 +30,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetAllAsync(int page = 1, int pageSize = 20)
     {
         return await _context.Listings
+            .AsNoTracking()
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -39,6 +40,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetByPropertyIdAsync(Guid propertyId)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.PropertyId == propertyId)
             .OrderBy(l => l.FloorNumber)
             .ThenBy(l => l.UnitNumber)
@@ -48,6 +50,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetByOwnerIdAsync(Guid ownerId)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.OwnerId == ownerId)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync();
@@ -56,6 +59,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetByAgentIdAsync(Guid agentId)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.AgentId == agentId)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync();
@@ -64,6 +68,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetByCaretakerIdAsync(Guid caretakerId)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.CaretakerId == caretakerId)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync();
@@ -72,6 +77,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetByCityAsync(string city, int page = 1, int pageSize = 20)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.Location.City.ToLower() == city.ToLower())
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -82,6 +88,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetByCountyAsync(string county, int page = 1, int pageSize = 20)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.Location.County.ToLower() == county.ToLower())
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -92,6 +99,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetByPropertyTypeAsync(PropertyType propertyType, int page = 1, int pageSize = 20)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.PropertyType == propertyType)
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -102,6 +110,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetByListingTypeAsync(ListingType listingType, int page = 1, int pageSize = 20)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.ListingType == listingType)
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -112,6 +121,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetFeaturedAsync(int limit = 10)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.IsFeatured && l.AvailabilityStatus == AvailabilityStatus.Available)
             .OrderByDescending(l => l.RecommendedScore)
             .ThenByDescending(l => l.Rating)
@@ -122,6 +132,7 @@ public class EfListingRepository : IListingRepository
     public async Task<IEnumerable<Listing>> GetAvailableAsync(int page = 1, int pageSize = 20)
     {
         return await _context.Listings
+            .AsNoTracking()
             .Where(l => l.AvailabilityStatus == AvailabilityStatus.Available)
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -131,7 +142,7 @@ public class EfListingRepository : IListingRepository
 
     public async Task<IEnumerable<Listing>> SearchAsync(ListingSearchCriteria criteria)
     {
-        var query = _context.Listings.AsQueryable();
+        var query = _context.Listings.AsNoTracking().AsQueryable();
 
         if (criteria.PropertyId.HasValue)
             query = query.Where(l => l.PropertyId == criteria.PropertyId.Value);

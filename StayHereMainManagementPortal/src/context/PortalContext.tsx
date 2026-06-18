@@ -102,27 +102,33 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
 
   const refreshOwnerDirectory = useCallback(async () => {
     setOwnerDirectoryLoading(true);
-    try {
-      const raw = await ownersApi.portalDirectory(500);
-      const list = Array.isArray(raw) ? raw : [];
-      setOwnerDirectory(
-        list.map((x) => {
-          const r = x as Record<string, unknown>;
-          return {
-            id: String(r.id ?? ""),
-            userId: String(r.userId ?? r.id ?? ""),
-            fullName: String(r.fullName ?? ""),
-            email: String(r.email ?? ""),
-            phone: String(r.phone ?? ""),
-          };
-        })
-      );
-    } catch (e) {
-      toast(e instanceof ApiError ? e.message : "Could not load property owners", "error");
-      setOwnerDirectory([]);
-    } finally {
-      setOwnerDirectoryLoading(false);
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise<void>((r) => setTimeout(r, 1500 * attempt));
+      try {
+        const raw = await ownersApi.portalDirectory(500);
+        const list = Array.isArray(raw) ? raw : [];
+        setOwnerDirectory(
+          list.map((x) => {
+            const r = x as Record<string, unknown>;
+            return {
+              id: String(r.id ?? ""),
+              userId: String(r.userId ?? r.id ?? ""),
+              fullName: String(r.fullName ?? ""),
+              email: String(r.email ?? ""),
+              phone: String(r.phone ?? ""),
+            };
+          })
+        );
+        setOwnerDirectoryLoading(false);
+        return;
+      } catch (e) {
+        lastError = e;
+      }
     }
+    toast(lastError instanceof ApiError ? lastError.message : "Could not load property owners", "error");
+    setOwnerDirectory([]);
+    setOwnerDirectoryLoading(false);
   }, [toast]);
 
   useEffect(() => {

@@ -104,15 +104,16 @@ export function DashboardPage() {
   const tenantCount = useCounter(stats.loading ? 0 : stats.customers, 1000);
   const vacantCount = useCounter(stats.loading ? 0 : stats.vacant, 700);
 
-  const refresh = async () => {
+  const refresh = async (signal?: AbortSignal) => {
     if (!userId) return;
     setRefreshing(true);
     try {
       const [propsData, listData, custData] = await Promise.allSettled([
         propertiesApi.byOwner(userId, 1, 1),
         listingsApi.byOwner(userId, 1, 50),
-        customersApi.list(),
+        customersApi.byOwner(userId),
       ]);
+      if (signal?.aborted) return;
       const propPg  = propsData.status === "fulfilled" ? asPaginated<unknown>(propsData.value) : null;
       const listPg  = listData.status  === "fulfilled" ? asPaginated<unknown>(listData.value)  : null;
       const custArr = custData.status  === "fulfilled" && Array.isArray(custData.value) ? custData.value : [];
@@ -122,12 +123,19 @@ export function DashboardPage() {
       setStats({ properties: propPg?.totalCount ?? 0, listings: listPg?.totalCount ?? 0, occupied, vacant, customers: custArr.length, loading: false });
       setRecentListings(listItems.slice(0, 4) as Record<string, unknown>[]);
     } catch (e) {
+      if (signal?.aborted) return;
       toast(e instanceof ApiError ? e.message : "Failed to load stats", "error");
       setStats(s => ({ ...s, loading: false }));
-    } finally { setRefreshing(false); }
+    } finally {
+      if (!signal?.aborted) setRefreshing(false);
+    }
   };
 
-  useEffect(() => { void refresh(); }, [reloadKey, userId]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void refresh(controller.signal);
+    return () => controller.abort();
+  }, [reloadKey, userId]);
 
   const STAT_CARDS = [
     { label: "Properties",  val: propCount,   raw: stats.properties, Icon: IcoBuilding, color: "#0d9488", spark: [2,3,2,4,3,5,4,6],    to: "/properties" },

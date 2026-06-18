@@ -65,6 +65,7 @@ export function ListingsPage() {
   const [createForm, setCreateForm] = useState({
     propertyId: "", title: "", price: "", bedrooms: "1", bathrooms: "1",
     propertyType: "Apartment", listingType: "Rent", description: "",
+    unitNumber: "", floorNumber: "0",
   });
   const [creating, setCreating] = useState(false);
 
@@ -181,11 +182,19 @@ export function ListingsPage() {
       const body: Record<string, unknown> = {
         title: createForm.title.trim(),
         price: Number(createForm.price),
+        priceCurrency: "KES",
         bedrooms: Number(createForm.bedrooms),
         bathrooms: Number(createForm.bathrooms),
         propertyType: createForm.propertyType,
         listingType: createForm.listingType,
         description: createForm.description.trim(),
+        unitNumber: createForm.unitNumber.trim() || "N/A",
+        floorNumber: Number(createForm.floorNumber) || 0,
+        owner: {
+          name: owner?.fullName ?? "",
+          phone: owner?.phone ?? "",
+          email: owner?.email ?? "",
+        },
         primaryImageUrl: primaryImg.url || undefined,
         images: extraImgs.filter(img => img.url).map(img => img.url!),
       };
@@ -332,6 +341,10 @@ export function ListingsPage() {
                 </select>
               </div>
               <div className="field"><label className="field-label">Title *</label><input required className="input" placeholder="e.g. 2BR Apartment, Westlands" value={createForm.title} onChange={e=>setCreateForm(f=>({...f,title:e.target.value}))}/></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="field"><label className="field-label">Unit Number *</label><input required className="input" placeholder="e.g. A1, 3B, 101" value={createForm.unitNumber} onChange={e=>setCreateForm(f=>({...f,unitNumber:e.target.value}))}/></div>
+                <div className="field"><label className="field-label">Floor</label><input type="number" min="0" className="input" placeholder="0" value={createForm.floorNumber} onChange={e=>setCreateForm(f=>({...f,floorNumber:e.target.value}))}/></div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="field"><label className="field-label">Monthly Rent (KES) *</label><input required type="number" className="input" value={createForm.price} onChange={e=>setCreateForm(f=>({...f,price:e.target.value}))}/></div>
                 <div className="field"><label className="field-label">Type</label>

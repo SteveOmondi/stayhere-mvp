@@ -46,7 +46,10 @@ public sealed class R2Options
     public TimeSpan DefaultPresignedExpiry { get; set; } = TimeSpan.FromMinutes(15);
 
     /// <summary>S3-compatible service URL for R2.</summary>
-    public string ServiceUrl => $"https://{AccountId}.r2.cloudflarestorage.com";
+    public string ServiceUrl =>
+        string.IsNullOrWhiteSpace(AccountId)
+            ? "https://unconfigured.r2.cloudflarestorage.com"
+            : $"https://{AccountId}.r2.cloudflarestorage.com";
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(AccountId) &&

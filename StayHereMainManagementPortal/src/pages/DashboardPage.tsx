@@ -79,16 +79,31 @@ export function DashboardPage() {
   const [dataLoading,    setDataLoading]    = useState(true);
   const [lastRefreshed,  setLastRefreshed]  = useState<string>("");
 
-  const loadAll = async () => {
+  const loadAll = async (signal?: AbortSignal) => {
     setStats(s => ({ ...s, loading: true }));
     setDataLoading(true);
+
+    const isCancelled = () => signal?.aborted ?? false;
+
+    /* Retry a single fetch up to maxAttempts times before giving up */
+    const fetchWithRetry = async <T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> => {
+      let lastErr: unknown;
+      for (let i = 0; i < maxAttempts; i++) {
+        if (isCancelled()) throw new DOMException("Aborted", "AbortError");
+        if (i > 0) await new Promise<void>((r) => setTimeout(r, 1500 * i));
+        try { return await fn(); } catch (e) { lastErr = e; }
+      }
+      throw lastErr;
+    };
+
     try {
       const [o, p, c, l] = await Promise.allSettled([
-        ownersApi.list(1, 1),
-        propertiesApi.list(1, 1),
-        customersApi.list(),
-        listingsApi.list(1, 1),
+        fetchWithRetry(() => ownersApi.list(1, 1)),
+        fetchWithRetry(() => propertiesApi.list(1, 1)),
+        fetchWithRetry(() => customersApi.list()),
+        fetchWithRetry(() => listingsApi.list(1, 1)),
       ]);
+      if (isCancelled()) return;
       const op = o.status === "fulfilled" ? asPaginated<unknown>(o.value) : null;
       const pp = p.status === "fulfilled" ? asPaginated<unknown>(p.value) : null;
       const lp = l.status === "fulfilled" ? asPaginated<unknown>(l.value) : null;
@@ -101,36 +116,51 @@ export function DashboardPage() {
         loading: false,
       });
     } catch (e) {
+      if (isCancelled()) return;
       setStats(s => ({ ...s, loading: false }));
       toast(e instanceof ApiError ? e.message : "Dashboard metrics failed", "error");
     }
 
+    if (isCancelled()) return;
+
     /* Load recent listings for highlights panel */
     try {
-      const listData = await listingsApi.list(1, 4);
-      const pg = asPaginated<unknown>(listData);
-      const raw = pg ? pg.items : (Array.isArray(listData) ? listData : []);
-      setRecentListings((raw as unknown[]).map(mapListing).filter(Boolean) as ListingRow[]);
+      const listData = await fetchWithRetry(() => listingsApi.list(1, 4));
+      if (!isCancelled()) {
+        const pg = asPaginated<unknown>(listData);
+        const raw = pg ? pg.items : (Array.isArray(listData) ? listData : []);
+        setRecentListings((raw as unknown[]).map(mapListing).filter(Boolean) as ListingRow[]);
+      }
     } catch { /* non-critical */ }
+
+    if (isCancelled()) return;
 
     /* Load recent owners for activity feed */
     try {
-      const ownerData = await ownersApi.list(1, 5);
-      const pg = asPaginated<unknown>(ownerData);
-      const raw = pg ? pg.items : (Array.isArray(ownerData) ? ownerData : []);
-      setRecentOwners(
-        (raw as unknown[]).map(x => {
-          const r = x as Record<string, unknown>;
-          return { id: String(r.id ?? ""), fullName: String(r.fullName ?? ""), email: String(r.email ?? "") };
-        })
-      );
+      const ownerData = await fetchWithRetry(() => ownersApi.list(1, 5));
+      if (!isCancelled()) {
+        const pg = asPaginated<unknown>(ownerData);
+        const raw = pg ? pg.items : (Array.isArray(ownerData) ? ownerData : []);
+        setRecentOwners(
+          (raw as unknown[]).map(x => {
+            const r = x as Record<string, unknown>;
+            return { id: String(r.id ?? ""), fullName: String(r.fullName ?? ""), email: String(r.email ?? "") };
+          })
+        );
+      }
     } catch { /* non-critical */ }
 
-    setDataLoading(false);
-    setLastRefreshed(new Date().toLocaleTimeString());
+    if (!isCancelled()) {
+      setDataLoading(false);
+      setLastRefreshed(new Date().toLocaleTimeString());
+    }
   };
 
-  useEffect(() => { void loadAll(); }, [reloadKey]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadAll(controller.signal);
+    return () => controller.abort();
+  }, [reloadKey]);
 
   const statCards = [
     { label: "Property Owners", value: stats.owners,     Icon: IcoOwners,    color: "#c9a227", to: "/owners",     spark: [4,6,5,8,7,9,10,11] },

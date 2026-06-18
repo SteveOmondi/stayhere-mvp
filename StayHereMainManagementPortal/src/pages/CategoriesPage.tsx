@@ -7,6 +7,8 @@ type Category = {
   id: string;
   name: string;
   description?: string;
+  country?: string;
+  city?: string;
   isActive?: boolean;
   slug?: string;
   sortOrder?: number;
@@ -23,6 +25,8 @@ function mapCat(x: unknown): Category | null {
     id: String(id),
     name: String(r.name ?? r.categoryName ?? ""),
     description: r.description ? String(r.description) : undefined,
+    country: r.country ? String(r.country) : undefined,
+    city: r.city ? String(r.city) : undefined,
     isActive: typeof r.isActive === "boolean" ? r.isActive : true,
     slug: r.slug ? String(r.slug) : undefined,
     sortOrder: typeof r.sortOrder === "number" ? r.sortOrder : undefined,
@@ -31,7 +35,7 @@ function mapCat(x: unknown): Category | null {
   };
 }
 
-const EMPTY_FORM = { name: "", description: "", slug: "", sortOrder: "" };
+const EMPTY_FORM = { name: "", description: "", country: "Kenya", city: "Nairobi", slug: "", sortOrder: "" };
 
 export function CategoriesPage() {
   const { toast, reloadKey } = usePortal();
@@ -74,6 +78,8 @@ export function CategoriesPage() {
     setForm({
       name: c.name,
       description: c.description ?? "",
+      country: c.country ?? "Kenya",
+      city: c.city ?? "Nairobi",
       slug: c.slug ?? "",
       sortOrder: c.sortOrder != null ? String(c.sortOrder) : "",
     });
@@ -84,7 +90,11 @@ export function CategoriesPage() {
     e.preventDefault();
     if (!form.name.trim()) return;
     setSaving(true);
-    const body: Record<string, unknown> = { name: form.name.trim() };
+    const body: Record<string, unknown> = {
+      name: form.name.trim(),
+      country: form.country.trim() || "Kenya",
+      city: form.city.trim() || "Nairobi",
+    };
     if (form.description.trim()) body.description = form.description.trim();
     if (form.slug.trim()) body.slug = form.slug.trim();
     if (form.sortOrder.trim()) body.sortOrder = Number(form.sortOrder);
@@ -224,6 +234,11 @@ export function CategoriesPage() {
               {c.description && (
                 <div className="text-xs text-brand-500 line-clamp-2 mb-2">{c.description}</div>
               )}
+              {(c.country || c.city) && (
+                <div className="text-[10px] text-brand-400 mb-2">
+                  {[c.city, c.country].filter(Boolean).join(", ")}
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {c.isActive !== false
@@ -281,6 +296,29 @@ export function CategoriesPage() {
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="portal-field">
+                  <label className="portal-label">Country <span className="text-red-500">*</span></label>
+                  <input
+                    required
+                    className="portal-input"
+                    placeholder="e.g. Kenya"
+                    value={form.country}
+                    onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
+                  />
+                </div>
+                <div className="portal-field">
+                  <label className="portal-label">City <span className="text-red-500">*</span></label>
+                  <input
+                    required
+                    className="portal-input"
+                    placeholder="e.g. Nairobi"
+                    value={form.city}
+                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
