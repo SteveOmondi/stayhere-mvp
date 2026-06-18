@@ -86,7 +86,7 @@ export function DashboardPage() {
     const isCancelled = () => signal?.aborted ?? false;
 
     /* Retry a single fetch up to maxAttempts times before giving up */
-    const fetchWithRetry = async <T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> => {
+    async function fetchWithRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
       let lastErr: unknown;
       for (let i = 0; i < maxAttempts; i++) {
         if (isCancelled()) throw new DOMException("Aborted", "AbortError");
@@ -94,7 +94,7 @@ export function DashboardPage() {
         try { return await fn(); } catch (e) { lastErr = e; }
       }
       throw lastErr;
-    };
+    }
 
     try {
       const [o, p, c, l] = await Promise.allSettled([
