@@ -1,0 +1,297 @@
+{
+  "info": {
+    "name": "StayHere — Logging API Tests",
+    "_postman_id": "7f851b43-4701-47ee-a82c-aa4f1c3d2e89",
+    "description": "Verification tests for the new dedicated Logging Service.\n\nLOCAL: Runs against the LoggingService on port 7107 (no auth required locally when SKIP_AUTH=true).\nPROD:  Runs through the APIM gateway /logging base path. Set 'token' variable to a valid JWT.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "token",
+      "value": "your-jwt-auth-token-here",
+      "type": "string"
+    },
+    {
+      "key": "current_date",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "00000000-0000-0000-0000-000000000001",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "LOCAL — http://localhost:7107 (no auth required)",
+      "description": "Tests targeting local Function App on port 7107. Start using:\n  cd src/FunctionApps/LoggingService && func start",
+      "item": [
+        {
+          "name": "Write Log (Local)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set date variable automatically (format: yyyy-MM-dd)",
+                  "var date = new Date().toISOString().split('T')[0];",
+                  "pm.collectionVariables.set(\"current_date\", date);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 202 (Accepted)\", () => {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test(\"Success status returned\", () => {",
+                  "    pm.expect(data.status).to.eql(\"success\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"content\": \"Verify local logging service functions correctly.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7107/api/logs",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7107",
+              "path": [
+                "api",
+                "logs"
+              ]
+            },
+            "description": "Writes a log entry locally."
+          },
+          "response": []
+        },
+        {
+          "name": "Read Log (Local)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var date = new Date().toISOString().split('T')[0];",
+                  "pm.collectionVariables.set(\"current_date\", date);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Log content is returned\", () => {",
+                  "    pm.expect(pm.response.text()).to.include(\"Verify local logging service\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{customerId}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:7107/api/logs?customerId={{customerId}}&date={{current_date}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7107",
+              "path": [
+                "api",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}"
+                },
+                {
+                  "key": "date",
+                  "value": "{{current_date}}"
+                }
+              ]
+            },
+            "description": "Reads log entries written today locally."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PRODUCTION — APIM (Bearer token required)",
+      "description": "Tests targeting the deployed service via the Azure API Management gateway.",
+      "item": [
+        {
+          "name": "Write Log (APIM)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var date = new Date().toISOString().split('T')[0];",
+                  "pm.collectionVariables.set(\"current_date\", date);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 202 (Accepted)\", () => {",
+                  "    pm.response.to.have.status(202);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"content\": \"Verify gateway logging service functions correctly.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://apim-dev-5c27bcf3.azure-api.net/logging/logs",
+              "protocol": "https",
+              "host": [
+                "apim-dev-5c27bcf3",
+                "azure-api",
+                "net"
+              ],
+              "path": [
+                "logging",
+                "logs"
+              ]
+            },
+            "description": "Writes a log entry via APIM gateway."
+          },
+          "response": []
+        },
+        {
+          "name": "Read Log (APIM)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var date = new Date().toISOString().split('T')[0];",
+                  "pm.collectionVariables.set(\"current_date\", date);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://apim-dev-5c27bcf3.azure-api.net/logging/logs?customerId={{customerId}}&date={{current_date}}",
+              "protocol": "https",
+              "host": [
+                "apim-dev-5c27bcf3",
+                "azure-api",
+                "net"
+              ],
+              "path": [
+                "logging",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}"
+                },
+                {
+                  "key": "date",
+                  "value": "{{current_date}}"
+                }
+              ]
+            },
+            "description": "Reads log entries written today via APIM gateway."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

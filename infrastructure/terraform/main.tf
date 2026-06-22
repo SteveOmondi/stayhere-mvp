@@ -150,6 +150,7 @@ module "apim" {
   staticdata_function_host    = module.compute.staticdata_function_host
   aiagent_function_host       = module.compute.aiagent_function_host
   payments_function_host      = module.compute.payments_function_host
+  logging_function_host       = module.compute.logging_function_host
 
   entra_client_id             = azuread_application.main.client_id
   entra_tenant_id             = data.azurerm_client_config.current.tenant_id
