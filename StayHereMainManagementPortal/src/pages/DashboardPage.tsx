@@ -208,7 +208,7 @@ export function DashboardPage() {
           <div className="flex gap-3 flex-wrap">
             {[
               { label: "Auth",     val: "Connected" },
-              { label: "APIs",     val: "6 Live"    },
+              { label: "APIs",     val: "8 Live"    },
               { label: "AI Agent", val: "Ready"     },
             ].map(s => (
               <div key={s.label} className="px-4 py-2 rounded-2xl text-sm backdrop-blur-sm border border-white/15"
@@ -417,6 +417,8 @@ export function DashboardPage() {
               { name: "Customer API",       base: "customers",     ok: !stats.loading && stats.customers !== "–" },
               { name: "Static Data API",    base: "staticdata",    ok: true  },
               { name: "AI Agent API",       base: "aiagent",       ok: true  },
+              { name: "Payments API",       base: "payments",      ok: true  },
+              { name: "Logging API",        base: "logging",       ok: true  },
             ].map(s => (
               <div key={s.name} className="flex items-center justify-between py-1.5 border-b border-black/[0.05] last:border-0">
                 <div className="flex items-center gap-2 text-xs text-brand-700">

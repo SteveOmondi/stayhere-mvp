@@ -1,4 +1,4 @@
-# Auto-generated Operations for CustomerService
+﻿# Auto-generated Operations for CustomerService
 
 resource "azurerm_api_management_api_operation" "op_customer_createcustomer" {
   operation_id        = "CreateCustomer"

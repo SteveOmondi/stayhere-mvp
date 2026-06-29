@@ -155,8 +155,6 @@ Import-Operation "op_customer_attachcustomerproperty" "customer-api" "AttachCust
 Import-Operation "op_customer_getcustomerproperties" "customer-api" "GetCustomerProperties"
 Import-Operation "op_customer_addcustomerdocument" "customer-api" "AddCustomerDocument"
 Import-Operation "op_customer_getcustomerdocuments" "customer-api" "GetCustomerDocuments"
-Import-Operation "op_customer_writelog" "customer-api" "WriteLog"
-Import-Operation "op_customer_readlog" "customer-api" "ReadLog"
 
 # --- Static Data API Operations ---
 Import-Operation "op_staticdata_getcategories" "staticdata-api" "GetCategories"
@@ -171,6 +169,15 @@ Import-Operation "op_staticdata_getcategoriesbycountry" "staticdata-api" "GetCat
 Import-Operation "op_staticdata_createcategory" "staticdata-api" "CreateCategory"
 Import-Operation "op_staticdata_updatecategory" "staticdata-api" "UpdateCategory"
 Import-Operation "op_staticdata_deletecategory" "staticdata-api" "DeleteCategory"
+Import-Operation "op_staticdata_getsubcategories" "staticdata-api" "GetSubcategories"
+Import-Operation "op_staticdata_getallsubcategories" "staticdata-api" "GetAllSubcategories"
+Import-Operation "op_staticdata_getsubcategorybyid" "staticdata-api" "GetSubcategoryById"
+Import-Operation "op_staticdata_getsubcategoriesbycategory" "staticdata-api" "GetSubcategoriesByCategory"
+Import-Operation "op_staticdata_getsubcategoriesbycity" "staticdata-api" "GetSubcategoriesByCity"
+Import-Operation "op_staticdata_getsubcategoriesbycountry" "staticdata-api" "GetSubcategoriesByCountry"
+Import-Operation "op_staticdata_createsubcategory" "staticdata-api" "CreateSubcategory"
+Import-Operation "op_staticdata_updatesubcategory" "staticdata-api" "UpdateSubcategory"
+Import-Operation "op_staticdata_deletesubcategory" "staticdata-api" "DeleteSubcategory"
 
 # --- AI Agent API Operations ---
 Import-Operation "op_aiagent_agentchat" "aiagent-api" "AgentChat"
@@ -191,6 +198,10 @@ Import-Operation "op_payments_matchpaymenttoapplication" "payments-api" "MatchPa
 Import-Operation "op_payments_initiatestkpush" "payments-api" "InitiateStkPush"
 Import-Operation "op_payments_stkpushcallback" "payments-api" "StkPushCallback"
 Import-Operation "op_payments_querystkstatus" "payments-api" "QueryStkStatus"
+
+# --- Logging API Operations ---
+Import-Operation "op_logging_writelog" "logging-api" "WriteLog"
+Import-Operation "op_logging_readlog" "logging-api" "ReadLog"
 
 Write-Host "Import process completed successfully."
 exit 0
