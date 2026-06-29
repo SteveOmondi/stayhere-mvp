@@ -12,7 +12,7 @@ using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.OpenApi.Models;
 using StayHere.Shared.Attributes;
 
-namespace StayHere.FunctionApps.CustomerService;
+namespace StayHere.FunctionApps.LoggingService;
 
 public record WriteLogRequest(string? CustomerId, string Content);
 
@@ -31,7 +31,6 @@ public class LogFunctions
     }
 
     [Function("WriteLog")]
-    [Authorize]
     [OpenApiOperation(operationId: "WriteLog", tags: new[] { "Logs" }, Summary = "Write a daily log entry")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(WriteLogRequest), Required = true)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Accepted, contentType: "application/json", bodyType: typeof(object))]

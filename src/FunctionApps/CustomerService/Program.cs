@@ -9,8 +9,6 @@ using StayHere.Application.Customers.Services;
 using StayHere.Domain.Repositories;
 using StayHere.Infrastructure.Persistence;
 using StayHere.Shared.Middleware;
-using StayHere.Infrastructure.Logging;
-
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Configurations;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Abstractions;
 using Microsoft.OpenApi.Models;
@@ -32,7 +30,6 @@ var host = new HostBuilder()
         services.AddScoped<ICustomerRepository, EfCustomerRepository>();
         services.AddScoped<IDocumentRepository, EfDocumentRepository>();
         services.AddScoped<ICustomerService, CustomerService>();
-        services.AddScoped<IFileLoggingService, FileLoggingService>();
 
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();

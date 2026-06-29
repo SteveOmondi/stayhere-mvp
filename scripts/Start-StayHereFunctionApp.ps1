@@ -11,7 +11,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("AuthService", "PropertyService", "CustomerService", "PropertyOwnerService", "StaticDataService", "AiAgentService", "PaymentsService")]
+    [ValidateSet("AuthService", "PropertyService", "CustomerService", "PropertyOwnerService", "StaticDataService", "AiAgentService", "PaymentsService", "LoggingService")]
     [string] $Name,
 
     [switch] $NoNewWindow

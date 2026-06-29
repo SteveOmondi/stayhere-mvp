@@ -153,6 +153,43 @@ resource "azurerm_linux_function_app" "customer" {
   }
 }
 
+resource "azurerm_linux_function_app" "logging" {
+  name                = "func-${var.environment}-logging-${var.suffix}"
+  resource_group_name = var.rg_name
+  location            = var.location
+
+  storage_account_name       = azurerm_storage_account.main.name
+  storage_account_access_key = azurerm_storage_account.main.primary_access_key
+  service_plan_id            = azurerm_service_plan.main.id
+
+  site_config {
+    application_stack {
+      dotnet_version              = "9.0"
+      use_dotnet_isolated_runtime = true
+    }
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME"       = "dotnet-isolated"
+    "AzureWebJobsStorage"            = azurerm_storage_account.main.primary_connection_string
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "FUNCTIONS_EXTENSION_VERSION"    = "~4"
+    "SKIP_AUTH"                      = var.skip_auth
+    "AzureWebJobs.Http.RoutePrefix"  = ""
+    "WEBSITE_RUN_FROM_PACKAGE"       = "1"
+    "LogStorageConnectionString"     = azurerm_storage_account.main.primary_connection_string
+    "LogContainerName"               = "logs"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    Service = "LoggingService"
+  }
+}
+
 resource "azurerm_linux_function_app" "propertyowner" {
   name                = "func-${var.environment}-propertyowner-${var.suffix}"
   resource_group_name = var.rg_name
@@ -544,4 +581,12 @@ output "payments_function_host" {
 
 output "payments_principal_id" {
   value = azurerm_linux_function_app.payments.identity[0].principal_id
+}
+
+output "logging_function_name" {
+  value = azurerm_linux_function_app.logging.name
+}
+
+output "logging_function_host" {
+  value = azurerm_linux_function_app.logging.default_hostname
 }

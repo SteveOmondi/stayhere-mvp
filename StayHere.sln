@@ -1,3 +1,4 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -47,6 +48,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StayHere.Domain.Tests", "tests\StayHere.Domain.Tests\StayHere.Domain.Tests.csproj", "{C4B864FC-5F88-4DB3-9744-246DC1D256C0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LoggingService", "LoggingService", "{B41C287E-441C-6AE5-29F1-38266972B786}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StayHere.LoggingService", "src\FunctionApps\LoggingService\StayHere.LoggingService.csproj", "{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -202,6 +207,18 @@ Global
 		{C4B864FC-5F88-4DB3-9744-246DC1D256C0}.Release|x64.Build.0 = Release|Any CPU
 		{C4B864FC-5F88-4DB3-9744-246DC1D256C0}.Release|x86.ActiveCfg = Release|Any CPU
 		{C4B864FC-5F88-4DB3-9744-246DC1D256C0}.Release|x86.Build.0 = Release|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Debug|x64.Build.0 = Debug|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Debug|x86.Build.0 = Debug|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Release|x64.ActiveCfg = Release|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Release|x64.Build.0 = Release|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Release|x86.ActiveCfg = Release|Any CPU
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -228,5 +245,7 @@ Global
 		{A2345678-90AB-CDEF-0123-456789ABCDE3} = {67409DE7-479B-D59A-54F4-B9228F97664E}
 		{B2345678-90AB-CDEF-0123-456789ABCDE4} = {A2345678-90AB-CDEF-0123-456789ABCDE3}
 		{C4B864FC-5F88-4DB3-9744-246DC1D256C0} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{B41C287E-441C-6AE5-29F1-38266972B786} = {67409DE7-479B-D59A-54F4-B9228F97664E}
+		{A252A71A-2C9B-47C0-97B4-A5DB7479EFAD} = {B41C287E-441C-6AE5-29F1-38266972B786}
 	EndGlobalSection
 EndGlobal
