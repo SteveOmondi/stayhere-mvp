@@ -1027,7 +1027,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl_StaticDataService}}/categories",
-            "description": ""
+            "description": "Returns all active parent categories (no geo fields)."
           }
         },
         {
@@ -1073,24 +1073,6 @@
           }
         },
         {
-          "name": "Get categories by city",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl_StaticDataService}}/categories/city/Nairobi",
-            "description": ""
-          }
-        },
-        {
-          "name": "Get categories by country",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl_StaticDataService}}/categories/country/Kenya",
-            "description": ""
-          }
-        },
-        {
           "name": "Create category (admin)",
           "request": {
             "method": "POST",
@@ -1109,7 +1091,7 @@
             "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Short stay\",\n  \"description\": \"Nightly rentals\",\n  \"iconUrl\": null,\n  \"country\": \"Kenya\",\n  \"city\": \"Nairobi\",\n  \"isActive\": true,\n  \"sortOrder\": 10\n}"
+              "raw": "{\n  \"name\": \"Short Stay\",\n  \"slug\": \"short-stay\",\n  \"description\": \"Nightly rentals\",\n  \"iconUrl\": null,\n  \"isActive\": true,\n  \"sortOrder\": 10\n}"
             }
           }
         },
@@ -1148,6 +1130,127 @@
               }
             ],
             "url": "{{baseUrl_StaticDataService}}/categories/66666666-6666-6666-6666-666666666666",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get active subcategories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/subcategories",
+            "description": "Returns all active subcategories across all categories and cities."
+          }
+        },
+        {
+          "name": "Get all subcategories (admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": "{{baseUrl_StaticDataService}}/subcategories/all",
+            "description": "Returns all subcategories including inactive ones. Requires admin auth."
+          }
+        },
+        {
+          "name": "Get subcategory by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/subcategories/77777777-7777-7777-7777-777777777777",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get subcategories by category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/subcategories/category/66666666-6666-6666-6666-666666666666",
+            "description": "Returns all active subcategories for a given parent category ID."
+          }
+        },
+        {
+          "name": "Get subcategories by city",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/subcategories/city/Nairobi",
+            "description": ""
+          }
+        },
+        {
+          "name": "Get subcategories by country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl_StaticDataService}}/subcategories/country/Kenya",
+            "description": ""
+          }
+        },
+        {
+          "name": "Create subcategory (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": "{{baseUrl_StaticDataService}}/subcategories",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"66666666-6666-6666-6666-666666666666\",\n  \"name\": \"Studio Apartments\",\n  \"slug\": \"studio-apartments\",\n  \"description\": \"Self-contained studio units\",\n  \"iconUrl\": null,\n  \"country\": \"Kenya\",\n  \"city\": \"Nairobi\",\n  \"isActive\": true,\n  \"sortOrder\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Update subcategory (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": "{{baseUrl_StaticDataService}}/subcategories/77777777-7777-7777-7777-777777777777",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Studio Apartments+\",\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete subcategory (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": "{{baseUrl_StaticDataService}}/subcategories/77777777-7777-7777-7777-777777777777",
             "description": ""
           }
         }

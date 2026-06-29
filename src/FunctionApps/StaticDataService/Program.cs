@@ -29,10 +29,12 @@ var host = new HostBuilder()
         services.AddStayHereDbContext(connectionString);
 
         services.AddScoped<ICategoryRepository, EfCategoryRepository>();
+        services.AddScoped<ISubcategoryRepository, EfSubcategoryRepository>();
         services.AddScoped<IRoleDefinitionRepository, EfRoleDefinitionRepository>();
         services.AddScoped<IUserTypeDefinitionRepository, EfUserTypeDefinitionRepository>();
 
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<ISubcategoryService, SubcategoryService>();
         services.AddScoped<IRoleDefinitionService, RoleDefinitionService>();
         services.AddScoped<IUserTypeDefinitionService, UserTypeDefinitionService>();
 

@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AiChat } from "./components/AiChat";
 import { Footer } from "./components/Footer";
@@ -39,6 +40,8 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const location = useLocation();
+
+  useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
 
   return (
     <div className="flex min-h-screen flex-col bg-brand-dark">

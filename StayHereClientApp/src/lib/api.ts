@@ -124,6 +124,10 @@ export type Listing = {
   agentId?: string;
   caretakerId?: string;
   ownerId?: string;
+  categoryId?: string;
+  subcategoryId?: string;
+  categoryName?: string;
+  subcategoryName?: string;
   [key: string]: unknown;
 };
 
@@ -146,6 +150,8 @@ export type SearchBody = {
   bedrooms?: number;
   amenities?: string[];
   sortBy?: string;
+  categoryId?: string;
+  subcategoryId?: string;
   page?: number;
   pageSize?: number;
   [key: string]: unknown;
@@ -455,6 +461,18 @@ export const paymentApi = {
   getOnboarding: (applicationId: string) =>
     req<Record<string, unknown>>(loadConfig().propertyApiBase,
       `applications/${applicationId}/onboarding`, { requireAuth: true }),
+};
+
+/* ══════════════════════════════════════════════════════════
+   Static data (categories / subcategories)
+══════════════════════════════════════════════════════════ */
+export type CategoryOption = { id: string; name: string; slug?: string };
+export type SubcategoryOption = { id: string; name: string; categoryId?: string; slug?: string };
+
+export const staticApi = {
+  categories: () => req<CategoryOption[]>(loadConfig().staticApiBase, "categories"),
+  subcategoriesByCategory: (categoryId: string) =>
+    req<SubcategoryOption[]>(loadConfig().staticApiBase, `subcategories/category/${categoryId}`),
 };
 
 /* ══════════════════════════════════════════════════════════

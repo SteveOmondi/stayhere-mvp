@@ -1940,46 +1940,6 @@
           "response": []
         },
         {
-          "name": "Get categories by city",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl_StaticDataService}}/staticdata/categories/city/Nairobi",
-              "host": [
-                "{{baseUrl_StaticDataService}}"
-              ],
-              "path": [
-                "staticdata",
-                "categories",
-                "city",
-                "Nairobi"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get categories by country",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl_StaticDataService}}/staticdata/categories/country/Kenya",
-              "host": [
-                "{{baseUrl_StaticDataService}}"
-              ],
-              "path": [
-                "staticdata",
-                "categories",
-                "country",
-                "Kenya"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
           "name": "Create category (admin)",
           "request": {
             "method": "POST",
@@ -1996,7 +1956,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Short stay\",\n  \"description\": \"Nightly rentals\",\n  \"iconUrl\": null,\n  \"country\": \"Kenya\",\n  \"city\": \"Nairobi\",\n  \"isActive\": true,\n  \"sortOrder\": 10\n}"
+              "raw": "{\n  \"name\": \"Short Stay\",\n  \"slug\": \"short-stay\",\n  \"description\": \"Nightly rentals\",\n  \"iconUrl\": null,\n  \"isActive\": true,\n  \"sortOrder\": 10\n}"
             },
             "url": {
               "raw": "{{baseUrl_StaticDataService}}/staticdata/categories",
@@ -2064,6 +2024,218 @@
                 "staticdata",
                 "categories",
                 "66666666-6666-6666-6666-666666666666"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get active subcategories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl_StaticDataService}}/staticdata/subcategories",
+              "host": [
+                "{{baseUrl_StaticDataService}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all subcategories (admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl_StaticDataService}}/staticdata/subcategories/all",
+              "host": [
+                "{{baseUrl_StaticDataService}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get subcategory by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl_StaticDataService}}/staticdata/subcategories/77777777-7777-7777-7777-777777777777",
+              "host": [
+                "{{baseUrl_StaticDataService}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories",
+                "77777777-7777-7777-7777-777777777777"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get subcategories by category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl_StaticDataService}}/staticdata/subcategories/category/66666666-6666-6666-6666-666666666666",
+              "host": [
+                "{{baseUrl_StaticDataService}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories",
+                "category",
+                "66666666-6666-6666-6666-666666666666"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get subcategories by city",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl_StaticDataService}}/staticdata/subcategories/city/Nairobi",
+              "host": [
+                "{{baseUrl_StaticDataService}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories",
+                "city",
+                "Nairobi"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get subcategories by country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl_StaticDataService}}/staticdata/subcategories/country/Kenya",
+              "host": [
+                "{{baseUrl_StaticDataService}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories",
+                "country",
+                "Kenya"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create subcategory (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"66666666-6666-6666-6666-666666666666\",\n  \"name\": \"Studio Apartments\",\n  \"slug\": \"studio-apartments\",\n  \"description\": \"Self-contained studio units\",\n  \"iconUrl\": null,\n  \"country\": \"Kenya\",\n  \"city\": \"Nairobi\",\n  \"isActive\": true,\n  \"sortOrder\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl_StaticDataService}}/staticdata/subcategories",
+              "host": [
+                "{{baseUrl_StaticDataService}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update subcategory (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Studio Apartments+\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl_StaticDataService}}/staticdata/subcategories/77777777-7777-7777-7777-777777777777",
+              "host": [
+                "{{baseUrl_StaticDataService}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories",
+                "77777777-7777-7777-7777-777777777777"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete subcategory (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer mock-jwt-token",
+                "description": "StaticDataService admin routes when SKIP_AUTH is not true."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl_StaticDataService}}/staticdata/subcategories/77777777-7777-7777-7777-777777777777",
+              "host": [
+                "{{baseUrl_StaticDataService}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories",
+                "77777777-7777-7777-7777-777777777777"
               ]
             }
           },

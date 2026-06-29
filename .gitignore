@@ -38,3 +38,7 @@ local.settings.json
 publish-test/
 local.settings.json
 *.local.settings.json
+
+# Vite local env overrides
+.env.local
+.env.*.local

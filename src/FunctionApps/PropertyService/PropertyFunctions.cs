@@ -195,7 +195,7 @@ public class PropertyFunctions
     [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "DeleteProperty", tags: new[] { "Properties" }, Summary = "Delete property")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
-    [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.NoContent)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> DeleteProperty(
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "properties/{id:guid}")] HttpRequestData req,
@@ -210,7 +210,7 @@ public class PropertyFunctions
             var deleted = await _propertyService.DeletePropertyAsync(id, callerId);
             if (!deleted)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Property not found");
-            return req.CreateResponse(HttpStatusCode.NoContent);
+            return await CreateJsonResponse(req, HttpStatusCode.OK, new { message = "Deactivated successfully" });
         }
         catch (UnauthorizedAccessException ex)
         {

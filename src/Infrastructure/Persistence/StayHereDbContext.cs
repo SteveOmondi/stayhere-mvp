@@ -36,6 +36,7 @@ public class StayHereDbContext : DbContext
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Subcategory> Subcategories => Set<Subcategory>();
     public DbSet<Organization> Organizations => Set<Organization>();
     public DbSet<RoleDefinition> RoleDefinitions => Set<RoleDefinition>();
     public DbSet<UserTypeDefinition> UserTypeDefinitions => Set<UserTypeDefinition>();
@@ -63,6 +64,7 @@ public class StayHereDbContext : DbContext
         ConfigureDocument(modelBuilder);
         ConfigureOtpVerification(modelBuilder);
         ConfigureCategory(modelBuilder);
+        ConfigureSubcategory(modelBuilder);
         ConfigureOrganization(modelBuilder);
         ConfigureRoleDefinition(modelBuilder);
         ConfigureUserTypeDefinition(modelBuilder);
@@ -81,25 +83,25 @@ public class StayHereDbContext : DbContext
         var houseId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
         modelBuilder.Entity<Category>().HasData(
-            new Category 
-            { 
-                Id = apartmentId, 
-                Name = "Apartment", 
-                Description = "Modern apartments in the city", 
-                Country = "Kenya", 
-                City = "Nairobi",
+            new Category
+            {
+                Id = apartmentId,
+                Name = "Apartment",
+                Slug = "apartment",
+                Description = "Apartment units for rent or sale",
                 IsActive = true,
+                SortOrder = 1,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             },
-            new Category 
-            { 
-                Id = houseId, 
-                Name = "House", 
-                Description = "Spacious family houses", 
-                Country = "Kenya", 
-                City = "Nairobi",
+            new Category
+            {
+                Id = houseId,
+                Name = "House",
+                Slug = "house",
+                Description = "Stand-alone houses for rent or sale",
                 IsActive = true,
+                SortOrder = 2,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
@@ -281,6 +283,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.DeletedAt).HasColumnName("deleted_at");
 
             entity.OwnsOne(e => e.Location, location =>
             {
@@ -295,6 +298,7 @@ public class StayHereDbContext : DbContext
 
             entity.HasIndex(e => e.PropertyCode).IsUnique();
             entity.HasIndex(e => e.OwnerId);
+            entity.HasIndex(e => e.DeletedAt);
         });
     }
 
@@ -345,10 +349,13 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.Views).HasColumnName("views").HasDefaultValue(0);
             entity.Property(e => e.Rating).HasColumnName("rating").HasPrecision(3, 2).HasDefaultValue(0);
             entity.Property(e => e.RatingCount).HasColumnName("rating_count").HasDefaultValue(0);
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.SubcategoryId).HasColumnName("subcategory_id");
             entity.Property(e => e.IsFeatured).HasColumnName("is_featured").HasDefaultValue(false);
             entity.Property(e => e.RecommendedScore).HasColumnName("recommended_score").HasPrecision(3, 2).HasDefaultValue(0);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.DeletedAt).HasColumnName("deleted_at");
 
             var embeddingComparer = new ValueComparer<float[]?>(
                 (a, b) => a == b || (a != null && b != null && a.SequenceEqual(b)),
@@ -395,6 +402,7 @@ public class StayHereDbContext : DbContext
             entity.HasIndex(e => e.ListingType);
             entity.HasIndex(e => e.AvailabilityStatus);
             entity.HasIndex(e => e.IsFeatured);
+            entity.HasIndex(e => e.DeletedAt);
         });
     }
 
@@ -773,6 +781,28 @@ public class StayHereDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Slug).HasColumnName("slug").HasMaxLength(100);
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
+            entity.Property(e => e.IconUrl).HasColumnName("icon_url").HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.HasIndex(e => e.Slug).IsUnique().HasFilter("slug IS NOT NULL");
+            entity.HasIndex(e => e.IsActive);
+        });
+    }
+
+    private static void ConfigureSubcategory(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Subcategory>(entity =>
+        {
+            entity.ToTable("subcategories");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Slug).HasColumnName("slug").HasMaxLength(100);
             entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
             entity.Property(e => e.IconUrl).HasColumnName("icon_url").HasMaxLength(500);
             entity.Property(e => e.Country).HasColumnName("country").HasMaxLength(100).IsRequired();
@@ -781,6 +811,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.HasIndex(e => e.CategoryId);
             entity.HasIndex(e => e.Country);
             entity.HasIndex(e => e.City);
             entity.HasIndex(e => e.IsActive);

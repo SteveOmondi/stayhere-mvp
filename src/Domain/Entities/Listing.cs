@@ -38,6 +38,9 @@ public class Listing
     public PropertyContact Owner { get; set; } = null!;
     public PropertyContact? Agent { get; set; }
 
+    public Guid? CategoryId { get; set; }
+    public Guid? SubcategoryId { get; set; }
+
     public Guid OwnerId { get; set; }
     public Guid? AgentId { get; set; }
     public Guid? CaretakerId { get; set; }
@@ -51,6 +54,7 @@ public class Listing
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public DateTime? DeletedAt { get; set; }
 
     /// <summary>Semantic embedding for pgvector similarity search (768 dimensions, text-embedding-004).</summary>
     public float[]? Embedding { get; set; }

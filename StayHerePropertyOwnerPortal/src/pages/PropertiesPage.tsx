@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { propertiesApi, listingsApi, uploadApi, uploadToR2, ApiError } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
 import { IcoBuilding, IcoPlus, IcoMapPin, IcoListing, IcoChevRight, IcoX, IcoCheck, IcoLoader, IcoEdit, IcoRefresh } from "../components/icons";
+import { LocationPicker } from "../components/LocationPicker";
 
 type Prop = {
   id: string; buildingName: string; propertyCode?: string;
   city?: string; suburb?: string; totalUnits?: number; floors?: number;
   description?: string; primaryImageUrl?: string; images?: string[];
+  latitude?: number; longitude?: number;
 };
 type PropWithStats = Prop & { listingCount: number; vacantCount: number };
 
@@ -26,6 +28,8 @@ function mapProp(x: unknown): Prop | null {
     description: r.description ? String(r.description) : undefined,
     primaryImageUrl: r.primaryImageUrl ? String(r.primaryImageUrl) : undefined,
     images: Array.isArray(r.images) ? r.images.map(String) : undefined,
+    latitude: typeof r.latitude === "number" ? r.latitude : undefined,
+    longitude: typeof r.longitude === "number" ? r.longitude : undefined,
   };
 }
 
@@ -51,6 +55,7 @@ export function PropertiesPage() {
   const [editTarget, setEditTarget] = useState<PropWithStats | null>(null);
   const [form, setForm]     = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number | null; lng: number | null }>({ lat: null, lng: null });
 
   // Image state
   const [primaryImg, setPrimaryImg] = useState<ImgSlot>(EMPTY_IMG());
@@ -124,6 +129,7 @@ export function PropertiesPage() {
     setModal("create");
     setForm(EMPTY_FORM);
     setEditTarget(null);
+    setCoords({ lat: null, lng: null });
     resetImageState();
   }
 
@@ -140,6 +146,7 @@ export function PropertiesPage() {
       totalFloors: p.floors?.toString() ?? "",
       country: "Kenya",
     });
+    setCoords({ lat: p.latitude ?? null, lng: p.longitude ?? null });
     // Pre-populate existing images
     setPrimaryImg(p.primaryImageUrl ? { url: p.primaryImageUrl, uploading: false } : EMPTY_IMG());
     const existingExtras = p.images ?? [];
@@ -155,8 +162,17 @@ export function PropertiesPage() {
   function closeModal() {
     setModal(null);
     setForm(EMPTY_FORM);
+    setCoords({ lat: null, lng: null });
     resetImageState();
   }
+
+  const handleCoordsChange = useCallback((lat: number, lng: number) => {
+    setCoords({ lat, lng });
+  }, []);
+
+  const handleCoordsClear = useCallback(() => {
+    setCoords({ lat: null, lng: null });
+  }, []);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -173,6 +189,8 @@ export function PropertiesPage() {
         city: form.city.trim(),
         suburb: form.suburb.trim() || undefined,
         street: form.street.trim() || undefined,
+        latitude: coords.lat ?? undefined,
+        longitude: coords.lng ?? undefined,
       },
       primaryImageUrl: primaryImg.url || undefined,
       images: extraImgs.filter(img => img.url).map(img => img.url!),
@@ -275,6 +293,17 @@ export function PropertiesPage() {
                 <div className="field"><label className="field-label">Total Floors *</label><input required type="number" min="1" className="input" placeholder="e.g. 4" value={form.totalFloors} onChange={e=>setForm(f=>({...f,totalFloors:e.target.value}))}/></div>
               </div>
               <div className="field"><label className="field-label">Description</label><textarea className="input" rows={3} placeholder="Brief description of the property…" value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))}/></div>
+
+              {/* Location pin */}
+              <div className="field">
+                <label className="field-label">Map Location <span className="text-brand-400 font-normal">(optional — set now or update later)</span></label>
+                <LocationPicker
+                  lat={coords.lat}
+                  lng={coords.lng}
+                  onChange={handleCoordsChange}
+                  onClear={handleCoordsClear}
+                />
+              </div>
 
               {/* Primary Image */}
               <div className="field">

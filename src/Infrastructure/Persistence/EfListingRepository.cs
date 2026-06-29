@@ -18,19 +18,21 @@ public class EfListingRepository : IListingRepository
 
     public async Task<Listing?> GetByIdAsync(Guid id)
     {
-        return await _context.Listings.FindAsync(id);
+        return await _context.Listings
+            .FirstOrDefaultAsync(l => l.Id == id && l.DeletedAt == null);
     }
 
     public async Task<Listing?> GetByListingCodeAsync(string listingCode)
     {
         return await _context.Listings
-            .FirstOrDefaultAsync(l => l.ListingCode == listingCode);
+            .FirstOrDefaultAsync(l => l.ListingCode == listingCode && l.DeletedAt == null);
     }
 
     public async Task<IEnumerable<Listing>> GetAllAsync(int page = 1, int pageSize = 20)
     {
         return await _context.Listings
             .AsNoTracking()
+            .Where(l => l.DeletedAt == null)
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -41,7 +43,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.PropertyId == propertyId)
+            .Where(l => l.PropertyId == propertyId && l.DeletedAt == null)
             .OrderBy(l => l.FloorNumber)
             .ThenBy(l => l.UnitNumber)
             .ToListAsync();
@@ -51,7 +53,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.OwnerId == ownerId)
+            .Where(l => l.OwnerId == ownerId && l.DeletedAt == null)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync();
     }
@@ -60,7 +62,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.AgentId == agentId)
+            .Where(l => l.AgentId == agentId && l.DeletedAt == null)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync();
     }
@@ -69,7 +71,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.CaretakerId == caretakerId)
+            .Where(l => l.CaretakerId == caretakerId && l.DeletedAt == null)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync();
     }
@@ -78,7 +80,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.Location.City.ToLower() == city.ToLower())
+            .Where(l => l.DeletedAt == null && l.Location.City.ToLower() == city.ToLower())
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -89,7 +91,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.Location.County.ToLower() == county.ToLower())
+            .Where(l => l.DeletedAt == null && l.Location.County.ToLower() == county.ToLower())
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -100,7 +102,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.PropertyType == propertyType)
+            .Where(l => l.DeletedAt == null && l.PropertyType == propertyType)
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -111,7 +113,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.ListingType == listingType)
+            .Where(l => l.DeletedAt == null && l.ListingType == listingType)
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -122,7 +124,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.IsFeatured && l.AvailabilityStatus == AvailabilityStatus.Available)
+            .Where(l => l.DeletedAt == null && l.IsFeatured && l.AvailabilityStatus == AvailabilityStatus.Available)
             .OrderByDescending(l => l.RecommendedScore)
             .ThenByDescending(l => l.Rating)
             .Take(limit)
@@ -133,7 +135,7 @@ public class EfListingRepository : IListingRepository
     {
         return await _context.Listings
             .AsNoTracking()
-            .Where(l => l.AvailabilityStatus == AvailabilityStatus.Available)
+            .Where(l => l.DeletedAt == null && l.AvailabilityStatus == AvailabilityStatus.Available)
             .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -142,7 +144,7 @@ public class EfListingRepository : IListingRepository
 
     public async Task<IEnumerable<Listing>> SearchAsync(ListingSearchCriteria criteria)
     {
-        var query = _context.Listings.AsNoTracking().AsQueryable();
+        var query = _context.Listings.AsNoTracking().Where(l => l.DeletedAt == null).AsQueryable();
 
         if (criteria.PropertyId.HasValue)
             query = query.Where(l => l.PropertyId == criteria.PropertyId.Value);
@@ -195,6 +197,10 @@ public class EfListingRepository : IListingRepository
             query = query.Where(l => l.AvailabilityStatus == criteria.AvailabilityStatus.Value);
         if (criteria.IsFeatured.HasValue)
             query = query.Where(l => l.IsFeatured == criteria.IsFeatured.Value);
+        if (criteria.CategoryId.HasValue)
+            query = query.Where(l => l.CategoryId == criteria.CategoryId.Value);
+        if (criteria.SubcategoryId.HasValue)
+            query = query.Where(l => l.SubcategoryId == criteria.SubcategoryId.Value);
 
         query = criteria.SortBy?.ToLower() switch
         {
@@ -212,9 +218,65 @@ public class EfListingRepository : IListingRepository
             .ToListAsync();
     }
 
+    public async Task<int> GetSearchCountAsync(ListingSearchCriteria criteria)
+    {
+        var query = _context.Listings.AsNoTracking().Where(l => l.DeletedAt == null).AsQueryable();
+
+        if (criteria.PropertyId.HasValue)
+            query = query.Where(l => l.PropertyId == criteria.PropertyId.Value);
+        if (!string.IsNullOrEmpty(criteria.City))
+            query = query.Where(l => l.Location.City.ToLower() == criteria.City.ToLower());
+        if (!string.IsNullOrEmpty(criteria.County))
+            query = query.Where(l => l.Location.County.ToLower() == criteria.County.ToLower());
+        if (!string.IsNullOrEmpty(criteria.Country))
+            query = query.Where(l => l.Location.Country.ToLower() == criteria.Country.ToLower());
+        if (!string.IsNullOrWhiteSpace(criteria.Suburb))
+        {
+            var s = criteria.Suburb.Trim().ToLowerInvariant();
+            query = query.Where(l => l.Location.Suburb != null && l.Location.Suburb.ToLower().Contains(s));
+        }
+        if (!string.IsNullOrWhiteSpace(criteria.Street))
+        {
+            var s = criteria.Street.Trim().ToLowerInvariant();
+            query = query.Where(l => l.Location.Street != null && l.Location.Street.ToLower().Contains(s));
+        }
+        if (!string.IsNullOrWhiteSpace(criteria.LocationText))
+        {
+            var t = criteria.LocationText.Trim().ToLowerInvariant();
+            query = query.Where(l =>
+                l.Location.Country.ToLower().Contains(t) ||
+                l.Location.County.ToLower().Contains(t) ||
+                l.Location.City.ToLower().Contains(t) ||
+                (l.Location.Suburb != null && l.Location.Suburb.ToLower().Contains(t)) ||
+                (l.Location.Street != null && l.Location.Street.ToLower().Contains(t)));
+        }
+        if (criteria.PropertyType.HasValue)
+            query = query.Where(l => l.PropertyType == criteria.PropertyType.Value);
+        if (criteria.ListingType.HasValue)
+            query = query.Where(l => l.ListingType == criteria.ListingType.Value);
+        if (criteria.MinPrice.HasValue)
+            query = query.Where(l => l.Price >= criteria.MinPrice.Value);
+        if (criteria.MaxPrice.HasValue)
+            query = query.Where(l => l.Price <= criteria.MaxPrice.Value);
+        if (criteria.MinBedrooms.HasValue)
+            query = query.Where(l => l.Bedrooms >= criteria.MinBedrooms.Value);
+        if (criteria.MaxBedrooms.HasValue)
+            query = query.Where(l => l.Bedrooms <= criteria.MaxBedrooms.Value);
+        if (criteria.MinBathrooms.HasValue)
+            query = query.Where(l => l.Bathrooms >= criteria.MinBathrooms.Value);
+        if (criteria.IsFurnished.HasValue)
+            query = query.Where(l => l.IsFurnished == criteria.IsFurnished.Value);
+        if (criteria.AvailabilityStatus.HasValue)
+            query = query.Where(l => l.AvailabilityStatus == criteria.AvailabilityStatus.Value);
+        if (criteria.IsFeatured.HasValue)
+            query = query.Where(l => l.IsFeatured == criteria.IsFeatured.Value);
+
+        return await query.CountAsync();
+    }
+
     public async Task<int> GetTotalCountAsync()
     {
-        return await _context.Listings.CountAsync();
+        return await _context.Listings.CountAsync(l => l.DeletedAt == null);
     }
 
     public async Task CreateAsync(Listing listing)
@@ -234,7 +296,9 @@ public class EfListingRepository : IListingRepository
         var listing = await _context.Listings.FindAsync(id);
         if (listing != null)
         {
-            _context.Listings.Remove(listing);
+            listing.DeletedAt = DateTime.UtcNow;
+            listing.UpdatedAt = DateTime.UtcNow;
+            _context.Listings.Update(listing);
             await _context.SaveChangesAsync();
         }
     }
@@ -243,6 +307,17 @@ public class EfListingRepository : IListingRepository
     {
         var count = await _context.Listings.CountAsync();
         return $"L{(count + 1001):D4}";
+    }
+
+    public async Task BatchIncrementViewsAsync(IReadOnlyDictionary<Guid, long> deltas)
+    {
+        if (deltas.Count == 0) return;
+        foreach (var (id, delta) in deltas)
+        {
+            await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE listings SET views = views + {0}, updated_at = {1} WHERE id = {2}",
+                (int)delta, DateTime.UtcNow, id);
+        }
     }
 
     public async Task<IReadOnlyList<(Listing Listing, double Similarity)>> SearchByEmbeddingSimilarityAsync(

@@ -8,6 +8,7 @@ namespace StayHere.Domain.Repositories;
 public interface IPropertyRepository
 {
     Task<Property?> GetByIdAsync(Guid id);
+    Task<IReadOnlyDictionary<Guid, Property>> GetByIdsAsync(IEnumerable<Guid> ids);
     Task<Property?> GetByPropertyCodeAsync(string propertyCode);
     Task<IEnumerable<Property>> GetAllAsync(int page = 1, int pageSize = 20);
     Task<IEnumerable<Property>> GetByOwnerIdAsync(Guid ownerId);

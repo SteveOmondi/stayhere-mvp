@@ -266,6 +266,8 @@ export const paymentApi = {
 /* ══ Static / Categories ═══════════════════════════════════ */
 export const staticApi = {
   categories: () => req<unknown[]>(loadConfig().staticApiBase, "categories"),
+  subcategoriesByCategory: (categoryId: string) =>
+    req<unknown[]>(loadConfig().staticApiBase, `subcategories/category/${categoryId}`),
 };
 
 /* ══ Image / File Upload ═══════════════════════════════════ */

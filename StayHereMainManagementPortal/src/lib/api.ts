@@ -295,6 +295,16 @@ export const staticApi = {
     request<unknown>(loadConfig().staticApiBase, `categories/${id}`, { method: "PUT", body }),
   deleteCategory: (id: string) =>
     request<unknown>(loadConfig().staticApiBase, `categories/${id}`, { method: "DELETE" }),
+  subcategories: () =>
+    request<unknown[]>(loadConfig().staticApiBase, "subcategories"),
+  subcategoriesAll: () =>
+    request<unknown[]>(loadConfig().staticApiBase, "subcategories/all"),
+  createSubcategory: (body: Record<string, unknown>) =>
+    request<unknown>(loadConfig().staticApiBase, "subcategories", { method: "POST", body }),
+  updateSubcategory: (id: string, body: Record<string, unknown>) =>
+    request<unknown>(loadConfig().staticApiBase, `subcategories/${id}`, { method: "PUT", body }),
+  deleteSubcategory: (id: string) =>
+    request<unknown>(loadConfig().staticApiBase, `subcategories/${id}`, { method: "DELETE" }),
   createUserRole: (body: { name: string; description?: string }) =>
     request<RoleDefinitionDto>(loadConfig().staticApiBase, "user-roles", { method: "POST", body }),
   createUserType: (body: { name: string; description?: string }) =>

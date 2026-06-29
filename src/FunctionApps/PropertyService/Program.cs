@@ -9,6 +9,7 @@ using StayHere.Domain.Repositories;
 using StayHere.Infrastructure.AiAgent;
 using StayHere.Infrastructure.Caching;
 using StayHere.Infrastructure.Persistence;
+using StayHere.Application.Categories.Services;
 using StayHere.Shared.Middleware;
 
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Configurations;
@@ -38,6 +39,8 @@ var host = new HostBuilder()
         });
         services.AddScoped<IPropertyRepository, EfPropertyRepository>();
         services.AddScoped<IListingRepository, EfListingRepository>();
+        services.AddScoped<ICategoryRepository, EfCategoryRepository>();
+        services.AddScoped<ISubcategoryRepository, EfSubcategoryRepository>();
         services.AddScoped<IPropertyService, PropertyService>();
         services.AddScoped<IListingService, ListingService>();
         services.AddR2Storage(config);

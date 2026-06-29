@@ -8,10 +8,12 @@ namespace StayHere.Application.Properties.Services;
 public class PropertyService : IPropertyService
 {
     private readonly IPropertyRepository _propertyRepository;
+    private readonly IListingRepository _listingRepository;
 
-    public PropertyService(IPropertyRepository propertyRepository)
+    public PropertyService(IPropertyRepository propertyRepository, IListingRepository listingRepository)
     {
         _propertyRepository = propertyRepository;
+        _listingRepository = listingRepository;
     }
 
     public async Task<PropertyDto> CreatePropertyAsync(Guid ownerId, CreatePropertyRequest request)
@@ -87,8 +89,13 @@ public class PropertyService : IPropertyService
         if (request.TotalFloors.HasValue) property.TotalFloors = request.TotalFloors.Value;
         if (request.PrimaryImageUrl != null) property.PrimaryImageUrl = request.PrimaryImageUrl;
         if (request.Images != null) property.Images = request.Images;
+        bool coordsChanged = false;
         if (request.Location != null)
         {
+            coordsChanged =
+                request.Location.Latitude != property.Location.Latitude ||
+                request.Location.Longitude != property.Location.Longitude;
+
             property.Location = new PropertyLocation(
                 request.Location.Country,
                 request.Location.County,
@@ -102,6 +109,23 @@ public class PropertyService : IPropertyService
         property.UpdatedAt = DateTime.UtcNow;
 
         await _propertyRepository.UpdateAsync(property);
+
+        // Cascade coordinate changes to all listings under this property
+        if (coordsChanged)
+        {
+            var listings = await _listingRepository.GetByPropertyIdAsync(id);
+            foreach (var listing in listings)
+            {
+                listing.Location = listing.Location with
+                {
+                    Latitude = request.Location!.Latitude,
+                    Longitude = request.Location!.Longitude,
+                };
+                listing.UpdatedAt = DateTime.UtcNow;
+                await _listingRepository.UpdateAsync(listing);
+            }
+        }
+
         return MapToDto(property);
     }
 
@@ -153,7 +177,9 @@ public class PropertyService : IPropertyService
             property.TotalFloors,
             property.Location.City,
             property.Location.County,
-            property.PrimaryImageUrl
+            property.PrimaryImageUrl,
+            property.Location.Latitude,
+            property.Location.Longitude
         );
     }
 

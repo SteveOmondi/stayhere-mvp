@@ -45,7 +45,9 @@ public record PropertyListDto(
     int TotalFloors,
     string City,
     string County,
-    string? PrimaryImageUrl = null
+    string? PrimaryImageUrl = null,
+    double? Latitude = null,
+    double? Longitude = null
 );
 
 // ----- Listing (unit within a property) -----
@@ -71,7 +73,9 @@ public record CreateListingRequest(
     string? Developer,
     OwnerContactDto? Owner = null,
     AgentContactDto? Agent = null,
-    string? PrimaryImageUrl = null
+    string? PrimaryImageUrl = null,
+    Guid? CategoryId = null,
+    Guid? SubcategoryId = null
 );
 
 public record CreateListingFromPropertyRequest(
@@ -94,7 +98,9 @@ public record CreateListingFromPropertyRequest(
     string? Developer,
     OwnerContactDto? Owner = null,
     AgentContactDto? Agent = null,
-    string? PrimaryImageUrl = null
+    string? PrimaryImageUrl = null,
+    Guid? CategoryId = null,
+    Guid? SubcategoryId = null
 );
 
 public record UpdateListingRequest(
@@ -118,7 +124,9 @@ public record UpdateListingRequest(
     AgentContactDto? Agent,
     bool? IsFeatured,
     decimal? RecommendedScore,
-    string? PrimaryImageUrl = null
+    string? PrimaryImageUrl = null,
+    Guid? CategoryId = null,
+    Guid? SubcategoryId = null
 );
 
 public record ListingDto(
@@ -158,7 +166,11 @@ public record ListingDto(
     decimal RecommendedScore,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    string? PrimaryImageUrl = null
+    string? PrimaryImageUrl = null,
+    Guid? CategoryId = null,
+    Guid? SubcategoryId = null,
+    string? CategoryName = null,
+    string? SubcategoryName = null
 );
 
 public record ListingListDto(
@@ -177,7 +189,7 @@ public record ListingListDto(
     int Bathrooms,
     string City,
     string County,
-    string? PrimaryImage,
+    string? PrimaryImageUrl,
     string AvailabilityStatus,
     int Views,
     decimal Rating,
@@ -222,7 +234,9 @@ public record ListingSearchRequest(
     int Page = 1,
     int PageSize = 20,
     string? SortBy = null,
-    bool SortDescending = true
+    bool SortDescending = true,
+    Guid? CategoryId = null,
+    Guid? SubcategoryId = null
 );
 
 // ----- Shared -----

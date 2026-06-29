@@ -61,6 +61,79 @@ public sealed class RedisCacheService : ICacheService
         return value;
     }
 
+    public async Task RemoveAsync(string key)
+    {
+        try
+        {
+            var db = _multiplexer.GetDatabase();
+            await db.KeyDeleteAsync(key).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis RemoveAsync failed for key {CacheKey}", key);
+        }
+    }
+
+    public async Task RemoveByPrefixAsync(string prefix)
+    {
+        try
+        {
+            var endpoints = _multiplexer.GetEndPoints();
+            if (endpoints.Length == 0) return;
+
+            var db = _multiplexer.GetDatabase();
+            var server = _multiplexer.GetServer(endpoints[0]);
+            var keys = new List<RedisKey>();
+            await foreach (var key in server.KeysAsync(pattern: $"{prefix}*", database: db.Database))
+                keys.Add(key);
+
+            if (keys.Count > 0)
+                await db.KeyDeleteAsync(keys.ToArray()).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis RemoveByPrefixAsync failed for prefix {Prefix}", prefix);
+        }
+    }
+
+    public async Task<long> IncrementCounterAsync(string key)
+    {
+        try
+        {
+            var db = _multiplexer.GetDatabase();
+            return await db.StringIncrementAsync(key).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis IncrementCounterAsync failed for key {CacheKey}", key);
+            return 0;
+        }
+    }
+
+    public async Task<IReadOnlyDictionary<string, long>> GetAndClearCountersAsync(string keyPrefix)
+    {
+        var result = new Dictionary<string, long>();
+        try
+        {
+            var endpoints = _multiplexer.GetEndPoints();
+            if (endpoints.Length == 0) return result;
+
+            var db = _multiplexer.GetDatabase();
+            var server = _multiplexer.GetServer(endpoints[0]);
+            await foreach (var redisKey in server.KeysAsync(pattern: $"{keyPrefix}*", database: db.Database))
+            {
+                var value = await db.StringGetDeleteAsync(redisKey).ConfigureAwait(false);
+                if (value.TryParse(out long count) && count > 0)
+                    result[redisKey.ToString()] = count;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis GetAndClearCountersAsync failed for prefix {Prefix}", keyPrefix);
+        }
+        return result;
+    }
+
     /// <summary>Web defaults; omits <see cref="Listing.Embedding"/> on serialize to keep payloads small for catalog-style caches.</summary>
     private static JsonSerializerOptions CreateJsonOptions()
     {

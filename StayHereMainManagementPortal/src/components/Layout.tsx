@@ -34,6 +34,7 @@ const navGroups = [
       { to: "/users",          label: "User Management", Icon: IcoUsers    },
       { to: "/reference-data", label: "Reference Data",  Icon: IcoDatabase },
       { to: "/categories",     label: "Categories",      Icon: IcoCategory },
+      { to: "/subcategories",  label: "Subcategories",   Icon: IcoCategory },
       { to: "/settings",       label: "Settings",        Icon: IcoSettings },
     ],
   },
@@ -52,6 +53,7 @@ function useBreadcrumb(pathname: string): string {
     "/users":          "User Management",
     "/reference-data": "Reference Data",
     "/categories":     "Categories",
+    "/subcategories":  "Subcategories",
     "/settings":       "Settings",
   };
   const key = "/" + pathname.split("/").filter(Boolean)[0];

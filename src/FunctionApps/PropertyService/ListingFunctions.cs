@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -56,6 +57,7 @@ public class ListingFunctions
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
             var listing = await _listingService.CreateListingAsync(callerId, request);
+            await InvalidateAllListingListCachesAsync();
             return await CreateJsonResponse(req, HttpStatusCode.Created, listing);
         }
         catch (UnauthorizedAccessException ex)
@@ -91,6 +93,7 @@ public class ListingFunctions
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
 
             var listing = await _listingService.CreateListingFromPropertyAsync(propertyId, callerId, request);
+            await InvalidateAllListingListCachesAsync();
             return await CreateJsonResponse(req, HttpStatusCode.Created, listing);
         }
         catch (ArgumentException ex)
@@ -120,7 +123,10 @@ public class ListingFunctions
     {
         try
         {
-            var listing = await _listingService.GetListingByIdAsync(id);
+            var listing = await _cacheService.GetOrSetAsync(
+                $"stayhere:property:listing:{id}",
+                () => _listingService.GetListingByIdAsync(id),
+                TimeSpan.FromMinutes(30));
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
@@ -244,7 +250,10 @@ public class ListingFunctions
         {
             var page = GetQueryInt(req, "page", 1);
             var pageSize = GetQueryInt(req, "pageSize", 20);
-            var result = await _listingService.GetListingsByCityAsync(city, page, pageSize);
+            var result = await _cacheService.GetOrSetAsync(
+                $"stayhere:property:listings:city:{city.Trim().ToLowerInvariant()}:p{page}:s{pageSize}",
+                () => _listingService.GetListingsByCityAsync(city, page, pageSize),
+                TimeSpan.FromMinutes(15));
             return await CreateJsonResponse(req, HttpStatusCode.OK, result);
         }
         catch (Exception ex)
@@ -269,7 +278,10 @@ public class ListingFunctions
         {
             var page = GetQueryInt(req, "page", 1);
             var pageSize = GetQueryInt(req, "pageSize", 20);
-            var result = await _listingService.GetListingsByCountyAsync(county, page, pageSize);
+            var result = await _cacheService.GetOrSetAsync(
+                $"stayhere:property:listings:county:{county.Trim().ToLowerInvariant()}:p{page}:s{pageSize}",
+                () => _listingService.GetListingsByCountyAsync(county, page, pageSize),
+                TimeSpan.FromMinutes(15));
             return await CreateJsonResponse(req, HttpStatusCode.OK, result);
         }
         catch (Exception ex)
@@ -382,7 +394,10 @@ public class ListingFunctions
         try
         {
             var limit = GetQueryInt(req, "limit", 10);
-            var result = await _listingService.GetFeaturedListingsAsync(limit);
+            var result = await _cacheService.GetOrSetAsync(
+                $"stayhere:property:listings:featured:{limit}",
+                () => _listingService.GetFeaturedListingsAsync(limit),
+                TimeSpan.FromMinutes(10));
             return await CreateJsonResponse(req, HttpStatusCode.OK, result);
         }
         catch (Exception ex)
@@ -405,7 +420,10 @@ public class ListingFunctions
         {
             var page = GetQueryInt(req, "page", 1);
             var pageSize = GetQueryInt(req, "pageSize", 20);
-            var result = await _listingService.GetAvailableListingsAsync(page, pageSize);
+            var result = await _cacheService.GetOrSetAsync(
+                $"stayhere:property:listings:available:p{page}:s{pageSize}",
+                () => _listingService.GetAvailableListingsAsync(page, pageSize),
+                TimeSpan.FromMinutes(10));
             return await CreateJsonResponse(req, HttpStatusCode.OK, result);
         }
         catch (Exception ex)
@@ -428,7 +446,11 @@ public class ListingFunctions
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             var request = JsonSerializer.Deserialize<ListingSearchRequest>(body, JsonOptions)
                 ?? new ListingSearchRequest(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 20, null, true);
-            var result = await _listingService.SearchListingsAsync(request);
+            var cacheKey = $"stayhere:property:listings:search:{ComputeSha256(body)}";
+            var result = await _cacheService.GetOrSetAsync(
+                cacheKey,
+                () => _listingService.SearchListingsAsync(request),
+                TimeSpan.FromMinutes(5));
             return await CreateJsonResponse(req, HttpStatusCode.OK, result);
         }
         catch (Exception ex)
@@ -463,6 +485,7 @@ public class ListingFunctions
             var listing = await _listingService.UpdateListingAsync(id, callerId, request);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
+            await InvalidateListingCacheAsync(id);
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
         }
         catch (UnauthorizedAccessException ex)
@@ -545,6 +568,9 @@ public class ListingFunctions
             var listing = await _listingService.UpdateAvailabilityAsync(id, callerId, request);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
+            await Task.WhenAll(
+                _cacheService.RemoveAsync($"stayhere:property:listing:{id}"),
+                InvalidateAllListingListCachesAsync());
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
         }
         catch (UnauthorizedAccessException ex)
@@ -578,6 +604,7 @@ public class ListingFunctions
             var listing = await _listingService.UpdateRatingAsync(id, request);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
+            await _cacheService.RemoveAsync($"stayhere:property:listing:{id}");
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
         }
         catch (Exception ex)
@@ -598,10 +625,10 @@ public class ListingFunctions
     {
         try
         {
-            var listing = await _listingService.IncrementViewsAsync(id);
-            if (listing == null)
-                return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
-            return await CreateJsonResponse(req, HttpStatusCode.OK, new { listing.Views });
+            // Buffer view counts in Redis; a timer trigger flushes them to the DB every 5 minutes.
+            // This avoids a DB read+write on every page view.
+            await _cacheService.IncrementCounterAsync($"stayhere:views:{id}");
+            return req.CreateResponse(HttpStatusCode.OK);
         }
         catch (Exception ex)
         {
@@ -630,6 +657,9 @@ public class ListingFunctions
             var listing = await _listingService.UpdateFeaturedStatusAsync(id, request);
             if (listing == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
+            await Task.WhenAll(
+                _cacheService.RemoveAsync($"stayhere:property:listing:{id}"),
+                _cacheService.RemoveByPrefixAsync("stayhere:property:listings:featured:"));
             return await CreateJsonResponse(req, HttpStatusCode.OK, listing);
         }
         catch (Exception ex)
@@ -779,7 +809,7 @@ public class ListingFunctions
     [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     [OpenApiOperation(operationId: "DeleteListing", tags: new[] { "Listings" }, Summary = "Delete listing")]
     [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
-    [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.NoContent)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object))]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(object))]
     public async Task<HttpResponseData> DeleteListing(
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "listings/{id:guid}")] HttpRequestData req,
@@ -794,7 +824,10 @@ public class ListingFunctions
             var deleted = await _listingService.DeleteListingAsync(id, callerId);
             if (!deleted)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
-            return req.CreateResponse(HttpStatusCode.NoContent);
+            await Task.WhenAll(
+                _cacheService.RemoveAsync($"stayhere:property:listing:{id}"),
+                InvalidateAllListingListCachesAsync());
+            return await CreateJsonResponse(req, HttpStatusCode.OK, new { message = "Deactivated successfully" });
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -844,6 +877,30 @@ public class ListingFunctions
 
         var id = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("nameid");
         return Guid.TryParse(id, out var claimsGuid) ? claimsGuid : null;
+    }
+
+    // ── Cache invalidation helpers ─────────────────────────────────────────────
+
+    /// <summary>Removes the per-listing cache entry and all list caches that include availability or featured status.</summary>
+    private Task InvalidateListingCacheAsync(Guid id) =>
+        Task.WhenAll(
+            _cacheService.RemoveAsync($"stayhere:property:listing:{id}"),
+            _cacheService.RemoveByPrefixAsync("stayhere:property:listings:featured:"),
+            _cacheService.RemoveByPrefixAsync("stayhere:property:listings:available:"));
+
+    /// <summary>Removes all list-level caches (used after create/delete where city and county slices change too).</summary>
+    private Task InvalidateAllListingListCachesAsync() =>
+        Task.WhenAll(
+            _cacheService.RemoveByPrefixAsync("stayhere:property:listings:featured:"),
+            _cacheService.RemoveByPrefixAsync("stayhere:property:listings:available:"),
+            _cacheService.RemoveByPrefixAsync("stayhere:property:listings:city:"),
+            _cacheService.RemoveByPrefixAsync("stayhere:property:listings:county:"),
+            _cacheService.RemoveByPrefixAsync("stayhere:property:listings:search:"));
+
+    private static string ComputeSha256(string input)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
     /// <summary>Stable, readable Redis segment: lowercased, whitespace to hyphen, length-capped.</summary>

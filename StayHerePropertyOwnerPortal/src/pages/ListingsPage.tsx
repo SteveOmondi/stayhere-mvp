@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listingsApi, ownerApi, propertiesApi, uploadApi, uploadToR2, ApiError } from "../lib/api";
+import { listingsApi, ownerApi, propertiesApi, staticApi, uploadApi, uploadToR2, ApiError } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
 import { IcoPlus, IcoMapPin, IcoCheck, IcoX, IcoLoader, IcoEdit, IcoTeam, IcoUser, IcoSearch, IcoRefresh, IcoVacant } from "../components/icons";
@@ -22,6 +22,8 @@ type Listing = {
 };
 type StaffMember = { id: string; fullName: string; kind: "agent" | "caretaker" };
 type PropertyOption = { id: string; buildingName: string };
+type CategoryOption = { id: string; name: string };
+type SubcategoryOption = { id: string; name: string; categoryId?: string };
 type ImgSlot = { file?: File; url?: string; uploading: boolean; error?: string };
 
 const EMPTY_IMG = (): ImgSlot => ({ uploading: false });
@@ -58,6 +60,8 @@ export function ListingsPage() {
   const [agents, setAgents]     = useState<StaffMember[]>([]);
   const [caretakers, setCaretakers] = useState<StaffMember[]>([]);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [subcategories, setSubcategories] = useState<SubcategoryOption[]>([]);
   const [assignModal, setAssignModal] = useState<{ listingId: string; kind: "agent"|"caretaker" } | null>(null);
   const [selectedStaff, setSelectedStaff] = useState("");
   const [assigning, setAssigning] = useState(false);
@@ -66,6 +70,7 @@ export function ListingsPage() {
     propertyId: "", title: "", price: "", bedrooms: "1", bathrooms: "1",
     propertyType: "Apartment", listingType: "Rent", description: "",
     unitNumber: "", floorNumber: "0",
+    categoryId: "", subcategoryId: "",
   });
   const [creating, setCreating] = useState(false);
 
@@ -77,11 +82,12 @@ export function ListingsPage() {
     if (!userId) return;
     setLoading(true);
     try {
-      const [ld, ad, cd, pd] = await Promise.allSettled([
+      const [ld, ad, cd, pd, cats] = await Promise.allSettled([
         listingsApi.byOwner(userId, 1, 100),
         ownerApi.agents(owner?.id ?? userId),
         ownerApi.caretakers(owner?.id ?? userId),
         propertiesApi.byOwner(userId, 1, 50),
+        staticApi.categories(),
       ]);
       if (ld.status === "fulfilled") {
         const pg = asPaginated<unknown>(ld.value);
@@ -97,11 +103,23 @@ export function ListingsPage() {
         const r2 = (pg2?.items ?? (Array.isArray(pd.value) ? pd.value : [])) as unknown[];
         setProperties(r2.map(x => { const r = x as Record<string,unknown>; return { id: String(r.id), buildingName: String(r.buildingName??"") }; }));
       }
+      if (cats.status === "fulfilled" && Array.isArray(cats.value))
+        setCategories(cats.value.map(x => { const r = x as Record<string,unknown>; return { id: String(r.id), name: String(r.name??"") }; }));
     } catch (e) { toast(e instanceof ApiError ? e.message : "Failed to load listings", "error"); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { void load(); }, [reloadKey, userId]);
+
+  useEffect(() => {
+    if (!createForm.categoryId) { setSubcategories([]); return; }
+    staticApi.subcategoriesByCategory(createForm.categoryId)
+      .then(data => {
+        if (Array.isArray(data))
+          setSubcategories(data.map(x => { const r = x as Record<string,unknown>; return { id: String(r.id), name: String(r.name??""), categoryId: r.categoryId ? String(r.categoryId) : undefined }; }));
+      })
+      .catch(() => setSubcategories([]));
+  }, [createForm.categoryId]);
 
   async function uploadImage(file: File): Promise<string> {
     const contentType = file.type || "image/jpeg";
@@ -144,11 +162,15 @@ export function ListingsPage() {
 
   function openCreateModal() {
     setCreateModal(true);
+    setCreateForm(f => ({ ...f, categoryId: "", subcategoryId: "" }));
+    setSubcategories([]);
     resetImageState();
   }
 
   function closeCreateModal() {
     setCreateModal(false);
+    setCreateForm(f => ({ ...f, categoryId: "", subcategoryId: "" }));
+    setSubcategories([]);
     resetImageState();
   }
 
@@ -197,6 +219,8 @@ export function ListingsPage() {
         },
         primaryImageUrl: primaryImg.url || undefined,
         images: extraImgs.filter(img => img.url).map(img => img.url!),
+        categoryId: createForm.categoryId || undefined,
+        subcategoryId: createForm.subcategoryId || undefined,
       };
       await listingsApi.createFromProperty(createForm.propertyId, body);
       toast("Listing created!", "success");
@@ -358,6 +382,27 @@ export function ListingsPage() {
                 <div className="field"><label className="field-label">Bathrooms</label><input type="number" min="1" className="input" value={createForm.bathrooms} onChange={e=>setCreateForm(f=>({...f,bathrooms:e.target.value}))}/></div>
               </div>
               <div className="field"><label className="field-label">Description</label><textarea className="input" rows={2} value={createForm.description} onChange={e=>setCreateForm(f=>({...f,description:e.target.value}))}/></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="field">
+                  <label className="field-label">Category</label>
+                  <select className="select" value={createForm.categoryId}
+                    onChange={e => setCreateForm(f => ({ ...f, categoryId: e.target.value, subcategoryId: "" }))}>
+                    <option value="">Select category…</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label className="field-label">Subcategory</label>
+                  <select className="select" value={createForm.subcategoryId}
+                    onChange={e => setCreateForm(f => ({ ...f, subcategoryId: e.target.value }))}
+                    disabled={!createForm.categoryId || subcategories.length === 0}>
+                    <option value="">
+                      {!createForm.categoryId ? "Select category first" : subcategories.length === 0 ? "No subcategories" : "Select subcategory…"}
+                    </option>
+                    {subcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+              </div>
 
               {/* Primary Image */}
               <div className="field">

@@ -107,7 +107,7 @@ public class PropertyTermsFunctions
         return await Json(req, HttpStatusCode.OK, ToDto(terms));
     }
 
-    // ── Delete terms ───────────────────────────────────────────────────────────
+    // ── Deactivate terms ──────────────────────────────────────────────────────
     [Function("DeletePropertyTerms")]
     [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     public async Task<HttpResponseData> Delete(
@@ -116,9 +116,10 @@ public class PropertyTermsFunctions
     {
         var terms = await _db.PropertyTerms.FindAsync(id);
         if (terms == null) return await Error(req, HttpStatusCode.NotFound, "Terms not found.");
-        _db.PropertyTerms.Remove(terms);
+        terms.IsActive = false;
+        terms.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
-        return req.CreateResponse(HttpStatusCode.NoContent);
+        return await Json(req, HttpStatusCode.OK, new { message = "Deactivated successfully" });
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

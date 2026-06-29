@@ -18,11 +18,15 @@ public interface IListingRepository
     Task<IEnumerable<Listing>> GetFeaturedAsync(int limit = 10);
     Task<IEnumerable<Listing>> GetAvailableAsync(int page = 1, int pageSize = 20);
     Task<IEnumerable<Listing>> SearchAsync(ListingSearchCriteria criteria);
+    Task<int> GetSearchCountAsync(ListingSearchCriteria criteria);
     Task<int> GetTotalCountAsync();
     Task CreateAsync(Listing listing);
     Task UpdateAsync(Listing listing);
     Task DeleteAsync(Guid id);
     Task<string> GenerateListingCodeAsync();
+
+    /// <summary>Bulk-add accumulated view counts. Called by the timer flush every 5 minutes.</summary>
+    Task BatchIncrementViewsAsync(IReadOnlyDictionary<Guid, long> deltas);
 
     /// <summary>Order by pgvector cosine distance; similarity is 1 minus distance.</summary>
     Task<IReadOnlyList<(Listing Listing, double Similarity)>> SearchByEmbeddingSimilarityAsync(
@@ -53,6 +57,8 @@ public class ListingSearchCriteria
     public bool? IsFurnished { get; set; }
     public AvailabilityStatus? AvailabilityStatus { get; set; }
     public bool? IsFeatured { get; set; }
+    public Guid? CategoryId { get; set; }
+    public Guid? SubcategoryId { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
     public string? SortBy { get; set; }

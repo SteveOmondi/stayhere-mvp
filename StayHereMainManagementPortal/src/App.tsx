@@ -15,6 +15,7 @@ import { AgentsCaretakersPage } from "./pages/AgentsCaretakersPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { AiAgentPage } from "./pages/AiAgentPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
+import { SubcategoriesPage } from "./pages/SubcategoriesPage";
 import { UserManagementPage } from "./pages/UserManagementPage";
 import { ReferenceDataPage } from "./pages/ReferenceDataPage";
 import { usePortal } from "./context/PortalContext";
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="users"          element={<UserManagementPage />} />
         <Route path="reference-data" element={<ReferenceDataPage />} />
         <Route path="categories"     element={<CategoriesPage />} />
+        <Route path="subcategories"  element={<SubcategoriesPage />} />
         <Route path="settings"       element={<SettingsPage />} />
       </Route>
 

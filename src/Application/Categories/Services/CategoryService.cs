@@ -20,10 +20,9 @@ public class CategoryService : ICategoryService
         {
             Id = Guid.NewGuid(),
             Name = request.Name,
+            Slug = request.Slug,
             Description = request.Description,
             IconUrl = request.IconUrl,
-            Country = request.Country,
-            City = request.City,
             IsActive = request.IsActive,
             SortOrder = request.SortOrder,
             CreatedAt = DateTime.UtcNow,
@@ -31,7 +30,6 @@ public class CategoryService : ICategoryService
         };
 
         await _categoryRepository.CreateAsync(category);
-
         return MapToDto(category);
     }
 
@@ -47,18 +45,6 @@ public class CategoryService : ICategoryService
         return categories.Select(MapToDto);
     }
 
-    public async Task<IEnumerable<CategoryDto>> GetCategoriesByCityAsync(string city)
-    {
-        var categories = await _categoryRepository.GetByCityAsync(city);
-        return categories.Select(MapToDto);
-    }
-
-    public async Task<IEnumerable<CategoryDto>> GetCategoriesByCountryAsync(string country)
-    {
-        var categories = await _categoryRepository.GetByCountryAsync(country);
-        return categories.Select(MapToDto);
-    }
-
     public async Task<IEnumerable<CategoryDto>> GetActiveCategoriesAsync()
     {
         var categories = await _categoryRepository.GetActiveAsync();
@@ -71,16 +57,14 @@ public class CategoryService : ICategoryService
         if (category == null) return null;
 
         if (request.Name != null) category.Name = request.Name;
+        if (request.Slug != null) category.Slug = request.Slug;
         if (request.Description != null) category.Description = request.Description;
         if (request.IconUrl != null) category.IconUrl = request.IconUrl;
-        if (request.Country != null) category.Country = request.Country;
-        if (request.City != null) category.City = request.City;
         if (request.IsActive.HasValue) category.IsActive = request.IsActive.Value;
         if (request.SortOrder.HasValue) category.SortOrder = request.SortOrder.Value;
         category.UpdatedAt = DateTime.UtcNow;
 
         await _categoryRepository.UpdateAsync(category);
-
         return MapToDto(category);
     }
 
@@ -93,19 +77,6 @@ public class CategoryService : ICategoryService
         return true;
     }
 
-    private static CategoryDto MapToDto(Category category)
-    {
-        return new CategoryDto(
-            category.Id,
-            category.Name,
-            category.Description,
-            category.IconUrl,
-            category.Country,
-            category.City,
-            category.IsActive,
-            category.SortOrder,
-            category.CreatedAt,
-            category.UpdatedAt
-        );
-    }
+    private static CategoryDto MapToDto(Category c) =>
+        new(c.Id, c.Name, c.Slug, c.Description, c.IconUrl, c.IsActive, c.SortOrder, c.CreatedAt, c.UpdatedAt);
 }

@@ -13,17 +13,23 @@ public class ListingService : IListingService
     private readonly IListingRepository _listingRepository;
     private readonly IPropertyRepository _propertyRepository;
     private readonly IEmbeddingService _embeddingService;
+    private readonly ICategoryRepository _categoryRepository;
+    private readonly ISubcategoryRepository _subcategoryRepository;
     private readonly ILogger<ListingService> _logger;
 
     public ListingService(
         IListingRepository listingRepository,
         IPropertyRepository propertyRepository,
         IEmbeddingService embeddingService,
+        ICategoryRepository categoryRepository,
+        ISubcategoryRepository subcategoryRepository,
         ILogger<ListingService> logger)
     {
         _listingRepository = listingRepository;
         _propertyRepository = propertyRepository;
         _embeddingService = embeddingService;
+        _categoryRepository = categoryRepository;
+        _subcategoryRepository = subcategoryRepository;
         _logger = logger;
     }
 
@@ -94,6 +100,8 @@ public class ListingService : IListingService
             RatingCount = 0,
             IsFeatured = false,
             RecommendedScore = 0,
+            CategoryId = request.CategoryId,
+            SubcategoryId = request.SubcategoryId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -159,6 +167,8 @@ public class ListingService : IListingService
             RatingCount = 0,
             IsFeatured = false,
             RecommendedScore = 0,
+            CategoryId = request.CategoryId,
+            SubcategoryId = request.SubcategoryId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -283,13 +293,16 @@ public class ListingService : IListingService
             IsFurnished = request.IsFurnished,
             AvailabilityStatus = string.IsNullOrEmpty(request.AvailabilityStatus) ? null : ParseAvailabilityStatus(request.AvailabilityStatus),
             IsFeatured = request.IsFeatured,
+            CategoryId = request.CategoryId,
+            SubcategoryId = request.SubcategoryId,
             Page = request.Page,
             PageSize = request.PageSize,
             SortBy = request.SortBy,
             SortDescending = request.SortDescending
         };
+        var totalCount = await _listingRepository.GetSearchCountAsync(criteria);
         var listings = await _listingRepository.SearchAsync(criteria);
-        return CreatePaginatedResult(listings, listings.Count(), request.Page, request.PageSize);
+        return CreatePaginatedResult(listings, totalCount, request.Page, request.PageSize);
     }
 
     public async Task<ListingDto?> UpdateListingAsync(Guid id, Guid requesterId, UpdateListingRequest request)
@@ -321,6 +334,8 @@ public class ListingService : IListingService
         if (request.Agent != null) listing.Agent = new PropertyContact(request.Agent.Name, request.Agent.Phone, request.Agent.Email);
         if (request.IsFeatured.HasValue) listing.IsFeatured = request.IsFeatured.Value;
         if (request.RecommendedScore.HasValue) listing.RecommendedScore = request.RecommendedScore.Value;
+        if (request.CategoryId.HasValue) listing.CategoryId = request.CategoryId.Value;
+        if (request.SubcategoryId.HasValue) listing.SubcategoryId = request.SubcategoryId.Value;
         listing.UpdatedAt = DateTime.UtcNow;
 
         await TryComputeEmbeddingOnListingAsync(listing);
@@ -451,6 +466,20 @@ public class ListingService : IListingService
     private async Task<ListingDto> MapToDtoAsync(Listing listing)
     {
         var property = await _propertyRepository.GetByIdAsync(listing.PropertyId);
+
+        string? categoryName = null;
+        string? subcategoryName = null;
+        if (listing.CategoryId.HasValue)
+        {
+            var cat = await _categoryRepository.GetByIdAsync(listing.CategoryId.Value);
+            categoryName = cat?.Name;
+        }
+        if (listing.SubcategoryId.HasValue)
+        {
+            var sub = await _subcategoryRepository.GetByIdAsync(listing.SubcategoryId.Value);
+            subcategoryName = sub?.Name;
+        }
+
         return new ListingDto(
             listing.Id,
             listing.ListingCode,
@@ -488,7 +517,11 @@ public class ListingService : IListingService
             listing.RecommendedScore,
             listing.CreatedAt,
             listing.UpdatedAt,
-            listing.PrimaryImageUrl
+            listing.PrimaryImageUrl,
+            listing.CategoryId,
+            listing.SubcategoryId,
+            categoryName,
+            subcategoryName
         );
     }
 
@@ -522,13 +555,8 @@ public class ListingService : IListingService
     private async Task<PaginatedResult<ListingListDto>> CreatePaginatedResultWithBuildingNames(IEnumerable<Listing> listings, int totalCount, int page, int pageSize)
     {
         var list = listings.ToList();
-        var propertyIds = list.Select(l => l.PropertyId).Distinct().ToList();
-        var properties = new Dictionary<Guid, Property>();
-        foreach (var id in propertyIds)
-        {
-            var p = await _propertyRepository.GetByIdAsync(id);
-            if (p != null) properties[id] = p;
-        }
+        var propertyIds = list.Select(l => l.PropertyId).Distinct();
+        var properties = await _propertyRepository.GetByIdsAsync(propertyIds);
         var items = list.Select(l => MapToListDto(l, properties.GetValueOrDefault(l.PropertyId)?.BuildingName));
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         return new PaginatedResult<ListingListDto>(items, totalCount, page, pageSize, totalPages);

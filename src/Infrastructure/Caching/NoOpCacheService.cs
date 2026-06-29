@@ -7,4 +7,13 @@ public sealed class NoOpCacheService : ICacheService
 {
     public Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiration = null) =>
         factory();
+
+    public Task RemoveAsync(string key) => Task.CompletedTask;
+
+    public Task RemoveByPrefixAsync(string prefix) => Task.CompletedTask;
+
+    public Task<long> IncrementCounterAsync(string key) => Task.FromResult(0L);
+
+    public Task<IReadOnlyDictionary<string, long>> GetAndClearCountersAsync(string keyPrefix) =>
+        Task.FromResult<IReadOnlyDictionary<string, long>>(new Dictionary<string, long>());
 }

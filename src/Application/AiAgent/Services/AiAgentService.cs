@@ -186,7 +186,7 @@ public class AiAgentService : IAiAgentService
         IEnumerable<Listing> query = await _listings.SearchAsync(criteria);
 
         if (!string.IsNullOrWhiteSpace(request.ListingId) && Guid.TryParse(request.ListingId, out var id))
-            query = query.Where(l => l.Id == id);
+            query = query.Where(l => l.Id != id);  // exclude the seed listing; caller wants similar ones
         else if (!string.IsNullOrWhiteSpace(request.ListingCode))
             query = query.Where(l => l.ListingCode.Equals(request.ListingCode, StringComparison.OrdinalIgnoreCase));
 

@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { listingsApi, asListingArray, type Listing, aiApi } from "../lib/api";
 import {
-  formatKes, listingImages, listingLocation, listingPrice,
+  formatKes, fallbackImage, listingImages, listingLocation, listingPrice,
   listingTitle, isRent, resolveLocation,
 } from "../lib/format";
 import { useApp } from "../context/AppContext";
@@ -78,6 +78,14 @@ function HeroGallery({
 
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
+
+  function imgSrc(url: string): string {
+    return imgErrors[url] ? fallbackImage(url) : url;
+  }
+  function onImgError(url: string) {
+    setImgErrors((prev) => ({ ...prev, [url]: true }));
+  }
 
   const next = useCallback(() => setActive((a) => (a + 1) % all.length), [all.length]);
   const prev = useCallback(() => setActive((a) => (a - 1 + all.length) % all.length), [all.length]);
@@ -104,13 +112,14 @@ function HeroGallery({
         <AnimatePresence mode="sync">
           <motion.img
             key={active}
-            src={all[active]}
+            src={imgSrc(all[active])}
             alt={alt}
             initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.65, ease: "easeInOut" }}
             className="absolute inset-0 h-full w-full object-cover cursor-zoom-in"
+            onError={() => onImgError(all[active])}
             onClick={() => setLightbox(true)}
           />
         </AnimatePresence>
@@ -160,7 +169,7 @@ function HeroGallery({
                   : "border-transparent opacity-55 hover:opacity-100 hover:border-white/20"
               }`}
             >
-              <img src={img} alt={`${alt} ${i + 1}`} className="h-full w-full object-cover" />
+              <img src={imgSrc(img)} alt={`${alt} ${i + 1}`} onError={() => onImgError(img)} className="h-full w-full object-cover" />
             </button>
           ))}
         </div>
@@ -190,12 +199,13 @@ function HeroGallery({
             </button>
             <motion.img
               key={active}
-              src={all[active]}
+              src={imgSrc(all[active])}
               alt={alt}
               initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.3 }}
               className="max-h-[85vh] max-w-[85vw] rounded-2xl object-contain"
+              onError={() => onImgError(all[active])}
               onClick={(e) => e.stopPropagation()}
             />
             <button
@@ -476,7 +486,13 @@ export function ListingDetailPage() {
   function handleRate(rating: number) {
     if (!id || rated) return;
     listingsApi.rate(id, rating)
-      .then(() => { setUserRating(rating); setRated(true); toast("Thanks for your rating!", "success"); })
+      .then(() => listingsApi.getById(id))
+      .then(updated => {
+        if (updated) setListing(updated);
+        setUserRating(rating);
+        setRated(true);
+        toast("Thanks for your rating!", "success");
+      })
       .catch(() => toast("Could not submit rating", "error"));
   }
 
@@ -673,10 +689,12 @@ export function ListingDetailPage() {
               {/* Highlight chips */}
               <FadeUp delay={0.08} className="mt-6 flex flex-wrap gap-2">
                 {[
-                  listing.propertyType && { label: listing.propertyType, color: "gold" },
-                  listing.listingType  && { label: listing.listingType,  color: "teal" },
-                  listing.isFeatured   && { label: "Featured",           color: "gold" },
-                  listing.isAvailable !== false && { label: "Available", color: "teal" },
+                  listing.categoryName    && { label: listing.categoryName,    color: "teal" },
+                  listing.subcategoryName && { label: listing.subcategoryName, color: "gold" },
+                  listing.propertyType   && { label: listing.propertyType,    color: "gold" },
+                  listing.listingType    && { label: listing.listingType,     color: "teal" },
+                  listing.isFeatured     && { label: "Featured",              color: "gold" },
+                  listing.isAvailable !== false && { label: "Available",      color: "teal" },
                 ].filter(Boolean).map((c: any) => (
                   <span
                     key={c.label}
