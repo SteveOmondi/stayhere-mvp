@@ -274,11 +274,14 @@ stages:
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAdminPortal'], 'true'), eq(variables['globalChange'], 'true')))
 
     - script: |
+        echo "VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY" > .env
         npm ci
         npm run build
       workingDirectory: '$(System.DefaultWorkingDirectory)/StayHerePropertyOwnerPortal'
       displayName: 'Build StayHerePropertyOwnerPortal'
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isOwnerPortal'], 'true'), eq(variables['globalChange'], 'true')))
+      env:
+        VITE_GOOGLE_MAPS_API_KEY: $(VITE_GOOGLE_MAPS_API_KEY)
 
     - publish: $(System.DefaultWorkingDirectory)/StayHereMainManagementPortal/dist
       artifact: AdminPortal_Pkg
