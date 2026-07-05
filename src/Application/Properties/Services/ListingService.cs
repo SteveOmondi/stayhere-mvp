@@ -548,7 +548,9 @@ public class ListingService : IListingService
             listing.Views,
             listing.Rating,
             listing.IsFeatured,
-            listing.ListedDate
+            listing.ListedDate,
+            listing.Location.Latitude,
+            listing.Location.Longitude
         );
     }
 

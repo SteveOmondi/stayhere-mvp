@@ -194,7 +194,9 @@ public record ListingListDto(
     int Views,
     decimal Rating,
     bool IsFeatured,
-    DateTime ListedDate
+    DateTime ListedDate,
+    double? Latitude = null,
+    double? Longitude = null
 );
 
 public record UpdateAvailabilityRequest(string AvailabilityStatus);
