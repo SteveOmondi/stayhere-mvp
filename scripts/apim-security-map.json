@@ -250,7 +250,7 @@
   },
   {
     "pattern": "POST:logs",
-    "access": "requires-jwt"
+    "access": "public"
   },
   {
     "pattern": "GET:logs",
@@ -326,6 +326,42 @@
   {
     "comment": "── Static Data ───────────────────────────────────────────────",
     "pattern": "GET:categories/all",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "GET:subcategories/all",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "GET:subcategories/category/*",
+    "access": "public"
+  },
+  {
+    "pattern": "GET:subcategories/city/*",
+    "access": "public"
+  },
+  {
+    "pattern": "GET:subcategories/country/*",
+    "access": "public"
+  },
+  {
+    "pattern": "GET:subcategories/*",
+    "access": "public"
+  },
+  {
+    "pattern": "GET:subcategories",
+    "access": "public"
+  },
+  {
+    "pattern": "POST:subcategories",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "PUT:subcategories/*",
+    "access": "requires-jwt"
+  },
+  {
+    "pattern": "DELETE:subcategories/*",
     "access": "requires-jwt"
   },
   {

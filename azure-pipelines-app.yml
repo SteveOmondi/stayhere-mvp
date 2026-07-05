@@ -274,11 +274,14 @@ stages:
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAdminPortal'], 'true'), eq(variables['globalChange'], 'true')))
 
     - script: |
+        echo "VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY" > .env
         npm ci
         npm run build
       workingDirectory: '$(System.DefaultWorkingDirectory)/StayHerePropertyOwnerPortal'
       displayName: 'Build StayHerePropertyOwnerPortal'
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isOwnerPortal'], 'true'), eq(variables['globalChange'], 'true')))
+      env:
+        VITE_GOOGLE_MAPS_API_KEY: $(VITE_GOOGLE_MAPS_API_KEY)
 
     - publish: $(System.DefaultWorkingDirectory)/StayHereMainManagementPortal/dist
       artifact: AdminPortal_Pkg
@@ -381,7 +384,7 @@ stages:
 - stage: Deploy_AuthService
   displayName: 'Deploy Auth'
   dependsOn: Migrate_Database
-  condition: succeeded()
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AuthService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -428,7 +431,7 @@ stages:
 - stage: Deploy_PropertyService
   displayName: 'Deploy Property'
   dependsOn: Migrate_Database
-  condition: succeeded()
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -461,7 +464,7 @@ stages:
 - stage: Deploy_CustomerService
   displayName: 'Deploy Customer'
   dependsOn: Migrate_Database
-  condition: succeeded()
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_CustomerService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -494,7 +497,7 @@ stages:
 - stage: Deploy_PropertyOwnerService
   displayName: 'Deploy PropertyOwner'
   dependsOn: Migrate_Database
-  condition: succeeded()
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyOwnerService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -527,7 +530,7 @@ stages:
 - stage: Deploy_StaticDataService
   displayName: 'Deploy StaticData'
   dependsOn: Migrate_Database
-  condition: succeeded()
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StaticDataService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -560,7 +563,7 @@ stages:
 - stage: Deploy_AiAgentService
   displayName: 'Deploy AiAgent'
   dependsOn: Migrate_Database
-  condition: succeeded()
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -593,7 +596,7 @@ stages:
 - stage: Deploy_PaymentsService
   displayName: 'Deploy Payments'
   dependsOn: Migrate_Database
-  condition: succeeded()
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PaymentsService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -626,7 +629,7 @@ stages:
 - stage: Deploy_LoggingService
   displayName: 'Deploy Logging'
   dependsOn: Migrate_Database
-  condition: succeeded()
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_LoggingService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:

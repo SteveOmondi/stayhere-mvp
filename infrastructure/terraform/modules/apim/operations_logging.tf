@@ -1,4 +1,4 @@
-# Operations for LoggingService
+﻿# Auto-generated Operations for LoggingService
 
 resource "azurerm_api_management_api_operation" "op_logging_writelog" {
   operation_id        = "WriteLog"
@@ -9,29 +9,6 @@ resource "azurerm_api_management_api_operation" "op_logging_writelog" {
   method              = "POST"
   url_template        = "/logs"
   depends_on          = [azurerm_api_management_api_policy.logging]
-}
-
-resource "azurerm_api_management_api_operation_policy" "pol_logging_writelog" {
-  api_name            = azurerm_api_management_api_operation.op_logging_writelog.api_name
-  api_management_name = azurerm_api_management_api_operation.op_logging_writelog.api_management_name
-  resource_group_name = azurerm_api_management_api_operation.op_logging_writelog.resource_group_name
-  operation_id        = azurerm_api_management_api_operation.op_logging_writelog.operation_id
-  xml_content         = <<XML
-<policies>
-    <inbound>
-        <base />
-    </inbound>
-    <backend>
-        <base />
-    </backend>
-    <outbound>
-        <base />
-    </outbound>
-    <on-error>
-        <base />
-    </on-error>
-</policies>
-XML
 }
 
 resource "azurerm_api_management_api_operation" "op_logging_readlog" {
@@ -78,3 +55,4 @@ resource "azurerm_api_management_api_operation_policy" "pol_logging_readlog" {
 </policies>
 XML
 }
+
