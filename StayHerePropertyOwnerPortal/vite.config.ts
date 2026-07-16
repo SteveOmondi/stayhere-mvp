@@ -18,7 +18,7 @@ export default defineConfig({
     proxy: {
       "/api/auth":     { target: `${APIM}/auth`,          changeOrigin: true, secure: true, rewrite: (p) => p.replace(/^\/api\/auth/,     "") },
       "/api/owner":    { target: `${APIM}/propertyowner`, changeOrigin: true, secure: true, rewrite: (p) => p.replace(/^\/api\/owner/,    "") },
-      "/api/property": { target: `${APIM}/property`,      changeOrigin: true, secure: true, rewrite: (p) => p.replace(/^\/api\/property/, "") },
+      "/api/property": { target: "http://localhost:7072",  changeOrigin: true, secure: false, rewrite: (p) => p.replace(/^\/api\/property/, "/api") },
       "/api/customer": { target: `${APIM}/customers`,     changeOrigin: true, secure: true, rewrite: (p) => p.replace(/^\/api\/customer/, "") },
       "/api/static":   { target: `${APIM}/staticdata`,    changeOrigin: true, secure: true, rewrite: (p) => p.replace(/^\/api\/static/,   "") },
       "/api/ai":       { target: `${APIM}/aiagent`,       changeOrigin: true, secure: true, rewrite: (p) => p.replace(/^\/api\/ai/,       "") },

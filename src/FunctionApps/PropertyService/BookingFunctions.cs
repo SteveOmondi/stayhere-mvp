@@ -43,16 +43,18 @@ public class BookingFunctions
         {
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             var dto = JsonSerializer.Deserialize<CreateBookingRequest>(body, _json);
-            if (dto == null || dto.ListingId == Guid.Empty || dto.CustomerId == Guid.Empty)
+            if (dto == null || dto.ListingId == Guid.Empty || dto.CustomerId is null || dto.CustomerId == Guid.Empty)
                 return await Error(req, HttpStatusCode.BadRequest, "ListingId and CustomerId are required.");
+            if (dto.ViewingDate is null)
+                return await Error(req, HttpStatusCode.BadRequest, "viewingDate is required.");
 
             var booking = new ViewingBooking
             {
                 Id = Guid.NewGuid(),
                 ListingId = dto.ListingId,
-                CustomerId = dto.CustomerId,
-                PreferredDate = dto.PreferredDate.ToUniversalTime(),
-                PreferredTime = dto.PreferredTime ?? "10:00",
+                CustomerId = dto.CustomerId!.Value,
+                PreferredDate = DateTime.SpecifyKind(dto.ViewingDate.Value.Date, DateTimeKind.Utc),
+                PreferredTime = dto.ViewingTime ?? "10:00",
                 ViewingType = dto.ViewingType ?? "Physical",
                 Notes = dto.Notes,
                 ContactPhone = dto.ContactPhone,
@@ -218,7 +220,7 @@ public class BookingFunctions
         ["id"] = b.Id,
         ["listingId"] = b.ListingId,
         ["customerId"] = b.CustomerId,
-        ["preferredDate"] = b.PreferredDate,
+        ["preferredDate"] = b.PreferredDate.ToString("yyyy-MM-dd"),
         ["preferredTime"] = b.PreferredTime,
         ["viewingType"] = b.ViewingType,
         ["status"] = b.Status,
@@ -248,9 +250,9 @@ public class BookingFunctions
 // ── Request DTOs ──────────────────────────────────────────────────────────────
 public record CreateBookingRequest(
     Guid ListingId,
-    Guid CustomerId,
-    DateTime PreferredDate,
-    string? PreferredTime,
+    Guid? CustomerId,
+    DateTime? ViewingDate,
+    string? ViewingTime,
     string? ViewingType,
     string? Notes,
     string? ContactPhone);

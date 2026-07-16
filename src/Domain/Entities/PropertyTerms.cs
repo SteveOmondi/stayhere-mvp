@@ -27,7 +27,15 @@ public class PropertyTerms
     public string? MaintenancePolicy { get; set; }
     public string? SecurityDepositTerms { get; set; }
 
+    /// <summary>Minimum rental period, e.g. "6 months".</summary>
+    public string? MinimumLeasePeriod { get; set; }
+
     public decimal? SecurityDeposit { get; set; }
+    public decimal? WaterDeposit { get; set; }
+    public decimal? ElectricityDeposit { get; set; }
+    /// <summary>Prepaid electricity token deposit.</summary>
+    public decimal? TokenDeposit { get; set; }
+    public decimal? GarbageDeposit { get; set; }
     public decimal? AdminFee { get; set; }
     public string? Currency { get; set; } = "KES";
 

@@ -1,4 +1,4 @@
-import { loadConfig } from "./config";
+import { loadConfig, loadOwnerProfile } from "./config";
 
 export class ApiError extends Error {
   status: number; body: string;
@@ -39,6 +39,9 @@ async function req<T>(base: string, path: string, opts: Opts = {}): Promise<T> {
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (opts.bearer) headers["Authorization"] = `Bearer ${opts.bearer}`;
   else if (cfg.authToken) headers["Authorization"] = `Bearer ${cfg.authToken}`;
+  // Required by SKIP_AUTH=true local dev mode: backend reads this as the caller's PropertyOwner ID.
+  const ownerId = loadOwnerProfile()?.id;
+  if (ownerId) headers["X-User-Id"] = ownerId;
 
   logReq(method, url, opts.body, headers);
   const t0 = Date.now();
@@ -122,7 +125,7 @@ export const listingsApi = {
     req<unknown>(loadConfig().propertyApiBase, `properties/${propertyId}/listings`, { method: "POST", body }),
   update: (id: string, body: Record<string, unknown>) =>
     req<unknown>(loadConfig().propertyApiBase, `listings/${id}`, { method: "PUT", body }),
-  updateAvailability: (id: string, body: { isAvailable: boolean }) =>
+  updateAvailability: (id: string, body: { availabilityStatus: string }) =>
     req<unknown>(loadConfig().propertyApiBase, `listings/${id}/availability`, { method: "PATCH", body }),
   delete: (id: string) =>
     req<unknown>(loadConfig().propertyApiBase, `listings/${id}`, { method: "DELETE" }),
@@ -203,6 +206,7 @@ export type TenantApplication = {
   termsAcceptedAt?: string; digitalSignatureUrl?: string;
   createdAt: string; updatedAt: string;
   documents?: ApplicationDocument[];
+  payments?: RentalPayment[];
   listingTitle?: string; listingCode?: string;
   customerName?: string; customerEmail?: string; customerPhone?: string;
 };
@@ -214,7 +218,7 @@ export const applicationApi = {
     req<TenantApplication[]>(loadConfig().propertyApiBase, `applications/owner/${ownerId}`),
   getById: (id: string) =>
     req<TenantApplication>(loadConfig().propertyApiBase, `applications/${id}`),
-  review: (id: string, body: { status: "Approved" | "Rejected"; rejectionReason?: string; reviewedBy?: string }) =>
+  review: (id: string, body: { decision: "Approved" | "Rejected"; reason?: string; reviewerEmail?: string }) =>
     req<TenantApplication>(loadConfig().propertyApiBase, `applications/${id}/review`, { method: "PATCH", body }),
   cancel: (id: string) =>
     req<TenantApplication>(loadConfig().propertyApiBase, `applications/${id}/cancel`, { method: "PATCH" }),
@@ -225,7 +229,9 @@ export type PropertyTerms = {
   id: string; listingId: string; title: string; isActive: boolean;
   termsContent?: string; houseRules?: string; paymentTerms?: string;
   noticePeriod?: string; petPolicy?: string; maintenancePolicy?: string;
+  minimumLeasePeriod?: string;
   securityDepositTerms?: string; securityDeposit?: number; adminFee?: number;
+  waterDeposit?: number; electricityDeposit?: number; tokenDeposit?: number; garbageDeposit?: number;
   currency?: string;
   mpesaPaybill?: string; mpesaTill?: string; mpesaAccountNumber?: string;
   bankName?: string; bankAccountName?: string; bankAccountNumber?: string;

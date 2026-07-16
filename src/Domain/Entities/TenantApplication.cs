@@ -27,8 +27,6 @@ public class TenantApplication
 
     // Navigation
     public Listing? Listing { get; set; }
-    public Customer? Customer { get; set; }
-    public ViewingBooking? ViewingBooking { get; set; }
     public List<ApplicationDocument> Documents { get; set; } = new();
     public List<RentalPayment> Payments { get; set; } = new();
 }

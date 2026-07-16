@@ -172,8 +172,12 @@ public class StayHereDbContext : DbContext
                 Description = "Luxury living in the heart of the city",
                 TotalUnits = 50,
                 TotalFloors = 10,
+                YearBuilt = (int?)null,
                 PrimaryImageUrl = (string?)null,
                 Images = new List<string>(),
+                SharedAmenities = new List<string>(),
+                Rules = new List<HouseRule>(),
+                StructuredImages = PropertyImages.Empty(),
                 OwnerId = ownerId,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
@@ -264,6 +268,16 @@ public class StayHereDbContext : DbContext
             c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
             c => c.ToList());
 
+        var houseRuleListComparer = new ValueComparer<List<HouseRule>>(
+            (c1, c2) => JsonSerializer.Serialize(c1, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(c2, (JsonSerializerOptions?)null),
+            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, (v.Type + v.Description).GetHashCode())),
+            c => c.Select(r => new HouseRule(r.Type, r.Description)).ToList());
+
+        var propertyImagesComparer = new ValueComparer<PropertyImages>(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(),
+            v => JsonSerializer.Deserialize<PropertyImages>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+
         modelBuilder.Entity<Property>(entity =>
         {
             entity.ToTable("properties");
@@ -274,12 +288,28 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.TotalUnits).HasColumnName("total_units");
             entity.Property(e => e.TotalFloors).HasColumnName("total_floors");
+            entity.Property(e => e.YearBuilt).HasColumnName("year_built");
             entity.Property(e => e.PrimaryImageUrl).HasColumnName("primary_image_url").HasMaxLength(500);
             entity.Property(e => e.Images).HasColumnName("images")
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                     v => string.IsNullOrWhiteSpace(v) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
                 .Metadata.SetValueComparer(stringListComparer);
+            entity.Property(e => e.SharedAmenities).HasColumnName("shared_amenities").HasColumnType("text")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrWhiteSpace(v) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                .Metadata.SetValueComparer(stringListComparer);
+            entity.Property(e => e.Rules).HasColumnName("rules").HasColumnType("text")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrWhiteSpace(v) ? new List<HouseRule>() : JsonSerializer.Deserialize<List<HouseRule>>(v, (JsonSerializerOptions?)null) ?? new List<HouseRule>())
+                .Metadata.SetValueComparer(houseRuleListComparer);
+            entity.Property(e => e.StructuredImages).HasColumnName("images_structured").HasColumnType("text")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrWhiteSpace(v) ? PropertyImages.Empty() : JsonSerializer.Deserialize<PropertyImages>(v, (JsonSerializerOptions?)null) ?? PropertyImages.Empty())
+                .Metadata.SetValueComparer(propertyImagesComparer);
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
@@ -309,6 +339,11 @@ public class StayHereDbContext : DbContext
             c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
             c => c.ToList());
 
+        var listingImagesComparer = new ValueComparer<ListingImages>(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(),
+            v => JsonSerializer.Deserialize<ListingImages>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+
         modelBuilder.Entity<Listing>(entity =>
         {
             entity.ToTable("listings");
@@ -337,6 +372,11 @@ public class StayHereDbContext : DbContext
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                     v => string.IsNullOrWhiteSpace(v) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
                 .Metadata.SetValueComparer(stringListComparer);
+            entity.Property(e => e.StructuredImages).HasColumnName("images_structured").HasColumnType("text")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrWhiteSpace(v) ? ListingImages.Empty() : JsonSerializer.Deserialize<ListingImages>(v, (JsonSerializerOptions?)null) ?? ListingImages.Empty())
+                .Metadata.SetValueComparer(listingImagesComparer);
             entity.Property(e => e.PrimaryImageUrl).HasColumnName("primary_image_url").HasMaxLength(500);
             entity.Property(e => e.SizeSqft).HasColumnName("size_sqft");
             entity.Property(e => e.YearBuilt).HasColumnName("year_built");
@@ -391,6 +431,12 @@ public class StayHereDbContext : DbContext
                 agent.Property(a => a.Name).HasColumnName("agent_name").HasMaxLength(255);
                 agent.Property(a => a.Phone).HasColumnName("agent_phone").HasMaxLength(20).HasConversion(PhoneConverter);
                 agent.Property(a => a.Email).HasColumnName("agent_email").HasMaxLength(255);
+            });
+            entity.OwnsOne(e => e.Caretaker, ct =>
+            {
+                ct.Property(c => c.Name).HasColumnName("caretaker_name").HasMaxLength(255);
+                ct.Property(c => c.Phone).HasColumnName("caretaker_phone").HasMaxLength(20).HasConversion(PhoneConverter);
+                ct.Property(c => c.Email).HasColumnName("caretaker_email").HasMaxLength(255);
             });
 
             entity.HasIndex(e => e.ListingCode).IsUnique();
@@ -689,7 +735,12 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.PetPolicy).HasColumnName("pet_policy").HasMaxLength(500);
             entity.Property(e => e.MaintenancePolicy).HasColumnName("maintenance_policy");
             entity.Property(e => e.SecurityDepositTerms).HasColumnName("security_deposit_terms");
+            entity.Property(e => e.MinimumLeasePeriod).HasColumnName("min_lease_period").HasMaxLength(50);
             entity.Property(e => e.SecurityDeposit).HasColumnName("security_deposit").HasPrecision(18, 2);
+            entity.Property(e => e.WaterDeposit).HasColumnName("water_deposit").HasPrecision(18, 2);
+            entity.Property(e => e.ElectricityDeposit).HasColumnName("electricity_deposit").HasPrecision(18, 2);
+            entity.Property(e => e.TokenDeposit).HasColumnName("token_deposit").HasPrecision(18, 2);
+            entity.Property(e => e.GarbageDeposit).HasColumnName("garbage_deposit").HasPrecision(18, 2);
             entity.Property(e => e.AdminFee).HasColumnName("admin_fee").HasPrecision(18, 2);
             entity.Property(e => e.Currency).HasColumnName("currency").HasMaxLength(3).HasDefaultValue("KES");
             entity.Property(e => e.MpesaPaybill).HasColumnName("mpesa_paybill").HasMaxLength(20);

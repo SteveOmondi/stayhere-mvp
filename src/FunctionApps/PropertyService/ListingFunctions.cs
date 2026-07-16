@@ -167,7 +167,7 @@ public class ListingFunctions
     [OpenApiOperation(operationId: "GetAllListings", tags: new[] { "Listings" }, Summary = "Get all listings paginated")]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> GetAllListings(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings")] HttpRequestData req)
     {
@@ -191,7 +191,7 @@ public class ListingFunctions
     [OpenApiParameter(name: "propertyId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> GetListingsByProperty(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/property/{propertyId:guid}")] HttpRequestData req,
         Guid propertyId)
@@ -216,7 +216,7 @@ public class ListingFunctions
     [OpenApiParameter(name: "ownerId", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> GetListingsByOwner(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/owner/{ownerId:guid}")] HttpRequestData req,
         Guid ownerId)
@@ -241,7 +241,7 @@ public class ListingFunctions
     [OpenApiParameter(name: "city", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> GetListingsByCity(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/city/{city}")] HttpRequestData req,
         string city)
@@ -269,7 +269,7 @@ public class ListingFunctions
     [OpenApiParameter(name: "county", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> GetListingsByCounty(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/county/{county}")] HttpRequestData req,
         string county)
@@ -301,7 +301,7 @@ public class ListingFunctions
     [OpenApiParameter(name: "location", In = ParameterLocation.Query, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> GetListingsByLocation(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/by-location")] HttpRequestData req)
     {
@@ -339,7 +339,7 @@ public class ListingFunctions
     [OpenApiParameter(name: "propertyType", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> GetListingsByType(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/type/{propertyType}")] HttpRequestData req,
         string propertyType)
@@ -364,7 +364,7 @@ public class ListingFunctions
     [OpenApiParameter(name: "listingType", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> GetListingsByListingType(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/listing-type/{listingType}")] HttpRequestData req,
         string listingType)
@@ -387,7 +387,7 @@ public class ListingFunctions
     [AllowAnonymous]
     [OpenApiOperation(operationId: "GetFeaturedListings", tags: new[] { "Listings" }, Summary = "Get featured listings")]
     [OpenApiParameter(name: "limit", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<ListingResponseDto>))]
     public async Task<HttpResponseData> GetFeaturedListings(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/featured")] HttpRequestData req)
     {
@@ -412,7 +412,7 @@ public class ListingFunctions
     [OpenApiOperation(operationId: "GetAvailableListings", tags: new[] { "Listings" }, Summary = "Get available listings")]
     [OpenApiParameter(name: "page", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
     [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int))]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> GetAvailableListings(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "listings/available")] HttpRequestData req)
     {
@@ -437,7 +437,7 @@ public class ListingFunctions
     [AllowAnonymous]
     [OpenApiOperation(operationId: "SearchListings", tags: new[] { "Listings" }, Summary = "Search listings")]
     [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(ListingSearchRequest), Required = true)]
-    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingListDto>))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PaginatedResult<ListingResponseDto>))]
     public async Task<HttpResponseData> SearchListings(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "listings/search")] HttpRequestData req)
     {
@@ -517,7 +517,7 @@ public class ListingFunctions
             var preview = await _listingService.GetListingByIdAsync(id);
             if (preview == null)
                 return await CreateErrorResponse(req, HttpStatusCode.NotFound, "Listing not found");
-            callerId = preview.OwnerId;
+            callerId = preview.Owner.Id;
         }
         else
         {

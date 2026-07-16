@@ -27,7 +27,10 @@ public class Listing
 
     public List<string> Amenities { get; set; } = new();
     public string? PrimaryImageUrl { get; set; }
+    /// <summary>Legacy flat image list (kept for backward compat). New code uses StructuredImages.</summary>
     public List<string> Images { get; set; } = new();
+    /// <summary>Sectioned images: Exterior, LivingRoom, Kitchen, DiningArea, Bedroom, Bathroom, Balcony, Other.</summary>
+    public ListingImages StructuredImages { get; set; } = ListingImages.Empty();
 
     public int? SizeSqft { get; set; }
     public int? YearBuilt { get; set; }
@@ -37,6 +40,7 @@ public class Listing
 
     public PropertyContact Owner { get; set; } = null!;
     public PropertyContact? Agent { get; set; }
+    public PropertyContact? Caretaker { get; set; }
 
     public Guid? CategoryId { get; set; }
     public Guid? SubcategoryId { get; set; }

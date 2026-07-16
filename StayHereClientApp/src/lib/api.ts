@@ -299,8 +299,8 @@ export type ViewingBooking = {
 
 export const bookingApi = {
   create: (body: {
-    listingId: string; customerId: string; preferredDate: string;
-    preferredTime?: string; viewingType?: string; notes?: string; contactPhone?: string;
+    listingId: string; customerId: string; viewingDate: string;
+    viewingTime?: string; viewingType?: string; notes?: string; contactPhone?: string;
   }) => req<ViewingBooking>(loadConfig().propertyApiBase, "bookings", { method: "POST", body, requireAuth: true }),
 
   getById: (id: string) =>
@@ -478,14 +478,13 @@ export const staticApi = {
 /* ══════════════════════════════════════════════════════════
    Cloudflare upload helper (reused for document uploads)
 ══════════════════════════════════════════════════════════ */
-export async function uploadFileToCloudflare(uploadUrl: string, file: File): Promise<string> {
-  const form = new FormData();
-  form.append("file", file);
-  const res = await fetch(uploadUrl, { method: "POST", body: form });
+export async function uploadFileToR2(uploadUrl: string, file: File, contentType: string): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": contentType },
+  });
   if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-  const data = await res.json() as { result?: { variants?: string[] } };
-  const variants = data.result?.variants ?? [];
-  return variants.find((v) => v.endsWith("/public")) ?? variants[0] ?? "";
 }
 
 /** Best-effort extraction of an AI reply string from a varied response shape. */

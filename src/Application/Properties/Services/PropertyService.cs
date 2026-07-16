@@ -28,8 +28,12 @@ public class PropertyService : IPropertyService
             Description = request.Description,
             TotalUnits = request.TotalUnits,
             TotalFloors = request.TotalFloors,
+            YearBuilt = request.YearBuilt,
             PrimaryImageUrl = request.PrimaryImageUrl,
             Images = request.Images ?? new List<string>(),
+            SharedAmenities = request.SharedAmenities ?? [],
+            Rules = request.Rules?.Select(r => new HouseRule(r.Type, r.Description)).ToList() ?? [],
+            StructuredImages = MapToPropertyImages(request.StructuredImages),
             Location = new PropertyLocation(
                 request.Location.Country,
                 request.Location.County,
@@ -87,8 +91,12 @@ public class PropertyService : IPropertyService
         if (request.Description != null) property.Description = request.Description;
         if (request.TotalUnits.HasValue) property.TotalUnits = request.TotalUnits.Value;
         if (request.TotalFloors.HasValue) property.TotalFloors = request.TotalFloors.Value;
+        if (request.YearBuilt.HasValue) property.YearBuilt = request.YearBuilt.Value;
         if (request.PrimaryImageUrl != null) property.PrimaryImageUrl = request.PrimaryImageUrl;
         if (request.Images != null) property.Images = request.Images;
+        if (request.SharedAmenities != null) property.SharedAmenities = request.SharedAmenities;
+        if (request.Rules != null) property.Rules = request.Rules.Select(r => new HouseRule(r.Type, r.Description)).ToList();
+        if (request.StructuredImages != null) property.StructuredImages = MapToPropertyImages(request.StructuredImages);
         bool coordsChanged = false;
         if (request.Location != null)
         {
@@ -163,7 +171,15 @@ public class PropertyService : IPropertyService
             property.CreatedAt,
             property.UpdatedAt,
             property.PrimaryImageUrl,
-            property.Images
+            property.Images,
+            property.YearBuilt,
+            property.SharedAmenities,
+            property.Rules.Select(r => new HouseRuleDto(r.Type, r.Description)).ToList(),
+            new PropertyImagesDto(
+                property.StructuredImages.Exterior,
+                property.StructuredImages.CommonAreas,
+                property.StructuredImages.Other
+            )
         );
     }
 
@@ -179,7 +195,18 @@ public class PropertyService : IPropertyService
             property.Location.County,
             property.PrimaryImageUrl,
             property.Location.Latitude,
-            property.Location.Longitude
+            property.Location.Longitude,
+            property.YearBuilt
+        );
+    }
+
+    private static PropertyImages MapToPropertyImages(PropertyImagesDto? dto)
+    {
+        if (dto == null) return PropertyImages.Empty();
+        return new PropertyImages(
+            dto.Exterior ?? [],
+            dto.CommonAreas ?? [],
+            dto.Other ?? []
         );
     }
 

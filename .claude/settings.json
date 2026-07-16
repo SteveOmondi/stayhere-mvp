@@ -38,7 +38,8 @@
       "Bash(mv \"20260616105508_CheckPendingSnapshot.cs\" \"20260616105508_AddRentalFlowAndMpesaPayments.cs\")",
       "Bash(mv \"20260616105508_CheckPendingSnapshot.Designer.cs\" \"20260616105508_AddRentalFlowAndMpesaPayments.Designer.cs\")",
       "Bash(dotnet run *)",
-      "Bash(curl -s -X POST http://localhost:7071/api/property/upload/presigned-url -H \"Content-Type: application/json\" -H \"Authorization: Bearer test\" -d '{\"folder\":\"properties/images\",\"fileName\":\"test.jpg\",\"contentType\":\"image/jpeg\"}')"
+      "Bash(curl -s -X POST http://localhost:7071/api/property/upload/presigned-url -H \"Content-Type: application/json\" -H \"Authorization: Bearer test\" -d '{\"folder\":\"properties/images\",\"fileName\":\"test.jpg\",\"contentType\":\"image/jpeg\"}')",
+      "Bash(powershell -Command \"\\(Get-Content 'src\\\\FunctionApps\\\\PropertyService\\\\ListingFunctions.cs'\\) -replace 'PaginatedResult<ListingListDto>', 'PaginatedResult<ListingResponseDto>' -replace 'List<ListingListDto>', 'List<ListingResponseDto>' | Set-Content 'src\\\\FunctionApps\\\\PropertyService\\\\ListingFunctions.cs'\")"
     ],
     "additionalDirectories": [
       "d:\\d\\Projects\\StayHereProject_MVP\\stayhere-mvp\\src\\Infrastructure\\Persistence\\Migrations"

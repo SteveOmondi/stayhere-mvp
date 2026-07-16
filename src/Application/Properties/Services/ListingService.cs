@@ -12,6 +12,7 @@ public class ListingService : IListingService
 
     private readonly IListingRepository _listingRepository;
     private readonly IPropertyRepository _propertyRepository;
+    private readonly IPropertyTermsRepository _termsRepository;
     private readonly IEmbeddingService _embeddingService;
     private readonly ICategoryRepository _categoryRepository;
     private readonly ISubcategoryRepository _subcategoryRepository;
@@ -20,6 +21,7 @@ public class ListingService : IListingService
     public ListingService(
         IListingRepository listingRepository,
         IPropertyRepository propertyRepository,
+        IPropertyTermsRepository termsRepository,
         IEmbeddingService embeddingService,
         ICategoryRepository categoryRepository,
         ISubcategoryRepository subcategoryRepository,
@@ -27,6 +29,7 @@ public class ListingService : IListingService
     {
         _listingRepository = listingRepository;
         _propertyRepository = propertyRepository;
+        _termsRepository = termsRepository;
         _embeddingService = embeddingService;
         _categoryRepository = categoryRepository;
         _subcategoryRepository = subcategoryRepository;
@@ -44,7 +47,7 @@ public class ListingService : IListingService
         return list;
     }
 
-    public async Task<ListingDto> CreateListingAsync(Guid ownerId, CreateListingRequest request)
+    public async Task<ListingResponseDto> CreateListingAsync(Guid ownerId, CreateListingRequest request)
     {
         var property = await _propertyRepository.GetByIdAsync(request.PropertyId);
         if (property == null)
@@ -63,6 +66,14 @@ public class ListingService : IListingService
             property.Location.Longitude
         );
 
+        // Inherit shared amenities from property, merging with any request-specific ones
+        var amenities = request.Amenities ?? new List<string>();
+        if (property.SharedAmenities.Count > 0)
+        {
+            var merged = property.SharedAmenities.Union(amenities).ToList();
+            amenities = merged;
+        }
+
         var listing = new Listing
         {
             Id = Guid.NewGuid(),
@@ -80,9 +91,10 @@ public class ListingService : IListingService
             Bathrooms = request.Bathrooms,
             IsFurnished = request.IsFurnished,
             Location = new PropertyLocation(location.Country, location.County, location.City, location.Suburb, location.Street, location.Latitude, location.Longitude),
-            Amenities = request.Amenities ?? new List<string>(),
+            Amenities = amenities,
             PrimaryImageUrl = request.PrimaryImageUrl,
             Images = NormalizeListingImages(request.Images),
+            StructuredImages = MapToListingImages(request.StructuredImages),
             SizeSqft = request.SizeSqft,
             YearBuilt = request.YearBuilt,
             Developer = request.Developer,
@@ -108,10 +120,10 @@ public class ListingService : IListingService
 
         await _listingRepository.CreateAsync(listing);
         await TryComputeAndPersistEmbeddingAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing, property);
     }
 
-    public async Task<ListingDto> CreateListingFromPropertyAsync(Guid propertyId, Guid ownerId, CreateListingFromPropertyRequest request)
+    public async Task<ListingResponseDto> CreateListingFromPropertyAsync(Guid propertyId, Guid ownerId, CreateListingFromPropertyRequest request)
     {
         var property = await _propertyRepository.GetByIdAsync(propertyId);
         if (property == null)
@@ -130,6 +142,12 @@ public class ListingService : IListingService
             property.Location.Longitude
         );
 
+        var amenities = request.Amenities ?? new List<string>();
+        if (property.SharedAmenities.Count > 0)
+        {
+            amenities = property.SharedAmenities.Union(amenities).ToList();
+        }
+
         var listing = new Listing
         {
             Id = Guid.NewGuid(),
@@ -147,9 +165,10 @@ public class ListingService : IListingService
             Bathrooms = request.Bathrooms,
             IsFurnished = request.IsFurnished,
             Location = new PropertyLocation(location.Country, location.County, location.City, location.Suburb, location.Street, location.Latitude, location.Longitude),
-            Amenities = request.Amenities ?? new List<string>(),
+            Amenities = amenities,
             PrimaryImageUrl = request.PrimaryImageUrl,
             Images = NormalizeListingImages(request.Images),
+            StructuredImages = MapToListingImages(request.StructuredImages),
             SizeSqft = request.SizeSqft,
             YearBuilt = request.YearBuilt,
             Developer = request.Developer,
@@ -175,65 +194,65 @@ public class ListingService : IListingService
 
         await _listingRepository.CreateAsync(listing);
         await TryComputeAndPersistEmbeddingAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing, property);
     }
 
-    public async Task<ListingDto?> GetListingByIdAsync(Guid id)
+    public async Task<ListingResponseDto?> GetListingByIdAsync(Guid id)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
-        return listing == null ? null : await MapToDtoAsync(listing);
+        return listing == null ? null : await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> GetListingByCodeAsync(string listingCode)
+    public async Task<ListingResponseDto?> GetListingByCodeAsync(string listingCode)
     {
         var listing = await _listingRepository.GetByListingCodeAsync(listingCode);
-        return listing == null ? null : await MapToDtoAsync(listing);
+        return listing == null ? null : await MapToResponseAsync(listing);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetAllListingsAsync(int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetAllListingsAsync(int page = 1, int pageSize = 20)
     {
         var listings = await _listingRepository.GetAllAsync(page, pageSize);
         var totalCount = await _listingRepository.GetTotalCountAsync();
-        return CreatePaginatedResult(listings, totalCount, page, pageSize);
+        return await CreatePaginatedResponseAsync(listings, totalCount, page, pageSize);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetListingsByPropertyIdAsync(Guid propertyId, int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetListingsByPropertyIdAsync(Guid propertyId, int page = 1, int pageSize = 20)
     {
         var listings = await _listingRepository.GetByPropertyIdAsync(propertyId);
         var list = listings.ToList();
         var paged = list.Skip((page - 1) * pageSize).Take(pageSize);
-        return CreatePaginatedResult(paged, list.Count, page, pageSize);
+        return await CreatePaginatedResponseAsync(paged, list.Count, page, pageSize);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetListingsByOwnerAsync(Guid ownerId, int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetListingsByOwnerAsync(Guid ownerId, int page = 1, int pageSize = 20)
     {
         var listings = await _listingRepository.GetByOwnerIdAsync(ownerId);
         var list = listings.ToList();
         var paged = list.Skip((page - 1) * pageSize).Take(pageSize);
-        return CreatePaginatedResult(paged, list.Count, page, pageSize);
+        return await CreatePaginatedResponseAsync(paged, list.Count, page, pageSize);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetListingsByAgentAsync(Guid agentId, int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetListingsByAgentAsync(Guid agentId, int page = 1, int pageSize = 20)
     {
         var listings = await _listingRepository.GetByAgentIdAsync(agentId);
         var list = listings.ToList();
         var paged = list.Skip((page - 1) * pageSize).Take(pageSize);
-        return CreatePaginatedResult(paged, list.Count, page, pageSize);
+        return await CreatePaginatedResponseAsync(paged, list.Count, page, pageSize);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetListingsByCityAsync(string city, int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetListingsByCityAsync(string city, int page = 1, int pageSize = 20)
     {
         var listings = await _listingRepository.GetByCityAsync(city, page, pageSize);
-        return CreatePaginatedResult(listings, listings.Count(), page, pageSize);
+        return await CreatePaginatedResponseAsync(listings, listings.Count(), page, pageSize);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetListingsByCountyAsync(string county, int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetListingsByCountyAsync(string county, int page = 1, int pageSize = 20)
     {
         var listings = await _listingRepository.GetByCountyAsync(county, page, pageSize);
-        return CreatePaginatedResult(listings, listings.Count(), page, pageSize);
+        return await CreatePaginatedResponseAsync(listings, listings.Count(), page, pageSize);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetListingsByElasticLocationAsync(string location, int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetListingsByElasticLocationAsync(string location, int page = 1, int pageSize = 20)
     {
         var criteria = new ListingSearchCriteria
         {
@@ -243,36 +262,37 @@ public class ListingService : IListingService
             SortDescending = true
         };
         var listings = await _listingRepository.SearchAsync(criteria);
-        return CreatePaginatedResult(listings, listings.Count(), page, pageSize);
+        return await CreatePaginatedResponseAsync(listings, listings.Count(), page, pageSize);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetListingsByTypeAsync(string propertyType, int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetListingsByTypeAsync(string propertyType, int page = 1, int pageSize = 20)
     {
         var type = ParsePropertyType(propertyType);
         var listings = await _listingRepository.GetByPropertyTypeAsync(type, page, pageSize);
-        return CreatePaginatedResult(listings, listings.Count(), page, pageSize);
+        return await CreatePaginatedResponseAsync(listings, listings.Count(), page, pageSize);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetListingsByListingTypeAsync(string listingType, int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetListingsByListingTypeAsync(string listingType, int page = 1, int pageSize = 20)
     {
         var type = ParseListingType(listingType);
         var listings = await _listingRepository.GetByListingTypeAsync(type, page, pageSize);
-        return CreatePaginatedResult(listings, listings.Count(), page, pageSize);
+        return await CreatePaginatedResponseAsync(listings, listings.Count(), page, pageSize);
     }
 
-    public async Task<IEnumerable<ListingListDto>> GetFeaturedListingsAsync(int limit = 10)
+    public async Task<IEnumerable<ListingResponseDto>> GetFeaturedListingsAsync(int limit = 10)
     {
         var listings = await _listingRepository.GetFeaturedAsync(limit);
-        return listings.Select(l => MapToListDto(l));
+        var result = await CreatePaginatedResponseAsync(listings, 0, 1, int.MaxValue);
+        return result.Items;
     }
 
-    public async Task<PaginatedResult<ListingListDto>> GetAvailableListingsAsync(int page = 1, int pageSize = 20)
+    public async Task<PaginatedResult<ListingResponseDto>> GetAvailableListingsAsync(int page = 1, int pageSize = 20)
     {
         var listings = await _listingRepository.GetAvailableAsync(page, pageSize);
-        return CreatePaginatedResult(listings, listings.Count(), page, pageSize);
+        return await CreatePaginatedResponseAsync(listings, listings.Count(), page, pageSize);
     }
 
-    public async Task<PaginatedResult<ListingListDto>> SearchListingsAsync(ListingSearchRequest request)
+    public async Task<PaginatedResult<ListingResponseDto>> SearchListingsAsync(ListingSearchRequest request)
     {
         var criteria = new ListingSearchCriteria
         {
@@ -302,10 +322,10 @@ public class ListingService : IListingService
         };
         var totalCount = await _listingRepository.GetSearchCountAsync(criteria);
         var listings = await _listingRepository.SearchAsync(criteria);
-        return CreatePaginatedResult(listings, totalCount, request.Page, request.PageSize);
+        return await CreatePaginatedResponseAsync(listings, totalCount, request.Page, request.PageSize);
     }
 
-    public async Task<ListingDto?> UpdateListingAsync(Guid id, Guid requesterId, UpdateListingRequest request)
+    public async Task<ListingResponseDto?> UpdateListingAsync(Guid id, Guid requesterId, UpdateListingRequest request)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
@@ -326,6 +346,7 @@ public class ListingService : IListingService
         if (request.Amenities != null) listing.Amenities = request.Amenities;
         if (request.PrimaryImageUrl != null) listing.PrimaryImageUrl = request.PrimaryImageUrl;
         if (request.Images != null) listing.Images = NormalizeListingImages(request.Images);
+        if (request.StructuredImages != null) listing.StructuredImages = MapToListingImages(request.StructuredImages);
         if (request.SizeSqft.HasValue) listing.SizeSqft = request.SizeSqft;
         if (request.YearBuilt.HasValue) listing.YearBuilt = request.YearBuilt;
         if (request.Developer != null) listing.Developer = request.Developer;
@@ -340,10 +361,10 @@ public class ListingService : IListingService
 
         await TryComputeEmbeddingOnListingAsync(listing);
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> RegenerateListingEmbeddingAsync(Guid id, Guid requesterId)
+    public async Task<ListingResponseDto?> RegenerateListingEmbeddingAsync(Guid id, Guid requesterId)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
@@ -353,10 +374,10 @@ public class ListingService : IListingService
         await TryComputeEmbeddingOnListingAsync(listing);
         listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> UpdateAvailabilityAsync(Guid id, Guid requesterId, UpdateAvailabilityRequest request)
+    public async Task<ListingResponseDto?> UpdateAvailabilityAsync(Guid id, Guid requesterId, UpdateAvailabilityRequest request)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
@@ -365,10 +386,10 @@ public class ListingService : IListingService
         listing.AvailabilityStatus = ParseAvailabilityStatus(request.AvailabilityStatus);
         listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> UpdateRatingAsync(Guid id, UpdateRatingRequest request)
+    public async Task<ListingResponseDto?> UpdateRatingAsync(Guid id, UpdateRatingRequest request)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
@@ -377,30 +398,30 @@ public class ListingService : IListingService
         listing.Rating = (totalRating + request.NewRating) / listing.RatingCount;
         listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> IncrementViewsAsync(Guid id)
+    public async Task<ListingResponseDto?> IncrementViewsAsync(Guid id)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
         listing.Views++;
         listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> UpdateFeaturedStatusAsync(Guid id, UpdateFeaturedRequest request)
+    public async Task<ListingResponseDto?> UpdateFeaturedStatusAsync(Guid id, UpdateFeaturedRequest request)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
         listing.IsFeatured = request.IsFeatured;
         listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> AssignAgentAsync(Guid id, Guid ownerId, AssignAgentRequest request)
+    public async Task<ListingResponseDto?> AssignAgentAsync(Guid id, Guid ownerId, AssignAgentRequest request)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
@@ -410,22 +431,23 @@ public class ListingService : IListingService
         listing.Agent = new PropertyContact(request.AgentName, request.AgentPhone, request.AgentEmail);
         listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> AssignCaretakerAsync(Guid id, Guid ownerId, AssignCaretakerRequest request)
+    public async Task<ListingResponseDto?> AssignCaretakerAsync(Guid id, Guid ownerId, AssignCaretakerRequest request)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
         if (listing.OwnerId != ownerId)
             throw new UnauthorizedAccessException("Only the owner can assign a caretaker");
         listing.CaretakerId = request.CaretakerId;
+        listing.Caretaker = new PropertyContact(request.CaretakerName ?? "", request.CaretakerPhone ?? "", request.CaretakerEmail);
         listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> RemoveAgentAsync(Guid id, Guid ownerId)
+    public async Task<ListingResponseDto?> RemoveAgentAsync(Guid id, Guid ownerId)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
@@ -435,19 +457,20 @@ public class ListingService : IListingService
         listing.Agent = null;
         listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
-    public async Task<ListingDto?> RemoveCaretakerAsync(Guid id, Guid ownerId)
+    public async Task<ListingResponseDto?> RemoveCaretakerAsync(Guid id, Guid ownerId)
     {
         var listing = await _listingRepository.GetByIdAsync(id);
         if (listing == null) return null;
         if (listing.OwnerId != ownerId)
             throw new UnauthorizedAccessException("Only the owner can remove a caretaker");
         listing.CaretakerId = null;
+        listing.Caretaker = null;
         listing.UpdatedAt = DateTime.UtcNow;
         await _listingRepository.UpdateAsync(listing);
-        return await MapToDtoAsync(listing);
+        return await MapToResponseAsync(listing);
     }
 
     public async Task<bool> DeleteListingAsync(Guid id, Guid requesterId)
@@ -463,112 +486,188 @@ public class ListingService : IListingService
     private static string? TrimOrNull(string? s) =>
         string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
-    private async Task<ListingDto> MapToDtoAsync(Listing listing)
+    private async Task<ListingResponseDto> MapToResponseAsync(Listing listing, Property? property = null)
     {
-        var property = await _propertyRepository.GetByIdAsync(listing.PropertyId);
+        property ??= await _propertyRepository.GetByIdAsync(listing.PropertyId);
+        var terms = await _termsRepository.GetActiveByListingIdAsync(listing.Id);
 
         string? categoryName = null;
         string? subcategoryName = null;
         if (listing.CategoryId.HasValue)
-        {
-            var cat = await _categoryRepository.GetByIdAsync(listing.CategoryId.Value);
-            categoryName = cat?.Name;
-        }
+            categoryName = (await _categoryRepository.GetByIdAsync(listing.CategoryId.Value))?.Name;
         if (listing.SubcategoryId.HasValue)
-        {
-            var sub = await _subcategoryRepository.GetByIdAsync(listing.SubcategoryId.Value);
-            subcategoryName = sub?.Name;
-        }
+            subcategoryName = (await _subcategoryRepository.GetByIdAsync(listing.SubcategoryId.Value))?.Name;
 
-        return new ListingDto(
-            listing.Id,
-            listing.ListingCode,
-            listing.PropertyId,
-            property?.PropertyCode ?? "",
-            property?.BuildingName ?? "",
-            listing.UnitNumber,
-            listing.FloorNumber,
-            listing.Title,
-            listing.Description,
-            listing.Price,
-            listing.PriceCurrency,
-            listing.PropertyType.ToString(),
-            listing.ListingType.ToString(),
-            listing.Bedrooms,
-            listing.Bathrooms,
-            listing.IsFurnished,
-            new LocationDto(listing.Location.Country, listing.Location.County, listing.Location.City, listing.Location.Suburb, listing.Location.Street, listing.Location.Latitude, listing.Location.Longitude),
-            listing.Amenities,
-            listing.Images,
-            listing.SizeSqft,
-            listing.YearBuilt,
-            listing.Developer,
-            listing.AvailabilityStatus.ToString(),
-            new OwnerContactDto(listing.Owner.Name, listing.Owner.Phone, listing.Owner.Email),
-            listing.Agent != null ? new AgentContactDto(listing.Agent.Name, listing.Agent.Phone, listing.Agent.Email) : null,
-            listing.OwnerId,
-            listing.AgentId,
-            listing.CaretakerId,
-            listing.ListedDate,
-            listing.Views,
-            listing.Rating,
-            listing.RatingCount,
-            listing.IsFeatured,
-            listing.RecommendedScore,
-            listing.CreatedAt,
-            listing.UpdatedAt,
-            listing.PrimaryImageUrl,
-            listing.CategoryId,
-            listing.SubcategoryId,
-            categoryName,
-            subcategoryName
-        );
+        return BuildResponseDto(listing, property, terms, categoryName, subcategoryName);
     }
 
-    private static ListingListDto MapToListDto(Listing listing, string? buildingName = null)
-    {
-        return new ListingListDto(
-            listing.Id,
-            listing.ListingCode,
-            listing.PropertyId,
-            buildingName ?? "",
-            listing.UnitNumber,
-            listing.FloorNumber,
-            listing.Title,
-            listing.Price,
-            listing.PriceCurrency,
-            listing.PropertyType.ToString(),
-            listing.ListingType.ToString(),
-            listing.Bedrooms,
-            listing.Bathrooms,
-            listing.Location.City,
-            listing.Location.County,
-            listing.PrimaryImageUrl ?? listing.Images.FirstOrDefault(),
-            listing.AvailabilityStatus.ToString(),
-            listing.Views,
-            listing.Rating,
-            listing.IsFeatured,
-            listing.ListedDate,
-            listing.Location.Latitude,
-            listing.Location.Longitude
-        );
-    }
-
-    private async Task<PaginatedResult<ListingListDto>> CreatePaginatedResultWithBuildingNames(IEnumerable<Listing> listings, int totalCount, int page, int pageSize)
+    private async Task<PaginatedResult<ListingResponseDto>> CreatePaginatedResponseAsync(
+        IEnumerable<Listing> listings, int totalCount, int page, int pageSize)
     {
         var list = listings.ToList();
+
         var propertyIds = list.Select(l => l.PropertyId).Distinct();
-        var properties = await _propertyRepository.GetByIdsAsync(propertyIds);
-        var items = list.Select(l => MapToListDto(l, properties.GetValueOrDefault(l.PropertyId)?.BuildingName));
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        return new PaginatedResult<ListingListDto>(items, totalCount, page, pageSize, totalPages);
+        var properties  = await _propertyRepository.GetByIdsAsync(propertyIds);
+
+        var listingIds = list.Select(l => l.Id);
+        var termsMap   = await _termsRepository.GetActiveByListingIdsAsync(listingIds);
+
+        // Fetch unique categories upfront (bounded by distinct category count, not listing count)
+        var catIds  = list.Where(l => l.CategoryId.HasValue).Select(l => l.CategoryId!.Value).Distinct().ToList();
+        var subIds  = list.Where(l => l.SubcategoryId.HasValue).Select(l => l.SubcategoryId!.Value).Distinct().ToList();
+        var catNames = new Dictionary<Guid, string>();
+        var subNames = new Dictionary<Guid, string>();
+        foreach (var cid in catIds)
+        {
+            var c = await _categoryRepository.GetByIdAsync(cid);
+            if (c != null) catNames[cid] = c.Name;
+        }
+        foreach (var sid in subIds)
+        {
+            var s = await _subcategoryRepository.GetByIdAsync(sid);
+            if (s != null) subNames[sid] = s.Name;
+        }
+
+        var items = list.Select(l => BuildResponseDto(
+            l,
+            properties.GetValueOrDefault(l.PropertyId),
+            termsMap.GetValueOrDefault(l.Id),
+            l.CategoryId.HasValue    ? catNames.GetValueOrDefault(l.CategoryId.Value)    : null,
+            l.SubcategoryId.HasValue ? subNames.GetValueOrDefault(l.SubcategoryId.Value) : null
+        )).ToList();
+
+        var totalPages = pageSize > 0 ? (int)Math.Ceiling(totalCount / (double)pageSize) : 1;
+        return new PaginatedResult<ListingResponseDto>(items, totalCount, page, pageSize, totalPages);
     }
 
-    private static PaginatedResult<ListingListDto> CreatePaginatedResult(IEnumerable<Listing> listings, int totalCount, int page, int pageSize)
+    private static ListingResponseDto BuildResponseDto(
+        Listing listing,
+        Property? property,
+        PropertyTerms? terms,
+        string? categoryName,
+        string? subcategoryName)
     {
-        var items = listings.Select(l => MapToListDto(l));
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        return new PaginatedResult<ListingListDto>(items, totalCount, page, pageSize, totalPages);
+        var rules = property?.Rules.Select(r => new HouseRuleDto(r.Type, r.Description)).ToList()
+                    ?? new List<HouseRuleDto>();
+
+        return new ListingResponseDto(
+            Id: listing.Id,
+            ListingCode: listing.ListingCode,
+            Title: listing.Title,
+            Description: listing.Description,
+            AvailabilityStatus: listing.AvailabilityStatus.ToString(),
+            IsFeatured: listing.IsFeatured,
+            RecommendedScore: listing.RecommendedScore,
+            ListedDate: listing.ListedDate,
+            Views: listing.Views,
+            Rating: listing.Rating,
+            RatingCount: listing.RatingCount,
+            CreatedAt: listing.CreatedAt,
+            UpdatedAt: listing.UpdatedAt,
+            Property: new ListingPropertyInfo(
+                Id: listing.PropertyId,
+                PropertyCode: property?.PropertyCode ?? "",
+                BuildingName: property?.BuildingName ?? "",
+                YearBuilt: property?.YearBuilt,
+                TotalFloors: property?.TotalFloors ?? 0,
+                TotalUnits: property?.TotalUnits ?? 0
+            ),
+            Unit: new ListingUnitInfo(
+                Number: listing.UnitNumber,
+                Floor: listing.FloorNumber,
+                PropertyType: listing.PropertyType.ToString(),
+                ListingType: listing.ListingType.ToString(),
+                Bedrooms: listing.Bedrooms,
+                Bathrooms: listing.Bathrooms,
+                SizeSqft: listing.SizeSqft,
+                YearBuilt: listing.YearBuilt,
+                IsFurnished: listing.IsFurnished,
+                Developer: listing.Developer
+            ),
+            Location: new LocationDto(
+                listing.Location.Country,
+                listing.Location.County,
+                listing.Location.City,
+                listing.Location.Suburb,
+                listing.Location.Street,
+                listing.Location.Latitude,
+                listing.Location.Longitude
+            ),
+            Pricing: new ListingPricingDto(listing.Price, listing.PriceCurrency),
+            Owner: new ListingOwnerDto(listing.OwnerId, listing.Owner.Name, listing.Owner.Phone, listing.Owner.Email),
+            Agent: listing.Agent != null
+                ? new ListingAgentDto(listing.AgentId ?? Guid.Empty, listing.Agent.Name, listing.Agent.Phone, listing.Agent.Email)
+                : null,
+            Caretaker: listing.CaretakerId.HasValue && listing.Caretaker != null
+                ? new ListingCaretakerDto(listing.CaretakerId.Value, listing.Caretaker.Name, listing.Caretaker.Phone, listing.Caretaker.Email)
+                : listing.CaretakerId.HasValue ? new ListingCaretakerDto(listing.CaretakerId.Value, "", "", null) : null,
+            Images: new ListingImagesDto(
+                Primary: listing.PrimaryImageUrl ?? listing.Images.FirstOrDefault(),
+                Exterior: listing.StructuredImages.Exterior,
+                LivingRoom: listing.StructuredImages.LivingRoom,
+                Kitchen: listing.StructuredImages.Kitchen,
+                DiningArea: listing.StructuredImages.DiningArea,
+                Bedroom: listing.StructuredImages.Bedroom,
+                Bathroom: listing.StructuredImages.Bathroom,
+                Balcony: listing.StructuredImages.Balcony,
+                Other: listing.StructuredImages.Other
+            ),
+            Amenities: listing.Amenities,
+            Rules: rules,
+            Terms: terms != null ? MapToTermsDto(terms) : null,
+            Category: listing.CategoryId.HasValue && categoryName != null
+                ? new ListingCategoryDto(listing.CategoryId.Value, categoryName)
+                : null,
+            Subcategory: listing.SubcategoryId.HasValue && subcategoryName != null
+                ? new ListingCategoryDto(listing.SubcategoryId.Value, subcategoryName)
+                : null
+        );
+    }
+
+    private static ListingTermsDto MapToTermsDto(PropertyTerms terms) => new(
+        Id: terms.Id,
+        MinLeasePeriod: terms.MinimumLeasePeriod,
+        NoticePeriod: terms.NoticePeriod,
+        Deposits: new ListingDepositsDto(
+            Security: terms.SecurityDeposit,
+            Water: terms.WaterDeposit,
+            Electricity: terms.ElectricityDeposit,
+            Token: terms.TokenDeposit,
+            Garbage: terms.GarbageDeposit,
+            Admin: terms.AdminFee,
+            Currency: terms.Currency ?? "KES"
+        ),
+        PetPolicy: terms.PetPolicy,
+        PaymentTerms: terms.PaymentTerms,
+        PaymentMethods: new ListingPaymentMethodsDto(
+            MpesaPaybill: terms.MpesaPaybill,
+            MpesaTill: terms.MpesaTill,
+            MpesaAccountNumber: terms.MpesaAccountNumber,
+            BankName: terms.BankName,
+            BankAccountName: terms.BankAccountName,
+            BankAccountNumber: terms.BankAccountNumber,
+            BankBranch: terms.BankBranch,
+            Instructions: terms.PaymentInstructions
+        ),
+        HouseRules: terms.HouseRules,
+        OnboardingInstructions: terms.OnboardingInstructions,
+        AccessInstructions: terms.AccessInstructions,
+        ItemsToCarry: terms.ItemsToCarry
+    );
+
+    private static ListingImages MapToListingImages(ListingImagesDto? dto)
+    {
+        if (dto == null) return ListingImages.Empty();
+        return new ListingImages(
+            Exterior: dto.Exterior ?? [],
+            LivingRoom: dto.LivingRoom ?? [],
+            Kitchen: dto.Kitchen ?? [],
+            DiningArea: dto.DiningArea ?? [],
+            Bedroom: dto.Bedroom ?? [],
+            Bathroom: dto.Bathroom ?? [],
+            Balcony: dto.Balcony ?? [],
+            Other: dto.Other ?? []
+        );
     }
 
     private async Task TryComputeAndPersistEmbeddingAsync(Listing listing)

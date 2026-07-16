@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { applicationApi, paymentApi, type TenantApplication, type RentalPayment } from "../lib/api";
+// paymentApi.confirm is used for manual payment confirmation
 import { useOwner } from "../context/OwnerContext";
 import {
   IcoCheck, IcoChevRight, IcoClipboard, IcoDocument, IcoLoader,
@@ -21,7 +22,8 @@ const TABS = ["All", "UnderReview", "Approved", "Rejected", "Active", "Cancelled
 const LABEL_MAP: Record<string, string> = { UnderReview: "Under Review", Approved: "Approved", Rejected: "Rejected", Active: "Active", Cancelled: "Cancelled", All: "All" };
 
 export function ApplicationsPage() {
-  const { owner } = useOwner();
+  const { owner, toast } = useOwner();
+  const ownerId = owner?.id ?? "";
   const [apps, setApps] = useState<TenantApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<string>("All");
@@ -29,22 +31,22 @@ export function ApplicationsPage() {
   const [payments, setPayments] = useState<RentalPayment[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const ownerId = owner?.id ?? "";
 
   function load() {
     if (!ownerId) return;
     setLoading(true);
-    applicationApi.byOwner(ownerId).then(setApps).catch(() => {}).finally(() => setLoading(false));
+    applicationApi.byOwner(ownerId)
+      .then(setApps)
+      .catch((err) => toast(err instanceof Error ? err.message : "Failed to load applications", "error"))
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => { load(); }, [ownerId]);
 
   async function selectApp(app: TenantApplication) {
     setSelected(app);
-    try {
-      const pmts = await paymentApi.getStatus(app.id);
-      setPayments(pmts ?? []);
-    } catch { setPayments([]); }
+    // Payments are already embedded in the application DTO — no extra call needed.
+    setPayments(app.payments ?? []);
   }
 
   async function handleApprove() {
@@ -52,8 +54,8 @@ export function ApplicationsPage() {
     setActionLoading(true);
     try {
       const updated = await applicationApi.review(selected.id, {
-        status: "Approved",
-        reviewedBy: owner?.fullName ?? "Owner",
+        decision: "Approved",
+        reviewerEmail: owner?.email ?? owner?.fullName ?? "Owner",
       });
       setApps((p) => p.map((a) => a.id === updated.id ? updated : a));
       setSelected(updated);
@@ -66,9 +68,9 @@ export function ApplicationsPage() {
     setActionLoading(true);
     try {
       const updated = await applicationApi.review(selected.id, {
-        status: "Rejected",
-        rejectionReason,
-        reviewedBy: owner?.fullName ?? "Owner",
+        decision: "Rejected",
+        reason: rejectionReason,
+        reviewerEmail: owner?.email ?? owner?.fullName ?? "Owner",
       });
       setApps((p) => p.map((a) => a.id === updated.id ? updated : a));
       setSelected(updated);
@@ -81,12 +83,11 @@ export function ApplicationsPage() {
     try {
       await paymentApi.confirm(paymentId);
       if (selected) {
-        const pmts = await paymentApi.getStatus(selected.id);
-        setPayments(pmts ?? []);
-        // Refresh the application too
+        // Refresh the full application (includes updated payments).
         const updated = await applicationApi.getById(selected.id);
         setApps((p) => p.map((a) => a.id === updated.id ? updated : a));
         setSelected(updated);
+        setPayments(updated.payments ?? []);
       }
     } finally { setActionLoading(false); }
   }
@@ -166,7 +167,7 @@ function AppCard({ app, onClick }: { app: TenantApplication; onClick: () => void
             <div>
               <div className="font-semibold text-brand-900">{app.customerName ?? "Applicant"}</div>
               <div className="text-sm text-brand-500 mt-0.5">
-                {app.listingTitle ?? `Listing ${app.listingId.slice(0, 8)}`}
+                {app.listingTitle ?? (app.listingId ? `Listing ${app.listingId.slice(0, 8)}` : "Unknown listing")}
                 {" · "}Applied {date}
               </div>
             </div>

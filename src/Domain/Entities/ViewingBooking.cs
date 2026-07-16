@@ -35,5 +35,4 @@ public class ViewingBooking
 
     // Navigation
     public Listing? Listing { get; set; }
-    public Customer? Customer { get; set; }
 }

@@ -9,7 +9,11 @@ public record CreatePropertyRequest(
     int TotalFloors,
     LocationDto Location,
     string? PrimaryImageUrl = null,
-    List<string>? Images = null
+    List<string>? Images = null,
+    int? YearBuilt = null,
+    List<string>? SharedAmenities = null,
+    List<HouseRuleDto>? Rules = null,
+    PropertyImagesDto? StructuredImages = null
 );
 
 public record UpdatePropertyRequest(
@@ -19,7 +23,11 @@ public record UpdatePropertyRequest(
     int? TotalFloors,
     LocationDto? Location,
     string? PrimaryImageUrl = null,
-    List<string>? Images = null
+    List<string>? Images = null,
+    int? YearBuilt = null,
+    List<string>? SharedAmenities = null,
+    List<HouseRuleDto>? Rules = null,
+    PropertyImagesDto? StructuredImages = null
 );
 
 public record PropertyDto(
@@ -34,7 +42,11 @@ public record PropertyDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     string? PrimaryImageUrl = null,
-    List<string>? Images = null
+    List<string>? Images = null,
+    int? YearBuilt = null,
+    List<string>? SharedAmenities = null,
+    List<HouseRuleDto>? Rules = null,
+    PropertyImagesDto? StructuredImages = null
 );
 
 public record PropertyListDto(
@@ -47,7 +59,8 @@ public record PropertyListDto(
     string County,
     string? PrimaryImageUrl = null,
     double? Latitude = null,
-    double? Longitude = null
+    double? Longitude = null,
+    int? YearBuilt = null
 );
 
 // ----- Listing (unit within a property) -----
@@ -75,7 +88,8 @@ public record CreateListingRequest(
     AgentContactDto? Agent = null,
     string? PrimaryImageUrl = null,
     Guid? CategoryId = null,
-    Guid? SubcategoryId = null
+    Guid? SubcategoryId = null,
+    ListingImagesDto? StructuredImages = null
 );
 
 public record CreateListingFromPropertyRequest(
@@ -100,7 +114,8 @@ public record CreateListingFromPropertyRequest(
     AgentContactDto? Agent = null,
     string? PrimaryImageUrl = null,
     Guid? CategoryId = null,
-    Guid? SubcategoryId = null
+    Guid? SubcategoryId = null,
+    ListingImagesDto? StructuredImages = null
 );
 
 public record UpdateListingRequest(
@@ -126,8 +141,127 @@ public record UpdateListingRequest(
     decimal? RecommendedScore,
     string? PrimaryImageUrl = null,
     Guid? CategoryId = null,
-    Guid? SubcategoryId = null
+    Guid? SubcategoryId = null,
+    ListingImagesDto? StructuredImages = null
 );
+
+// ----- Unified Listing Response (replaces ListingDto + ListingListDto) -----
+
+public record ListingResponseDto(
+    Guid Id,
+    string ListingCode,
+    string Title,
+    string? Description,
+    string AvailabilityStatus,
+    bool IsFeatured,
+    decimal RecommendedScore,
+    DateTime ListedDate,
+    int Views,
+    decimal Rating,
+    int RatingCount,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    ListingPropertyInfo Property,
+    ListingUnitInfo Unit,
+    LocationDto Location,
+    ListingPricingDto Pricing,
+    ListingOwnerDto Owner,
+    ListingAgentDto? Agent,
+    ListingCaretakerDto? Caretaker,
+    ListingImagesDto Images,
+    List<string> Amenities,
+    List<HouseRuleDto> Rules,
+    ListingTermsDto? Terms,
+    ListingCategoryDto? Category,
+    ListingCategoryDto? Subcategory
+);
+
+public record ListingPropertyInfo(
+    Guid Id,
+    string PropertyCode,
+    string BuildingName,
+    int? YearBuilt,
+    int TotalFloors,
+    int TotalUnits
+);
+
+public record ListingUnitInfo(
+    string Number,
+    int Floor,
+    string PropertyType,
+    string ListingType,
+    int Bedrooms,
+    int Bathrooms,
+    int? SizeSqft,
+    int? YearBuilt,
+    bool IsFurnished,
+    string? Developer
+);
+
+public record ListingPricingDto(decimal Price, string Currency);
+
+public record ListingOwnerDto(Guid Id, string Name, string Phone, string? Email);
+public record ListingAgentDto(Guid Id, string Name, string Phone, string? Email);
+public record ListingCaretakerDto(Guid Id, string Name, string Phone, string? Email);
+
+public record ListingImagesDto(
+    string? Primary,
+    List<string> Exterior,
+    List<string> LivingRoom,
+    List<string> Kitchen,
+    List<string> DiningArea,
+    List<string> Bedroom,
+    List<string> Bathroom,
+    List<string> Balcony,
+    List<string> Other
+);
+
+public record HouseRuleDto(string Type, string? Description = null);
+
+public record ListingTermsDto(
+    Guid Id,
+    string? MinLeasePeriod,
+    string? NoticePeriod,
+    ListingDepositsDto Deposits,
+    string? PetPolicy,
+    string? PaymentTerms,
+    ListingPaymentMethodsDto? PaymentMethods,
+    string? HouseRules,
+    string? OnboardingInstructions,
+    string? AccessInstructions,
+    string? ItemsToCarry
+);
+
+public record ListingDepositsDto(
+    decimal? Security,
+    decimal? Water,
+    decimal? Electricity,
+    decimal? Token,
+    decimal? Garbage,
+    decimal? Admin,
+    string Currency
+);
+
+public record ListingPaymentMethodsDto(
+    string? MpesaPaybill,
+    string? MpesaTill,
+    string? MpesaAccountNumber,
+    string? BankName,
+    string? BankAccountName,
+    string? BankAccountNumber,
+    string? BankBranch,
+    string? Instructions
+);
+
+public record ListingCategoryDto(Guid Id, string Name);
+
+public record PropertyImagesDto(
+    List<string>? Exterior = null,
+    List<string>? CommonAreas = null,
+    List<string>? Other = null
+);
+
+// ----- Legacy DTOs (kept for backward compat during transition) -----
 
 public record ListingDto(
     Guid Id,
@@ -199,6 +333,8 @@ public record ListingListDto(
     double? Longitude = null
 );
 
+// ----- Other request records -----
+
 public record UpdateAvailabilityRequest(string AvailabilityStatus);
 
 public record UpdateRatingRequest(decimal NewRating);
@@ -212,7 +348,7 @@ public record AssignAgentRequest(
     string? AgentEmail
 );
 
-public record AssignCaretakerRequest(Guid CaretakerId);
+public record AssignCaretakerRequest(Guid CaretakerId, string? CaretakerName = null, string? CaretakerPhone = null, string? CaretakerEmail = null);
 
 public record ListingSearchRequest(
     Guid? PropertyId,

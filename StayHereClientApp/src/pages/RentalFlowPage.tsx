@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   listingsApi, bookingApi, applicationApi, termsApi, paymentApi,
-  uploadFileToCloudflare,
+  uploadFileToR2,
   type Listing, type ViewingBooking, type TenantApplication, type PropertyTerms, type PaymentInitiateResult,
 } from "../lib/api";
 import { useApp } from "../context/AppContext";
@@ -67,7 +67,7 @@ export function RentalFlowPage() {
   const [mpesaPhone, setMpesaPhone] = useState("");
   const [pollInterval, setPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
 
-  const customerId = customerProfile?.id ?? customerProfile?.customerId ?? authUser?.id ?? "";
+  const customerId = customerProfile?.id ?? customerProfile?.customerId ?? authUser?.id;
 
   /* Redirect if not authenticated */
   useEffect(() => {
@@ -86,13 +86,14 @@ export function RentalFlowPage() {
   /* ── Step 1: Book viewing ─────────────────────────────────────────────── */
   async function handleBooking() {
     if (!bookDate) { toast("Please select a preferred date", "error"); return; }
+    if (!customerId) { toast("Could not identify your account. Please sign in again.", "error"); return; }
     setLoading(true);
     try {
       const b = await bookingApi.create({
         listingId,
         customerId,
-        preferredDate: new Date(bookDate).toISOString(),
-        preferredTime: bookTime,
+        viewingDate: (() => { const [y,m,d] = bookDate.split("-").map(Number); return new Date(y, m-1, d, 12, 0, 0).toISOString(); })(),
+        viewingTime: bookTime,
         viewingType: bookType,
         notes: bookNotes || undefined,
         contactPhone: bookPhone || undefined,
@@ -105,6 +106,7 @@ export function RentalFlowPage() {
 
   /* ── Step 2: Start application ────────────────────────────────────────── */
   async function handleApply() {
+    if (!customerId) { toast("Could not identify your account. Please sign in again.", "error"); return; }
     setLoading(true);
     try {
       const app = await applicationApi.create({
@@ -122,16 +124,16 @@ export function RentalFlowPage() {
   async function handleDocUpload(docType: string, file: File) {
     setDocs((d) => ({ ...d, [docType]: { uploading: true } }));
     try {
-      // Request upload URL from Cloudflare via property service
-      const uploadRes = await fetch(`/api/property/upload/request-url`, {
+      // Request presigned PUT URL from property service
+      const uploadRes = await fetch(`/api/property/upload/presigned-url`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("sh_client_auth_token")}` },
-        body: JSON.stringify({ folder: "documents" }),
+        body: JSON.stringify({ folder: "applications/documents", fileName: file.name, contentType: file.type }),
       });
       if (!uploadRes.ok) throw new Error("Could not get upload URL");
-      const { uploadUrl } = await uploadRes.json() as { uploadUrl: string };
-      const fileUrl = await uploadFileToCloudflare(uploadUrl, file);
-      setDocs((d) => ({ ...d, [docType]: { file, url: fileUrl, uploading: false } }));
+      const { uploadUrl, publicUrl, contentType } = await uploadRes.json() as { uploadUrl: string; publicUrl: string; contentType: string };
+      await uploadFileToR2(uploadUrl, file, contentType);
+      setDocs((d) => ({ ...d, [docType]: { file, url: publicUrl, uploading: false } }));
     } catch (err) {
       setDocs((d) => ({ ...d, [docType]: { uploading: false, error: "Upload failed" } }));
       toast("Document upload failed", "error");

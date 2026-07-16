@@ -282,42 +282,55 @@ public class ApplicationFunctions
     // ── Helpers ───────────────────────────────────────────────────────────────
     private async Task<object> ToDetailDto(TenantApplication app)
     {
-        // Enrich with listing info
         var listing = await _db.Listings
             .Select(l => new { l.Id, l.Title, l.ListingCode, l.Price, l.PriceCurrency })
             .FirstOrDefaultAsync(l => l.Id == app.ListingId);
 
-        // Enrich with customer info
         var customer = await _db.Customers
-            .Select(c => new { c.Id, c.FirstName, c.LastName, c.DisplayName, c.Email, c.Phone })
-            .FirstOrDefaultAsync(c => c.Id == app.CustomerId);
+            .Select(c => new { c.Id, c.UserId, c.FirstName, c.LastName, c.DisplayName, c.Email, c.Phone })
+            .FirstOrDefaultAsync(c => c.UserId == app.CustomerId || c.Id == app.CustomerId);
 
         return new
         {
-            app.Id, app.ListingId, app.CustomerId, app.ViewingBookingId,
-            app.Status, app.RejectionReason, app.ReviewedAt, app.ReviewedBy,
-            app.TermsAcceptedAt, app.DigitalSignatureUrl,
-            app.CreatedAt, app.UpdatedAt,
+            id                 = app.Id,
+            listingId          = app.ListingId,
+            customerId         = app.CustomerId,
+            viewingBookingId   = app.ViewingBookingId,
+            status             = app.Status,
+            rejectionReason    = app.RejectionReason,
+            reviewedAt         = app.ReviewedAt,
+            reviewedBy         = app.ReviewedBy,
+            termsAcceptedAt    = app.TermsAcceptedAt,
+            digitalSignatureUrl= app.DigitalSignatureUrl,
+            createdAt          = app.CreatedAt,
+            updatedAt          = app.UpdatedAt,
+            listingTitle       = listing?.Title,
+            listingCode        = listing?.ListingCode,
+            customerName       = customer == null ? null
+                                 : customer.DisplayName ?? $"{customer.FirstName} {customer.LastName}".Trim(),
+            customerEmail      = customer?.Email,
+            customerPhone      = customer?.Phone,
             documents = app.Documents.Select(d => new
             {
-                d.Id, d.DocumentType, d.FileUrl, d.FileName, d.UploadedAt
+                id           = d.Id,
+                documentType = d.DocumentType,
+                fileUrl      = d.FileUrl,
+                fileName     = d.FileName,
+                uploadedAt   = d.UploadedAt
             }),
             payments = app.Payments.Select(p => new
             {
-                p.Id, p.PaymentType, p.Amount, p.Currency, p.Method,
-                p.Status, p.MpesaReceiptNumber, p.Reference, p.InitiatedAt, p.ConfirmedAt
-            }),
-            listing = listing == null ? null : new
-            {
-                listing.Id, listing.Title, listing.ListingCode,
-                listing.Price, listing.PriceCurrency
-            },
-            customer = customer == null ? null : new
-            {
-                customer.Id,
-                name = customer.DisplayName ?? $"{customer.FirstName} {customer.LastName}".Trim(),
-                customer.Email, customer.Phone
-            }
+                id                  = p.Id,
+                paymentType         = p.PaymentType,
+                amount              = p.Amount,
+                currency            = p.Currency,
+                method              = p.Method,
+                status              = p.Status,
+                mpesaReceiptNumber  = p.MpesaReceiptNumber,
+                reference           = p.Reference,
+                initiatedAt         = p.InitiatedAt,
+                confirmedAt         = p.ConfirmedAt
+            })
         };
     }
 
