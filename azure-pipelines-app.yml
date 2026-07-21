@@ -2,7 +2,12 @@ trigger:
   branches:
     include: [main]
   paths:
-    include: [src/*]
+    include:
+    - src/**
+    - StayHereMainManagementPortal/**
+    - StayHerePropertyOwnerPortal/**
+    - StayHere.sln
+    - azure-pipelines-app.yml
 
 resources:
   pipelines:
