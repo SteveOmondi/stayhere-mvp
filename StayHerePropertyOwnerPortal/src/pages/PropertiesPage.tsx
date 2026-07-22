@@ -219,8 +219,7 @@ export function PropertiesPage() {
   async function handleExtraImageChange(idx: number, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
     setExtraImgs(imgs => imgs.map((im, i) => i === idx ? { file, uploading: true } : im));
-    try   { setExtraImgs(imgs => imgs.map((im, i) => i === idx ? { file, url: "", uploading: false, ...{ url: "" } } : im));
-            const url = await uploadImage(file);
+    try   { const url = await uploadImage(file);
             setExtraImgs(imgs => imgs.map((im, i) => i === idx ? { file, url, uploading: false } : im)); }
     catch { setExtraImgs(imgs => imgs.map((im, i) => i === idx ? { ...im, uploading: false, error: "Upload failed" } : im));
             toast("Image upload failed", "error"); }

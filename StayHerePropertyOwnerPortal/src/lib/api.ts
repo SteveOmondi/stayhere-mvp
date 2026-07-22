@@ -41,7 +41,7 @@ async function req<T>(base: string, path: string, opts: Opts = {}): Promise<T> {
   else if (cfg.authToken) headers["Authorization"] = `Bearer ${cfg.authToken}`;
   // Required by SKIP_AUTH=true local dev mode: backend reads this as the caller's PropertyOwner ID.
   const ownerId = loadOwnerProfile()?.id;
-  if (ownerId) headers["X-User-Id"] = ownerId;
+  if (ownerId) headers["X-User-Id"] = String(ownerId);
 
   logReq(method, url, opts.body, headers);
   const t0 = Date.now();
