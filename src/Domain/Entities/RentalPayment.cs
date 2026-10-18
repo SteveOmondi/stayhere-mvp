@@ -1,15 +1,16 @@
 namespace StayHere.Domain.Entities;
 
 /// <summary>
-/// A payment record linked to a TenantApplication.
+/// A payment record linked to EITHER a TenantApplication (long-term lease) OR a
+/// ShortStayBooking (nightly stay) - never both, never neither once matched.
 ///
-/// PaymentType:       SecurityDeposit | FirstMonth | AdminFee | MonthlyRent
+/// PaymentType:       SecurityDeposit | FirstMonth | AdminFee | MonthlyRent | ShortStayBookingFee
 /// Method:            Mpesa | BankTransfer | Card
 /// Status:            Initiated | Pending | Confirmed | Failed
 /// TransactionSource: STK_PUSH | C2B_PAYBILL | C2B_TILL | MANUAL
 ///
-/// ApplicationId is nullable to support inbound C2B payments that arrive before
-/// an application can be matched (e.g. if the BillRefNumber is not recognised).
+/// ApplicationId/ShortStayBookingId are both nullable to support inbound C2B payments that
+/// arrive before either can be matched (e.g. if the BillRefNumber is not recognised).
 /// These "unmatched" records remain queryable for admin reconciliation.
 /// </summary>
 public class RentalPayment
@@ -21,6 +22,9 @@ public class RentalPayment
     /// application is found at confirmation time.
     /// </summary>
     public Guid? ApplicationId { get; set; }
+
+    /// <summary>Set instead of ApplicationId for a short-stay booking fee payment.</summary>
+    public Guid? ShortStayBookingId { get; set; }
 
     public string PaymentType { get; set; } = string.Empty;
     public decimal Amount { get; set; }
@@ -93,4 +97,5 @@ public class RentalPayment
 
     // Navigation
     public TenantApplication? Application { get; set; }
+    public ShortStayBooking? ShortStayBooking { get; set; }
 }

@@ -2,27 +2,31 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  listingsApi, bookingApi, applicationApi, termsApi, paymentApi,
-  uploadFileToR2,
+  listingsApi, bookingApi, applicationApi, termsApi, paymentApi, authApi,
+  uploadDocumentToR2,
   type Listing, type ViewingBooking, type TenantApplication, type PropertyTerms, type PaymentInitiateResult,
 } from "../lib/api";
 import { useApp } from "../context/AppContext";
+import { loginUrlWithRedirect } from "../lib/authRedirect";
 import { listingTitle, listingLocation, formatKes, primaryImage } from "../lib/format";
 import { GradientBlobs } from "../components/ui";
+import { DocUploadSlot, type DocState } from "../components/DocUploadSlot";
+import { PhoneInput, isPhoneComplete } from "../components/PhoneInput";
 import {
   IcoArrowRight, IcoCalendar, IcoCheck,
   IcoKey, IcoLoader, IcoLocation, IcoPhone, IcoSparkle,
   IcoUser, IcoWallet, IcoX, IcoEye, IcoShare,
 } from "../components/icons";
 
-/* ── Step definitions ────────────────────────────────────────────────────── */
+/* ── Step definitions ─────────────────────────────────────────────────────
+ * Booking a viewing is a separate, optional action now (see the toggle inside Step 1) - it's no
+ * longer a numbered step you have to pass through before applying. */
 const STEPS = [
-  { id: 1, label: "Book Viewing",  icon: <IcoEye size={18} /> },
-  { id: 2, label: "Apply",         icon: <IcoUser size={18} /> },
-  { id: 3, label: "Documents",     icon: <IcoShare size={18} /> },
-  { id: 4, label: "Terms",         icon: <IcoKey size={18} /> },
-  { id: 5, label: "Payment",       icon: <IcoWallet size={18} /> },
-  { id: 6, label: "Welcome!",      icon: <IcoSparkle size={18} /> },
+  { id: 1, label: "Apply",         icon: <IcoUser size={18} /> },
+  { id: 2, label: "Documents",     icon: <IcoShare size={18} /> },
+  { id: 3, label: "Terms",         icon: <IcoKey size={18} /> },
+  { id: 4, label: "Payment",       icon: <IcoWallet size={18} /> },
+  { id: 5, label: "Welcome!",      icon: <IcoSparkle size={18} /> },
 ];
 
 const TIMES = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00"];
@@ -32,7 +36,47 @@ const DOC_TYPES = [
   { key: "Selfie",    label: "Selfie",                 hint: "A clear selfie of your face" },
 ];
 
-type DocState = { file?: File; url?: string; uploading: boolean; error?: string };
+
+/** Everything entered before an application exists server-side - lost on remount today (e.g. the
+ * redirect-to-login-and-back round trip, or an accidental refresh) since it only ever lived in
+ * component state. Persisted to sessionStorage (not localStorage - this is a draft for the
+ * current visit, not something that should resurface weeks later) keyed per-listing so starting
+ * the flow for a different listing never shows another listing's half-finished draft. Only the
+ * document `url`s are kept, never the `File` objects themselves (those aren't serializable, and
+ * once uploaded the url is all handleSubmitDocs actually needs). */
+type RentalFlowDraft = {
+  pathChoice: "viewing" | "apply" | null;
+  bookDate: string; bookTime: string; bookType: string; bookNotes: string; bookPhone: string;
+  docUrls: Record<string, string>;
+  sigPad: string;
+  payMethod: "Mpesa" | "BankTransfer";
+  mpesaPhone: string;
+};
+
+function draftKey(listingId: string) { return `sh_rental_flow_draft_${listingId}`; }
+
+function loadDraft(listingId: string): RentalFlowDraft | null {
+  try {
+    const raw = sessionStorage.getItem(draftKey(listingId));
+    return raw ? (JSON.parse(raw) as RentalFlowDraft) : null;
+  } catch { return null; }
+}
+
+function clearDraft(listingId: string) {
+  try { sessionStorage.removeItem(draftKey(listingId)); } catch { /* ignore */ }
+}
+
+/** Converts a canvas `toDataURL()` output (`data:image/png;base64,...`) into a real `File`, so the
+ * signature can go through the same R2 upload path as every other document instead of being sent
+ * to the API as a multi-KB inline string. */
+function dataUrlToFile(dataUrl: string, filename: string): File {
+  const [header, base64] = dataUrl.split(",");
+  const mime = header.match(/:(.*?);/)?.[1] ?? "image/png";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], filename, { type: mime });
+}
 
 export function RentalFlowPage() {
   const [params] = useSearchParams();
@@ -49,7 +93,15 @@ export function RentalFlowPage() {
   const [onboarding, setOnboarding] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Step 1 — Booking
+  // Step 1 — the customer explicitly chooses their own path: book a viewing first, or apply
+  // directly. Neither is the "default" - both are first-class, equally-weighted options, EXCEPT
+  // when arriving via a direct shortcut link (?path=apply|viewing - see the listing page's "Start
+  // Tenancy Application" button) that already states the user's intent, in which case skip
+  // straight past the choice screen instead of asking a question they already answered.
+  const pathHint = params.get("path");
+  const [pathChoice, setPathChoice] = useState<"viewing" | "apply" | null>(
+    pathHint === "viewing" || pathHint === "apply" ? pathHint : null
+  );
   const [bookDate, setBookDate] = useState("");
   const [bookTime, setBookTime] = useState("10:00");
   const [bookType, setBookType] = useState("Physical");
@@ -60,7 +112,13 @@ export function RentalFlowPage() {
   const [docs, setDocs] = useState<Record<string, DocState>>({
     IdFront: { uploading: false }, IdBack: { uploading: false }, Selfie: { uploading: false },
   });
-  const [sigPad, setSigPad] = useState<string>(""); // Data URL from canvas
+  const [sigPad, setSigPad] = useState<string>(""); // Data URL from canvas - preview only, never sent to the API
+  // The actual R2 public URL for the uploaded signature image - this is what ever gets persisted
+  // server-side. `digital_signature_url` (and application_documents.file_url) are both
+  // varchar(500) columns; a canvas toDataURL() PNG is routinely tens of KB of base64 text, which
+  // blows past that limit and fails with a DbUpdateException. Uploading it like every other
+  // document (same presigned-URL flow as the ID/selfie photos) keeps what's stored a short URL.
+  const [sigPadUrl, setSigPadUrl] = useState<string>("");
 
   // Step 5 — Payment
   const [payMethod, setPayMethod] = useState<"Mpesa" | "BankTransfer">("Mpesa");
@@ -69,10 +127,44 @@ export function RentalFlowPage() {
 
   const customerId = customerProfile?.id ?? customerProfile?.customerId ?? authUser?.id;
 
-  /* Redirect if not authenticated */
+  /* Redirect if not authenticated - RequireAuth in App.tsx normally catches this before the page
+   * even mounts, but this stays as a safety net for the case where a token expires mid-flow.
+   * Save whatever's been entered so far BEFORE navigating away, so it's there to restore once
+   * the user signs in and lands back on this exact page. */
   useEffect(() => {
-    if (!isAuthenticated) navigate("/login?redirect=/rental-flow?listingId=" + listingId, { replace: true });
+    if (!isAuthenticated) {
+      if (listingId) {
+        sessionStorage.setItem(draftKey(listingId), JSON.stringify({
+          pathChoice, bookDate, bookTime, bookType, bookNotes, bookPhone,
+          docUrls: Object.fromEntries(Object.entries(docs).map(([k, d]) => [k, d.url ?? ""]).filter(([, u]) => u)),
+          sigPad, payMethod, mpesaPhone,
+        } satisfies RentalFlowDraft));
+      }
+      navigate(loginUrlWithRedirect(`/rental-flow?listingId=${listingId}`), { replace: true });
+    }
   }, [isAuthenticated]);
+
+  /* Restore a draft left behind by the effect above (or by an accidental refresh) - runs once
+   * per listing, and only before anything has actually been chosen yet so it never clobbers a
+   * fresh in-progress session with a stale one. */
+  useEffect(() => {
+    if (!listingId || pathChoice !== null) return;
+    const draft = loadDraft(listingId);
+    if (!draft) return;
+    setPathChoice(draft.pathChoice);
+    setBookDate(draft.bookDate); setBookTime(draft.bookTime); setBookType(draft.bookType);
+    setBookNotes(draft.bookNotes); setBookPhone(draft.bookPhone);
+    setDocs((d) => {
+      const next = { ...d };
+      for (const [key, url] of Object.entries(draft.docUrls)) {
+        if (url) next[key] = { ...next[key], url, uploading: false };
+      }
+      return next;
+    });
+    setSigPad(draft.sigPad);
+    setPayMethod(draft.payMethod);
+    setMpesaPhone(draft.mpesaPhone);
+  }, [listingId]);
 
   /* Load listing + terms */
   useEffect(() => {
@@ -81,9 +173,44 @@ export function RentalFlowPage() {
     termsApi.getByListing(listingId).then(setTerms).catch(() => {});
   }, [listingId]);
 
+  /* Prefill the optional contact-phone field from whoever's signed in - still fully editable, and
+   * never overwrites a value the draft-restore effect above already set. `customerProfile` is NOT
+   * a reliable source (nothing in the app ever populates it) - this is the one endpoint any
+   * signed-in user can call for their own phone, keyed correctly by the JWT user id. */
+  useEffect(() => {
+    if (!authUser?.id) return;
+    authApi.getProfiles(authUser.id).then((profiles) => {
+      const phone = profiles[0]?.phone;
+      if (phone) { setBookPhone((p) => p || phone); setMpesaPhone((p) => p || phone); }
+    }).catch(() => {});
+  }, [authUser]);
+
+  /* Resume mid-flow — e.g. a link from Sage ("continue to payment") for an application the user
+   * already started. Without this the page always restarts at Step 1 regardless of real progress. */
+  const resumeApplicationId = params.get("applicationId");
+  useEffect(() => {
+    if (!resumeApplicationId) return;
+    applicationApi.getById(resumeApplicationId).then((app) => {
+      setApplication(app);
+      const stepForStatus: Record<string, number> = {
+        PendingApproval: 2,
+        DocumentsPending: 2,
+        UnderReview: 3,
+        Approved: 3,
+        TermsAccepted: 4,
+        PaymentPending: 4,
+        Active: 5,
+      };
+      setStep(stepForStatus[app.status] ?? 1);
+      if (app.status === "Active") {
+        paymentApi.getOnboarding(app.id).then(setOnboarding).catch(() => {});
+      }
+    }).catch(() => toast("Could not load your application.", "error"));
+  }, [resumeApplicationId]);
+
   useEffect(() => () => { if (pollInterval) clearInterval(pollInterval); }, [pollInterval]);
 
-  /* ── Step 1: Book viewing ─────────────────────────────────────────────── */
+  /* ── Optional: book a viewing (separate from applying - doesn't advance the step) ────── */
   async function handleBooking() {
     if (!bookDate) { toast("Please select a preferred date", "error"); return; }
     if (!customerId) { toast("Could not identify your account. Please sign in again.", "error"); return; }
@@ -99,12 +226,12 @@ export function RentalFlowPage() {
         contactPhone: bookPhone || undefined,
       });
       setBooking(b);
-      setStep(2);
+      toast("Viewing request sent!", "success");
     } catch { toast("Could not book viewing. Please try again.", "error"); }
     finally { setLoading(false); }
   }
 
-  /* ── Step 2: Start application ────────────────────────────────────────── */
+  /* ── Step 1: Start application (the entry point - viewing is optional, see above) ────── */
   async function handleApply() {
     if (!customerId) { toast("Could not identify your account. Please sign in again.", "error"); return; }
     setLoading(true);
@@ -115,7 +242,8 @@ export function RentalFlowPage() {
         viewingBookingId: booking?.id,
       });
       setApplication(app);
-      setStep(3);
+      setStep(2);
+      clearDraft(listingId);
     } catch { toast("Could not start application. Please try again.", "error"); }
     finally { setLoading(false); }
   }
@@ -124,17 +252,9 @@ export function RentalFlowPage() {
   async function handleDocUpload(docType: string, file: File) {
     setDocs((d) => ({ ...d, [docType]: { uploading: true } }));
     try {
-      // Request presigned PUT URL from property service
-      const uploadRes = await fetch(`/api/property/upload/presigned-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("sh_client_auth_token")}` },
-        body: JSON.stringify({ folder: "applications/documents", fileName: file.name, contentType: file.type }),
-      });
-      if (!uploadRes.ok) throw new Error("Could not get upload URL");
-      const { uploadUrl, publicUrl, contentType } = await uploadRes.json() as { uploadUrl: string; publicUrl: string; contentType: string };
-      await uploadFileToR2(uploadUrl, file, contentType);
+      const publicUrl = await uploadDocumentToR2(file, "applications/documents");
       setDocs((d) => ({ ...d, [docType]: { file, url: publicUrl, uploading: false } }));
-    } catch (err) {
+    } catch {
       setDocs((d) => ({ ...d, [docType]: { uploading: false, error: "Upload failed" } }));
       toast("Document upload failed", "error");
     }
@@ -154,49 +274,58 @@ export function RentalFlowPage() {
           });
         }
       }
-      // Save digital signature if drawn
+      // Save digital signature if drawn - upload the canvas PNG to R2 first (see sigPadUrl above)
+      // rather than ever sending the raw data: URL to the API.
       if (sigPad) {
+        const signatureFile = dataUrlToFile(sigPad, "signature.png");
+        const signaturePublicUrl = await uploadDocumentToR2(signatureFile, "applications/documents");
+        setSigPadUrl(signaturePublicUrl);
         await applicationApi.addDocument(application.id, {
-          documentType: "DigitalSignature", fileUrl: sigPad, fileName: "signature.png",
+          documentType: "DigitalSignature", fileUrl: signaturePublicUrl, fileName: "signature.png",
         });
       }
       const updated = await applicationApi.submit(application.id);
       setApplication(updated);
-      setStep(4);
+      setStep(3);
     } catch { toast("Could not submit documents.", "error"); }
     finally { setLoading(false); }
   }
 
-  /* ── Step 4: Accept terms ─────────────────────────────────────────────── */
+  /* ── Step 3: Accept terms ─────────────────────────────────────────────── */
   async function handleAcceptTerms() {
     if (!application) return;
     setLoading(true);
     try {
-      const updated = await applicationApi.acceptTerms(application.id, sigPad || undefined);
+      // sigPadUrl is the R2 public URL uploaded back in handleSubmitDocs - never send the raw
+      // canvas data: URL here either (digital_signature_url is also a varchar(500) column).
+      const updated = await applicationApi.acceptTerms(application.id, sigPadUrl || undefined);
       setApplication(updated);
-      setStep(5);
+      setStep(4);
     } catch { toast("Could not record acceptance.", "error"); }
     finally { setLoading(false); }
   }
 
-  /* ── Step 5: Payment ──────────────────────────────────────────────────── */
+  /* ── Step 4: Payment ──────────────────────────────────────────────────── */
   async function handlePayment() {
     if (!application) return;
-    if (payMethod === "Mpesa" && !mpesaPhone) { toast("Enter M-Pesa phone number", "error"); return; }
+    if (payMethod === "Mpesa" && !isPhoneComplete(mpesaPhone)) { toast("Enter a valid M-Pesa phone number", "error"); return; }
     setLoading(true);
     try {
       const totalAmount = (terms?.securityDeposit ?? 0) + (terms?.adminFee ?? 0);
       const result = await paymentApi.initiate(application.id, {
-        method: payMethod,
         phoneNumber: mpesaPhone,
         paymentType: "SecurityDeposit",
         amount: totalAmount,
       });
       setPayResult(result);
 
-      if (payMethod === "Mpesa" && result.mpesaCheckoutRequestId) {
+      if (payMethod === "Mpesa" && result.checkoutRequestId) {
+        const checkoutId = result.checkoutRequestId;
         // Poll for confirmation
         const iv = setInterval(async () => {
+          // Actively ask Safaricom via queryStkStatus (not just re-read our own DB row) - the
+          // STK callback is not reliable enough to be the only way this ever flips to Confirmed.
+          await paymentApi.queryStkStatus(checkoutId).catch(() => null);
           const statuses = await paymentApi.getStatus(application.id).catch(() => []);
           const confirmed = statuses.find((p) => p.status === "Confirmed");
           if (confirmed) {
@@ -204,7 +333,7 @@ export function RentalFlowPage() {
             setPollInterval(null);
             const ob = await paymentApi.getOnboarding(application.id).catch(() => null);
             setOnboarding(ob);
-            setStep(6);
+            setStep(5);
           }
         }, 4000);
         setPollInterval(iv);
@@ -224,7 +353,7 @@ export function RentalFlowPage() {
       itemsToCarry: terms?.itemsToCarry,
     }));
     setOnboarding(ob);
-    setStep(6);
+    setStep(5);
   }
 
   if (!listing) {
@@ -294,66 +423,123 @@ export function RentalFlowPage() {
             exit={{ opacity: 0, x: -30 }}
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* STEP 1 — Book Viewing */}
-            {step === 1 && (
-              <StepCard title="Book a Viewing" subtitle="Schedule a time to visit the property before committing.">
-                <div className="space-y-5">
-                  <div>
-                    <label className="label">Preferred Date</label>
-                    <input type="date" value={bookDate} min={new Date().toISOString().split("T")[0]}
-                      onChange={(e) => setBookDate(e.target.value)} className="input-dark" />
-                  </div>
-                  <div>
-                    <label className="label">Preferred Time</label>
-                    <div className="flex flex-wrap gap-2">
-                      {TIMES.map((t) => (
-                        <button key={t} onClick={() => setBookTime(t)}
-                          className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${bookTime === t ? "border-brand-gold bg-brand-gold/15 text-brand-gold" : "border-white/10 text-brand-muted hover:text-white"}`}>
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="label">Viewing Type</label>
-                    <div className="flex gap-3">
-                      {["Physical", "Virtual"].map((t) => (
-                        <button key={t} onClick={() => setBookType(t)}
-                          className={`flex-1 rounded-2xl border py-3 text-sm font-medium transition ${bookType === t ? "border-brand-gold bg-brand-gold/15 text-brand-gold" : "border-white/10 text-brand-muted hover:text-white"}`}>
-                          {t === "Physical" ? "🏠 Physical Visit" : "📱 Virtual Tour"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="label">Contact Phone (optional)</label>
-                    <input type="tel" value={bookPhone} onChange={(e) => setBookPhone(e.target.value)}
-                      placeholder="+254 700 000 000" className="input-dark" />
-                  </div>
-                  <div>
-                    <label className="label">Any notes for the agent?</label>
-                    <textarea rows={3} value={bookNotes} onChange={(e) => setBookNotes(e.target.value)}
-                      placeholder="e.g. I'm interested in the 3rd floor unit, available weekends only…"
-                      className="input-dark resize-none" />
-                  </div>
-                  <button onClick={handleBooking} disabled={loading} className="btn-gold w-full justify-center mt-2">
-                    {loading ? <IcoLoader size={18} /> : <><IcoCalendar size={16} /> Confirm Booking Request</>}
-                  </button>
+            {/* STEP 1a — the choice: book a viewing first, or apply directly. Equal weight, no default. */}
+            {step === 1 && pathChoice === null && (
+              <div>
+                <div className="text-center mb-7">
+                  <h2 className="font-display text-2xl sm:text-3xl font-bold text-white">How would you like to start?</h2>
+                  <p className="mt-2 text-sm text-brand-muted">Both paths lead to the same tenancy — pick whichever feels right for you.</p>
                 </div>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <PathCard
+                    accent="teal"
+                    icon={<IcoEye size={26} />}
+                    title="Book a Viewing First"
+                    tagline="See it before you commit"
+                    bullets={[
+                      "Visit in person or take a virtual tour",
+                      "Ask the agent questions on the spot",
+                      "No commitment — apply whenever you're ready",
+                    ]}
+                    ctaLabel="Schedule a Viewing"
+                    onClick={() => setPathChoice("viewing")}
+                  />
+                  <PathCard
+                    accent="gold"
+                    icon={<IcoKey size={26} />}
+                    title="Apply for Tenancy"
+                    tagline="Ready to move forward"
+                    bullets={[
+                      "Skip straight to the paperwork",
+                      "Fastest path to securing the unit",
+                      "You can still book a viewing afterward",
+                    ]}
+                    ctaLabel="Start My Application"
+                    onClick={() => setPathChoice("apply")}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* STEP 1b — chose to book a viewing */}
+            {step === 1 && pathChoice === "viewing" && (
+              <StepCard title="Book a Viewing" subtitle="Pick a time that works for you — this doesn't commit you to anything.">
+                <button onClick={() => setPathChoice(null)} className="text-xs text-brand-muted hover:text-white flex items-center gap-1 mb-5 -mt-1">
+                  <IcoArrowRight size={11} className="rotate-180" /> Choose a different path
+                </button>
+
+                {booking ? (
+                  <div className="space-y-5">
+                    <BookingConfirmed booking={booking} />
+                    <div className="glass rounded-2xl p-5 text-center space-y-3">
+                      <p className="text-sm text-brand-muted">Ready to secure the unit already? You don't have to wait for the viewing.</p>
+                      <button onClick={handleApply} disabled={loading} className="btn-gold w-full justify-center">
+                        {loading ? <IcoLoader size={18} /> : <><IcoArrowRight size={16} /> Apply for Tenancy Now</>}
+                      </button>
+                      <Link to={`/listing/${listingId}`} className="block text-xs text-brand-muted hover:text-white">Maybe later — back to listing</Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    <div>
+                      <label className="label">Preferred Date</label>
+                      <input type="date" value={bookDate} min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setBookDate(e.target.value)} className="input-dark" />
+                    </div>
+                    <div>
+                      <label className="label">Preferred Time</label>
+                      <div className="flex flex-wrap gap-2">
+                        {TIMES.map((t) => (
+                          <button key={t} onClick={() => setBookTime(t)}
+                            className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${bookTime === t ? "border-brand-gold bg-brand-gold/15 text-brand-gold" : "border-white/10 text-brand-muted hover:text-white"}`}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="label">Viewing Type</label>
+                      <div className="flex gap-3">
+                        {["Physical", "Virtual"].map((t) => (
+                          <button key={t} onClick={() => setBookType(t)}
+                            className={`flex-1 rounded-2xl border py-3 text-sm font-medium transition ${bookType === t ? "border-brand-gold bg-brand-gold/15 text-brand-gold" : "border-white/10 text-brand-muted hover:text-white"}`}>
+                            {t === "Physical" ? "🏠 Physical Visit" : "📱 Virtual Tour"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="label">Contact Phone (optional)</label>
+                      <PhoneInput value={bookPhone} onChange={setBookPhone} />
+                    </div>
+                    <div>
+                      <label className="label">Any notes for the agent?</label>
+                      <textarea rows={3} value={bookNotes} onChange={(e) => setBookNotes(e.target.value)}
+                        placeholder="e.g. I'm interested in the 3rd floor unit, available weekends only…"
+                        className="input-dark resize-none" />
+                    </div>
+                    <button onClick={handleBooking} disabled={loading} className="btn-gold w-full justify-center mt-2">
+                      {loading ? <IcoLoader size={18} /> : <><IcoCalendar size={16} /> Confirm Booking Request</>}
+                    </button>
+                  </div>
+                )}
               </StepCard>
             )}
 
-            {/* STEP 2 — Apply */}
-            {step === 2 && (
-              <StepCard title="Your Viewing is Booked!" subtitle="The property owner has been notified. Ready to proceed with a formal application?">
-                <BookingConfirmed booking={booking} />
-                <div className="mt-6 glass rounded-2xl p-5 space-y-3">
-                  <h4 className="font-display text-base font-semibold text-white">Application Process</h4>
+            {/* STEP 1c — chose to apply directly */}
+            {step === 1 && pathChoice === "apply" && (
+              <StepCard title="Apply for Tenancy" subtitle="Here's what to expect once you start.">
+                <button onClick={() => setPathChoice(null)} className="text-xs text-brand-muted hover:text-white flex items-center gap-1 mb-5 -mt-1">
+                  <IcoArrowRight size={11} className="rotate-180" /> Choose a different path
+                </button>
+
+                <div className="glass rounded-2xl p-5 space-y-3">
+                  <h4 className="font-display text-base font-semibold text-white">What happens next</h4>
                   {[
-                    "Upload your ID and a selfie for verification",
+                    "The property owner does a quick initial review of your application",
+                    "Once approved, upload your ID and a selfie for verification",
                     "Digitally sign the application form",
-                    "Review the property terms and conditions",
-                    "Make the required payment to secure the unit",
+                    "Review the property terms and make the required payment to secure the unit",
                   ].map((s, i) => (
                     <div key={i} className="flex items-start gap-3 text-sm text-brand-muted">
                       <span className="flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded-full bg-brand-gold/20 text-brand-gold text-[10px] font-bold">{i + 1}</span>
@@ -361,17 +547,43 @@ export function RentalFlowPage() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-6 flex gap-3">
-                  <button onClick={() => setStep(1)} className="btn-ghost flex-1 justify-center text-sm">← Back</button>
-                  <button onClick={handleApply} disabled={loading} className="btn-gold flex-1 justify-center">
-                    {loading ? <IcoLoader size={18} /> : <><IcoArrowRight size={16} /> Start Application</>}
-                  </button>
+
+                <button onClick={handleApply} disabled={loading} className="btn-gold w-full justify-center mt-5">
+                  {loading ? <IcoLoader size={18} /> : <><IcoArrowRight size={16} /> Start Application</>}
+                </button>
+                <p className="mt-3 text-center text-xs text-brand-muted">Prefer to see it first? Go back and choose "Book a Viewing" instead — you can always apply right after.</p>
+              </StepCard>
+            )}
+
+            {/* STEP 2 — Pending approval, then Documents (once the owner pre-screens the applicant) */}
+            {step === 2 && application?.status === "PendingApproval" && (
+              <StepCard title="Application Submitted" subtitle="The property owner reviews new applicants before documents are requested.">
+                <div className="flex flex-col items-center gap-4 py-8 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-purple-500/15 text-purple-400">
+                    <IcoLoader size={28} className="animate-spin" />
+                  </div>
+                  <h3 className="font-display text-lg font-semibold text-white">Pending Owner Approval</h3>
+                  <p className="text-brand-muted text-sm">We'll let you know as soon as the owner approves your application so you can upload your documents.</p>
+                  <button onClick={async () => {
+                    const updated = await applicationApi.getById(application!.id);
+                    setApplication(updated);
+                    toast("Status refreshed", "info");
+                  }} className="btn-ghost text-sm">Refresh Status</button>
                 </div>
               </StepCard>
             )}
 
-            {/* STEP 3 — Documents */}
-            {step === 3 && (
+            {step === 2 && application?.status === "Rejected" && (
+              <StepCard title="Application Not Approved" subtitle="">
+                <div className="flex flex-col items-center gap-4 py-8 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500/15 text-red-400"><IcoX size={28} /></div>
+                  <p className="text-brand-muted text-sm">{application.rejectionReason ?? "The owner was unable to approve your application at this time."}</p>
+                  <Link to="/explore" className="btn-ghost text-sm">Browse Other Listings</Link>
+                </div>
+              </StepCard>
+            )}
+
+            {step === 2 && application && !["PendingApproval", "Rejected"].includes(application.status) && (
               <StepCard title="Upload Your Documents" subtitle="We need to verify your identity. All documents are stored securely.">
                 <div className="space-y-4">
                   {DOC_TYPES.map((dt) => (
@@ -385,7 +597,6 @@ export function RentalFlowPage() {
                   </div>
                 </div>
                 <div className="mt-6 flex gap-3">
-                  <button onClick={() => setStep(2)} className="btn-ghost text-sm py-2.5 px-4">← Back</button>
                   <button onClick={handleSubmitDocs} disabled={loading} className="btn-gold flex-1 justify-center">
                     {loading ? <IcoLoader size={18} /> : <><IcoCheck size={16} /> Submit Documents</>}
                   </button>
@@ -396,8 +607,8 @@ export function RentalFlowPage() {
               </StepCard>
             )}
 
-            {/* STEP 4 — Terms */}
-            {step === 4 && (
+            {/* STEP 3 — Terms */}
+            {step === 3 && (
               <StepCard title="Review & Accept Terms" subtitle="Please read through all terms carefully before accepting.">
                 {application?.status === "UnderReview" ? (
                   <div className="flex flex-col items-center gap-4 py-8 text-center">
@@ -427,7 +638,6 @@ export function RentalFlowPage() {
                       </div>
                     )}
                     <div className="mt-6 flex gap-3">
-                      <button onClick={() => setStep(3)} className="btn-ghost text-sm py-2.5 px-4">← Back</button>
                       <button onClick={handleAcceptTerms} disabled={loading} className="btn-gold flex-1 justify-center">
                         {loading ? <IcoLoader size={18} /> : <><IcoCheck size={16} /> I Accept All Terms</>}
                       </button>
@@ -437,8 +647,8 @@ export function RentalFlowPage() {
               </StepCard>
             )}
 
-            {/* STEP 5 — Payment */}
-            {step === 5 && (
+            {/* STEP 4 — Payment */}
+            {step === 4 && (
               <StepCard title="Complete Payment" subtitle="Secure your tenancy by making the required payment.">
                 {!payResult ? (
                   <>
@@ -473,8 +683,7 @@ export function RentalFlowPage() {
                       <div className="space-y-4">
                         <div>
                           <label className="label">M-Pesa Phone Number</label>
-                          <input type="tel" value={mpesaPhone} onChange={(e) => setMpesaPhone(e.target.value)}
-                            placeholder="0700 000 000" className="input-dark" />
+                          <PhoneInput value={mpesaPhone} onChange={setMpesaPhone} />
                           <p className="text-xs text-brand-muted mt-1">Enter the Safaricom number to receive the STK Push prompt.</p>
                         </div>
                         {terms?.mpesaPaybill && (
@@ -490,7 +699,6 @@ export function RentalFlowPage() {
                     )}
 
                     <div className="mt-6 flex gap-3">
-                      <button onClick={() => setStep(4)} className="btn-ghost text-sm py-2.5 px-4">← Back</button>
                       {payMethod === "Mpesa" ? (
                         <button onClick={handlePayment} disabled={loading} className="btn-gold flex-1 justify-center">
                           {loading ? <IcoLoader size={18} /> : <><IcoWallet size={16} /> Send STK Push</>}
@@ -503,18 +711,30 @@ export function RentalFlowPage() {
                     </div>
                   </>
                 ) : (
-                  <StkWaiting payResult={payResult} onPaid={async () => {
-                    if (!application) return;
+                  <StkWaiting payResult={payResult} onCheck={async () => {
+                    if (!application) return false;
+                    // Ask Safaricom directly via queryStkStatus first - it self-heals the
+                    // application/payment status if the STK callback never arrived.
+                    if (payResult.checkoutRequestId) {
+                      await paymentApi.queryStkStatus(payResult.checkoutRequestId).catch(() => null);
+                    }
+                    // Re-fetch the application itself rather than trusting the STK response alone -
+                    // the callback only promotes it to Active once Safaricom actually confirms the
+                    // payment, so this is the real check, not an optimistic "assume it worked".
+                    const updated = await applicationApi.getById(application.id).catch(() => null);
+                    if (updated?.status !== "Active") return false;
+                    setApplication(updated);
                     const ob = await paymentApi.getOnboarding(application.id).catch(() => null);
                     setOnboarding(ob);
-                    setStep(6);
+                    setStep(5);
+                    return true;
                   }} />
                 )}
               </StepCard>
             )}
 
-            {/* STEP 6 — Welcome / Onboarding */}
-            {step === 6 && (
+            {/* STEP 5 — Welcome / Onboarding */}
+            {step === 5 && (
               <OnboardingStep listing={listing} onboarding={onboarding} terms={terms} />
             )}
           </motion.div>
@@ -536,6 +756,46 @@ function StepCard({ title, subtitle, children }: { title: string; subtitle?: str
   );
 }
 
+function PathCard({ accent, icon, title, tagline, bullets, ctaLabel, onClick }: {
+  accent: "teal" | "gold";
+  icon: React.ReactNode;
+  title: string;
+  tagline: string;
+  bullets: string[];
+  ctaLabel: string;
+  onClick: () => void;
+}) {
+  const theme = accent === "teal"
+    ? { glow: "hover:shadow-[0_0_0_1px_rgba(45,212,191,0.4),0_20px_40px_-15px_rgba(45,212,191,0.35)]", iconBg: "bg-brand-teal/15 text-brand-teallight", ring: "group-hover:border-brand-teal/40", btn: "border border-brand-teal/40 text-brand-teallight hover:bg-brand-teal/10" }
+    : { glow: "hover:shadow-[0_0_0_1px_rgba(201,162,39,0.45),0_20px_40px_-15px_rgba(201,162,39,0.4)]", iconBg: "bg-brand-gold/15 text-brand-gold", ring: "group-hover:border-brand-gold/40", btn: "btn-gold justify-center" };
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover={{ y: -4 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 300, damping: 22 }}
+      className={`group text-left glass-strong rounded-3xl p-6 border border-white/10 transition-shadow duration-300 ${theme.glow} ${theme.ring}`}
+    >
+      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${theme.iconBg}`}>{icon}</div>
+      <h3 className="mt-4 font-display text-xl font-bold text-white">{title}</h3>
+      <p className="text-xs uppercase tracking-wider text-brand-muted mt-1">{tagline}</p>
+      <div className="mt-4 space-y-2">
+        {bullets.map((b, i) => (
+          <div key={i} className="flex items-start gap-2 text-sm text-brand-muted">
+            <IcoCheck size={14} className="shrink-0 mt-0.5 text-emerald-400" />
+            {b}
+          </div>
+        ))}
+      </div>
+      <div className={`mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold w-full ${theme.btn}`}>
+        {ctaLabel} <IcoArrowRight size={14} />
+      </div>
+    </motion.button>
+  );
+}
+
 function BookingConfirmed({ booking }: { booking: ViewingBooking | null }) {
   if (!booking) return null;
   return (
@@ -551,37 +811,6 @@ function BookingConfirmed({ booking }: { booking: ViewingBooking | null }) {
         </div>
         <div className="mt-1 text-xs text-brand-muted">Status: <span className={`font-medium ${booking.status === "Confirmed" ? "text-emerald-400" : "text-yellow-400"}`}>{booking.status}</span></div>
       </div>
-    </div>
-  );
-}
-
-function DocUploadSlot({ docKey, label, hint, state, onChange }: {
-  docKey: string; label: string; hint: string;
-  state: DocState;
-  onChange: (key: string, file: File) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  return (
-    <div className={`glass rounded-2xl p-4 border transition ${state.url ? "border-emerald-500/30" : state.error ? "border-red-500/30" : "border-white/10"}`}>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-medium text-white">{label}</span>
-        {state.url && <span className="flex items-center gap-1 text-xs text-emerald-400"><IcoCheck size={12} /> Uploaded</span>}
-        {state.error && <span className="text-xs text-red-400">{state.error}</span>}
-      </div>
-      <p className="text-xs text-brand-muted mb-3">{hint}</p>
-      {state.url ? (
-        <div className="flex items-center gap-3">
-          <img src={state.url} alt="Preview" className="h-12 w-16 object-cover rounded-lg" />
-          <button onClick={() => inputRef.current?.click()} className="text-xs text-brand-teallight hover:underline">Replace</button>
-        </div>
-      ) : (
-        <button onClick={() => inputRef.current?.click()} disabled={state.uploading}
-          className="flex items-center gap-2 rounded-xl border border-dashed border-white/20 px-4 py-2.5 text-sm text-brand-muted hover:border-brand-gold/40 hover:text-white transition w-full justify-center">
-          {state.uploading ? <IcoLoader size={16} className="animate-spin" /> : "📎 Choose File"}
-        </button>
-      )}
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) onChange(docKey, f); }} />
     </div>
   );
 }
@@ -606,7 +835,11 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (v: string
 
   function draw(e: React.MouseEvent | React.TouchEvent) {
     if (!drawing.current) return;
-    e.preventDefault();
+    // Mouse only - touch scrolling during a signature stroke is already blocked by the canvas's
+    // own `touch-none` CSS (touch-action: none), and React registers touchmove listeners as
+    // passive by default, so calling preventDefault() on the touch path does nothing except log
+    // "Unable to preventDefault inside passive event listener invocation" on every single move.
+    if (!("touches" in e)) e.preventDefault();
     const { x, y } = getPos(e.nativeEvent as MouseEvent | TouchEvent);
     const ctx = canvasRef.current!.getContext("2d")!;
     ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "#c9a227";
@@ -711,7 +944,21 @@ function Row({ label, value, copy }: { label: string; value: string; copy?: bool
   );
 }
 
-function StkWaiting({ payResult, onPaid }: { payResult: PaymentInitiateResult; onPaid: () => void }) {
+function StkWaiting({ payResult, onCheck }: { payResult: PaymentInitiateResult; onCheck: () => Promise<boolean> }) {
+  const [checking, setChecking] = useState(false);
+  const [notYetConfirmed, setNotYetConfirmed] = useState(false);
+
+  async function handleClick() {
+    setChecking(true);
+    setNotYetConfirmed(false);
+    try {
+      const confirmed = await onCheck();
+      if (!confirmed) setNotYetConfirmed(true);
+    } finally {
+      setChecking(false);
+    }
+  }
+
   return (
     <div className="flex flex-col items-center gap-5 py-6 text-center">
       <motion.div
@@ -730,9 +977,16 @@ function StkWaiting({ payResult, onPaid }: { payResult: PaymentInitiateResult; o
       </div>
       <div className="glass rounded-2xl p-4 w-full text-left space-y-1.5 text-sm">
         <div className="flex justify-between"><span className="text-brand-muted">Amount</span><span className="font-bold text-brand-gold">{payResult.currency} {payResult.amount?.toLocaleString()}</span></div>
-        <div className="flex justify-between"><span className="text-brand-muted">Checkout ID</span><span className="text-white/60 text-xs">{payResult.mpesaCheckoutRequestId}</span></div>
+        <div className="flex justify-between"><span className="text-brand-muted">Checkout ID</span><span className="text-white/60 text-xs">{payResult.checkoutRequestId}</span></div>
       </div>
-      <button onClick={onPaid} className="btn-ghost text-sm">I've already paid — Continue</button>
+      {notYetConfirmed && (
+        <p className="text-xs text-amber-400">
+          We haven't received your payment confirmation yet. If you've already entered your PIN, please wait a few seconds and try again.
+        </p>
+      )}
+      <button onClick={handleClick} disabled={checking} className="btn-ghost text-sm">
+        {checking ? <IcoLoader size={14} className="animate-spin" /> : "I've already paid — Check Status"}
+      </button>
     </div>
   );
 }

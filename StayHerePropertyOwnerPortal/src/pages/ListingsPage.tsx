@@ -56,7 +56,7 @@ function mapL(x: unknown): Listing | null {
 }
 
 export function ListingsPage() {
-  const { owner, toast, reloadKey } = useOwner();
+  const { owner, userId, toast, reloadKey } = useOwner();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState("");
@@ -73,11 +73,11 @@ export function ListingsPage() {
 
   /* ── data loading ── */
   const load = async () => {
-    if (!owner?.id) return;
+    if (!userId || !owner?.id) return;
     setLoading(true);
     try {
       const [ld, ad, cd] = await Promise.allSettled([
-        listingsApi.byOwner(owner.id, 1, 100),
+        listingsApi.byOwner(userId, 1, 100),
         ownerApi.agents(owner.id),
         ownerApi.caretakers(owner.id),
       ]);
@@ -94,7 +94,7 @@ export function ListingsPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { void load(); }, [reloadKey, owner?.id]);
+  useEffect(() => { void load(); }, [reloadKey, owner?.id, userId]);
 
   /* ── staff assignment ── */
   async function handleAssign() {

@@ -6,6 +6,16 @@ export class ApiError extends Error {
     super(`HTTP ${status}: ${body.slice(0, 300)}`);
     this.status = status; this.body = body;
   }
+
+  /** A short, user-facing message safe to render directly — prefers a clear explanation for
+   * common statuses over the raw backend response, which can be empty, plain-text "Forbidden",
+   * or a stringified JSON blob never meant for display. */
+  get userMessage(): string {
+    if (this.status === 403) return "You don't have permission to access this functionality.";
+    if (this.status === 401) return "You need to sign in to do that.";
+    if (!this.body) return "Something went wrong. Please try again.";
+    return this.body;
+  }
 }
 
 /* ── Console logging ────────────────────────────────────── */
@@ -53,7 +63,14 @@ async function req<T>(base: string, path: string, opts: Opts = {}): Promise<T> {
   logRes(method, url, res.status, parsed, Date.now() - t0);
   if (res.status === 204) return undefined as T;
   if (res.status === 401) window.dispatchEvent(new CustomEvent("sh:unauthorized"));
-  if (!res.ok) throw new ApiError(res.status, typeof parsed === "string" ? parsed : JSON.stringify(parsed));
+  if (!res.ok) {
+    // Every backend error body is JSON `{ error: "..." }` (see AuthenticationMiddleware /
+    // CreateErrorResponse helpers) - surface that plain message instead of a raw JSON blob.
+    const errorField = parsed && typeof parsed === "object" && typeof (parsed as Record<string, unknown>).error === "string"
+      ? (parsed as Record<string, unknown>).error as string
+      : undefined;
+    throw new ApiError(res.status, errorField ?? (typeof parsed === "string" ? parsed : JSON.stringify(parsed)));
+  }
   return parsed as T;
 }
 
@@ -194,6 +211,57 @@ export const bookingApi = {
     req<ViewingBooking>(loadConfig().propertyApiBase, `bookings/${id}/cancel`, { method: "PATCH", body }),
 };
 
+/* ══ Short-Stay Bookings — a lighter sibling of applicationApi/TenantApplication, for
+   ListingType.ShortStay nightly stays. Read-only here: the owner portal just needs visibility
+   (who's arriving, when, verification status) - no manual date-blocking UI in this pass. ══ */
+export type ShortStayBookingDoc = { id: string; documentType: string; fileUrl: string; fileName?: string; uploadedAt: string };
+
+export type ShortStayBooking = {
+  id: string; listingId: string; customerId: string;
+  checkInDate: string; checkOutDate: string; nights: number;
+  guestName: string; guestPhone: string; guestEmail: string;
+  numberOfGuests: number; specialRequests?: string;
+  bookingFeeAmount: number; currency: string;
+  status: "PendingPayment" | "Confirmed" | "Cancelled" | "Completed";
+  cancellationReason?: string; documentsSubmittedAt?: string;
+  createdAt: string; updatedAt: string; confirmedAt?: string;
+  listingTitle?: string; listingCode?: string; listingPrice?: number;
+  documents?: ShortStayBookingDoc[];
+  payments?: RentalPayment[];
+};
+
+export const shortStayApi = {
+  byOwner: (ownerId: string) =>
+    req<ShortStayBooking[]>(loadConfig().propertyApiBase, `short-stay-bookings/owner/${ownerId}`),
+  getById: (id: string) =>
+    req<ShortStayBooking>(loadConfig().propertyApiBase, `short-stay-bookings/${id}`),
+};
+
+/* ══ Enquiries ════════════════════════════════════════════════
+   The only channel an owner and a customer ever talk through. Never returns the customer's
+   phone/email - just their display name and the message thread. ══ */
+export type EnquirySummary = {
+  id: string; listingId: string; status: string;
+  createdAt: string; lastMessageAt: string; lastMessagePreview?: string;
+  unreadCount: number; customerName?: string;
+  listingTitle?: string; listingCode?: string; listingImageUrl?: string;
+  listingPrice?: number; listingCurrency?: string; listingLocation?: string;
+};
+
+export type EnquiryMessage = {
+  id: string; enquiryId: string; senderRole: "Customer" | "Owner"; body: string; createdAt: string;
+};
+
+export const enquiryApi = {
+  ownerMine: () => req<EnquirySummary[]>(loadConfig().propertyApiBase, "enquiries/owner/mine"),
+  getMessages: (id: string, after?: string) =>
+    req<EnquiryMessage[]>(loadConfig().propertyApiBase, `enquiries/${id}/messages${after ? `?after=${encodeURIComponent(after)}` : ""}`),
+  sendMessage: (id: string, body: string) =>
+    req<EnquiryMessage>(loadConfig().propertyApiBase, `enquiries/${id}/messages`, { method: "POST", body: { body } }),
+  markRead: (id: string) =>
+    req<{ success: boolean }>(loadConfig().propertyApiBase, `enquiries/${id}/read`, { method: "PATCH" }),
+};
+
 /* ══ Tenant Applications ════════════════════════════════════ */
 export type ApplicationDocument = {
   id: string; applicationId: string; documentType: string;
@@ -202,7 +270,7 @@ export type ApplicationDocument = {
 
 export type TenantApplication = {
   id: string; listingId: string; customerId: string; viewingBookingId?: string;
-  status: string; rejectionReason?: string; reviewedAt?: string; reviewedBy?: string;
+  status: string; statusLabel?: string; rejectionReason?: string; reviewedAt?: string; reviewedBy?: string;
   termsAcceptedAt?: string; digitalSignatureUrl?: string;
   createdAt: string; updatedAt: string;
   documents?: ApplicationDocument[];
@@ -218,6 +286,10 @@ export const applicationApi = {
     req<TenantApplication[]>(loadConfig().propertyApiBase, `applications/owner/${ownerId}`),
   getById: (id: string) =>
     req<TenantApplication>(loadConfig().propertyApiBase, `applications/${id}`),
+  /** Pre-screen gate: approve or reject the applicant before any documents are requested. */
+  prescreen: (id: string, body: { decision: "Approved" | "Rejected"; reason?: string; reviewerEmail?: string }) =>
+    req<TenantApplication>(loadConfig().propertyApiBase, `applications/${id}/prescreen`, { method: "PATCH", body }),
+  /** Document-review gate: approve or reject after documents have been submitted. */
   review: (id: string, body: { decision: "Approved" | "Rejected"; reason?: string; reviewerEmail?: string }) =>
     req<TenantApplication>(loadConfig().propertyApiBase, `applications/${id}/review`, { method: "PATCH", body }),
   cancel: (id: string) =>
@@ -270,10 +342,22 @@ export const paymentApi = {
 };
 
 /* ══ Static / Categories ═══════════════════════════════════ */
+export type FurnitureCatalogItemDto = {
+  id: string;
+  name: string;
+  category: string;
+  footprint: [number, number];
+  height: number;
+  color: string;
+  icon: string;
+};
+
 export const staticApi = {
   categories: () => req<unknown[]>(loadConfig().staticApiBase, "categories"),
   subcategoriesByCategory: (categoryId: string) =>
     req<unknown[]>(loadConfig().staticApiBase, `subcategories/category/${categoryId}`),
+  /** GET /furniture-catalog — furniture used to render 3D/3D-Live floor plans. */
+  furnitureCatalog: () => req<FurnitureCatalogItemDto[]>(loadConfig().staticApiBase, "furniture-catalog"),
 };
 
 /* ══ Image / File Upload ═══════════════════════════════════ */
@@ -316,6 +400,16 @@ export async function uploadToR2(uploadUrl: string, file: File, contentType: str
 }
 
 /* ══ AI Agent ══════════════════════════════════════════════ */
+
+export type FloorPlanAnalysisRoom = { label: string; points: [number, number][]; dimensionText?: string };
+export type FloorPlanAnalysisOpening = { point: [number, number]; type: "door" | "window" };
+export type FloorPlanAnalysisResult = {
+  rooms: FloorPlanAnalysisRoom[];
+  openings: FloorPlanAnalysisOpening[];
+  overallStatedSize?: string;
+  estimatedTotalWidthMeters?: number;
+};
+
 export const aiApi = {
   chat: (body: { message: string; sessionId?: string }) =>
     req<Record<string, unknown>>(loadConfig().aiApiBase, "chat", { method: "POST", body }),
@@ -326,4 +420,30 @@ export const aiApi = {
   recommend: (body: Record<string, unknown>) =>
     req<unknown>(loadConfig().aiApiBase, "respondandrecommend", { method: "POST", body }),
   health: () => req<unknown>(loadConfig().aiApiBase, "health"),
+  /**
+   * POST /floor-plan/analyze — multipart image upload (raw fetch, not the JSON `req` helper,
+   * since forced JSON.stringify there can't carry a Blob). Returns a raw AI draft in fraction
+   * coordinates; the caller resolves real-world scale and snaps openings to walls itself.
+   */
+  analyzeFloorPlan: async (imageBlob: Blob): Promise<FloorPlanAnalysisResult> => {
+    const cfg = loadConfig();
+    const form = new FormData();
+    form.append("image", imageBlob, "floorplan.png");
+
+    const headers: Record<string, string> = {};
+    const bearer = cfg.authToken;
+    if (bearer) headers["Authorization"] = `Bearer ${bearer}`;
+    const ownerId = loadOwnerProfile()?.id;
+    if (ownerId) headers["X-User-Id"] = String(ownerId);
+
+    const url = `${cfg.aiApiBase.replace(/\/$/, "")}/floor-plan/analyze`;
+    const res = await fetch(url, { method: "POST", headers, body: form });
+    const text = await res.text();
+    const parsed = text ? JSON.parse(text) : undefined;
+    if (!res.ok) {
+      const message = parsed && typeof parsed === "object" && "error" in parsed ? String((parsed as { error: unknown }).error) : text;
+      throw new ApiError(res.status, message);
+    }
+    return parsed as FloorPlanAnalysisResult;
+  },
 };

@@ -1,9 +1,20 @@
 namespace StayHere.Domain.Entities;
 
 /// <summary>
-/// A formal application by a customer to rent/buy/lease a listing.
-/// State machine: DocumentsPending → UnderReview → Approved | Rejected
-///                → TermsAccepted → PaymentPending → Active | Cancelled
+/// A formal application by a customer to rent/buy/lease a listing. Booking a viewing is a fully
+/// separate, optional action (see ViewingBooking) - this can be the customer's very first step,
+/// hence ViewingBookingId being nullable.
+///
+/// State machine:
+///   PendingApproval              - owner pre-screens the applicant before any documents are requested
+///   → DocumentsPending           - pre-screen passed; tenant uploads ID/selfie/signature
+///   → UnderReview                - documents submitted; owner reviews them
+///   → Approved | Rejected        - final decision on the documents (Rejected is also the terminal
+///                                  state if the owner declines at the PendingApproval stage - see
+///                                  RejectionReason/ReviewedAt for which gate rejected it)
+///   → TermsAccepted              - (from Approved) tenant accepts the lease terms
+///   → PaymentPending             - (from TermsAccepted, set once payment is initiated)
+///   → Active | Cancelled         - payment confirmed, tenancy begins | cancelled at any point
 /// </summary>
 public class TenantApplication
 {
@@ -12,7 +23,7 @@ public class TenantApplication
     public Guid CustomerId { get; set; }
     public Guid? ViewingBookingId { get; set; }
 
-    public string Status { get; set; } = "DocumentsPending";
+    public string Status { get; set; } = "PendingApproval";
     public string? RejectionReason { get; set; }
     public DateTime? ReviewedAt { get; set; }
 

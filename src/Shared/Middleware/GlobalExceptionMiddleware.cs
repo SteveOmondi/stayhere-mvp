@@ -20,25 +20,38 @@ public class GlobalExceptionMiddleware : IFunctionsWorkerMiddleware
             var logger = context.GetLogger<GlobalExceptionMiddleware>();
             logger.LogError(ex, "An unhandled exception occurred during function execution.");
 
-            var httpRequestData = await context.GetHttpRequestDataAsync();
-            if (httpRequestData != null)
+            try
             {
-                var response = httpRequestData.CreateResponse(HttpStatusCode.InternalServerError);
-                response.Headers.Add("Content-Type", "application/json; charset=utf-8");
-
-                var errorResponse = new
+                var httpRequestData = await context.GetHttpRequestDataAsync();
+                if (httpRequestData != null)
                 {
-                    error = "Internal Server Error",
-                    message = ex.Message,
-                    type = ex.GetType().Name
-                };
+                    var response = httpRequestData.CreateResponse(HttpStatusCode.InternalServerError);
+                    response.Headers.Add("Content-Type", "application/json; charset=utf-8");
 
-                await response.WriteStringAsync(JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions 
-                { 
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
-                }));
-                
-                context.GetInvocationResult().Value = response;
+                    var errorResponse = new
+                    {
+                        error = "Internal Server Error",
+                        message = ex.Message,
+                        type = ex.GetType().Name
+                    };
+
+                    await response.WriteStringAsync(JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    }));
+
+                    context.GetInvocationResult().Value = response;
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // The caller already disconnected (client-side timeout, cancelled request) before
+                // the function finished - typically after a long tool-calling chain that hit
+                // several upstream rate-limit backoffs. The underlying HttpContext/feature
+                // collection is gone by the time we get here, so there is no response left to
+                // write; the error above is already logged, so just stop rather than letting this
+                // secondary exception mask the real one or crash the middleware pipeline.
+                logger.LogWarning("Could not write the error response - the caller had already disconnected.");
             }
         }
     }

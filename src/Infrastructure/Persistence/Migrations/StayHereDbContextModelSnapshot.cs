@@ -63,6 +63,83 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                     b.ToTable("agents", (string)null);
                 });
 
+            modelBuilder.Entity("StayHere.Domain.Entities.AiConversation", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UpdatedAt");
+
+                    b.HasIndex("UserId", "UpdatedAt");
+
+                    b.ToTable("ai_conversations", (string)null);
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.AiConversationMessage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("role");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.Property<string>("ToolCallId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tool_call_id");
+
+                    b.Property<string>("ToolCallsJson")
+                        .HasColumnType("text")
+                        .HasColumnName("tool_calls_json");
+
+                    b.Property<string>("ToolName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("tool_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "Timestamp");
+
+                    b.ToTable("ai_conversation_messages", (string)null);
+                });
+
             modelBuilder.Entity("StayHere.Domain.Entities.ApplicationDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -70,7 +147,7 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid>("ApplicationId")
+                    b.Property<Guid?>("ApplicationId")
                         .HasColumnType("uuid")
                         .HasColumnName("application_id");
 
@@ -91,6 +168,10 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("file_url");
 
+                    b.Property<Guid?>("ShortStayBookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("short_stay_booking_id");
+
                     b.Property<DateTime>("UploadedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("uploaded_at");
@@ -100,6 +181,8 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                     b.HasIndex("ApplicationId");
 
                     b.HasIndex("DocumentType");
+
+                    b.HasIndex("ShortStayBookingId");
 
                     b.ToTable("application_documents", (string)null);
                 });
@@ -207,7 +290,7 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Apartment units for rent or sale",
-                            IsActive = true,
+                            IsActive = false,
                             Name = "Apartment",
                             Slug = "apartment",
                             SortOrder = 1,
@@ -218,10 +301,65 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                             Id = new Guid("22222222-2222-2222-2222-222222222222"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Stand-alone houses for rent or sale",
-                            IsActive = true,
+                            IsActive = false,
                             Name = "House",
                             Slug = "house",
                             SortOrder = 2,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Homes and living spaces",
+                            IsActive = true,
+                            Name = "Residential",
+                            Slug = "residential",
+                            SortOrder = 1,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("a1000000-0000-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Spaces designed for administrative work, professional services, and desk operations",
+                            IsActive = true,
+                            Name = "Office",
+                            Slug = "office",
+                            SortOrder = 2,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("a1000000-0000-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Spaces optimized for customer foot traffic, trading, displays, and sales",
+                            IsActive = true,
+                            Name = "Commercial & Retail",
+                            Slug = "commercial-retail",
+                            SortOrder = 3,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("a1000000-0000-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Facilities dedicated to inventory storage, logistics, cold chains, and distribution",
+                            IsActive = true,
+                            Name = "Industrial & Storage",
+                            Slug = "industrial-storage",
+                            SortOrder = 4,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("a1000000-0000-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Versatile, specialized, or hourly-rented commercial assets",
+                            IsActive = true,
+                            Name = "Flexible Spaces",
+                            Slug = "flexible-spaces",
+                            SortOrder = 5,
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
@@ -458,6 +596,104 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                     b.ToTable("documents", (string)null);
                 });
 
+            modelBuilder.Entity("StayHere.Domain.Entities.Enquiry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<DateTime?>("CustomerLastReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("customer_last_read_at");
+
+                    b.Property<DateTime>("LastMessageAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_message_at");
+
+                    b.Property<string>("LastMessagePreview")
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("last_message_preview");
+
+                    b.Property<Guid>("ListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("listing_id");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_id");
+
+                    b.Property<DateTime?>("OwnerLastReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("owner_last_read_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Open")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ListingId", "CustomerId")
+                        .IsUnique();
+
+                    b.ToTable("enquiries", (string)null);
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.EnquiryMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EnquiryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("enquiry_id");
+
+                    b.Property<string>("SenderRole")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("sender_role");
+
+                    b.Property<Guid>("SenderUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sender_user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnquiryId");
+
+                    b.ToTable("enquiry_messages", (string)null);
+                });
+
             modelBuilder.Entity("StayHere.Domain.Entities.Listing", b =>
                 {
                     b.Property<Guid>("Id")
@@ -519,6 +755,10 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                     b.Property<int>("FloorNumber")
                         .HasColumnType("integer")
                         .HasColumnName("floor_number");
+
+                    b.Property<string>("FloorPlan")
+                        .HasColumnType("text")
+                        .HasColumnName("floor_plan");
 
                     b.Property<string>("Images")
                         .IsRequired()
@@ -614,6 +854,10 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("subcategory_id");
 
+                    b.Property<string>("Tenure")
+                        .HasColumnType("text")
+                        .HasColumnName("tenure");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -662,6 +906,8 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                     b.HasIndex("PropertyId");
 
                     b.HasIndex("PropertyType");
+
+                    b.HasIndex("Tenure");
 
                     b.ToTable("listings", (string)null);
                 });
@@ -1245,6 +1491,10 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("reference");
 
+                    b.Property<Guid?>("ShortStayBookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("short_stay_booking_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -1269,6 +1519,8 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                     b.HasIndex("MpesaTransactionId")
                         .IsUnique()
                         .HasFilter("mpesa_transaction_id IS NOT NULL");
+
+                    b.HasIndex("ShortStayBookingId");
 
                     b.HasIndex("Status");
 
@@ -1305,6 +1557,140 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("role_definitions", (string)null);
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.SavedListing", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<Guid>("ListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("listing_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ListingId");
+
+                    b.HasIndex("CustomerId", "ListingId")
+                        .IsUnique();
+
+                    b.ToTable("saved_listings", (string)null);
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.ShortStayBooking", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("BookingFeeAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("booking_fee_amount");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("text")
+                        .HasColumnName("cancellation_reason");
+
+                    b.Property<DateOnly>("CheckInDate")
+                        .HasColumnType("date")
+                        .HasColumnName("check_in_date");
+
+                    b.Property<DateOnly>("CheckOutDate")
+                        .HasColumnType("date")
+                        .HasColumnName("check_out_date");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasDefaultValue("KES")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<DateTime?>("DocumentsSubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("documents_submitted_at");
+
+                    b.Property<string>("GuestEmail")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("guest_email");
+
+                    b.Property<string>("GuestName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("guest_name");
+
+                    b.Property<string>("GuestPhone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("guest_phone");
+
+                    b.Property<Guid>("ListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("listing_id");
+
+                    b.Property<int>("NumberOfGuests")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("number_of_guests");
+
+                    b.Property<string>("SpecialRequests")
+                        .HasColumnType("text")
+                        .HasColumnName("special_requests");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("PendingPayment")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("ListingId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("ListingId", "Status");
+
+                    b.ToTable("short_stay_bookings", (string)null);
                 });
 
             modelBuilder.Entity("StayHere.Domain.Entities.Subcategory", b =>
@@ -1384,6 +1770,372 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                     b.HasIndex("Country", "City");
 
                     b.ToTable("subcategories", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000101"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Open-plan unit combining living, sleeping, and kitchenette",
+                            IsActive = true,
+                            Name = "Studio Apartment",
+                            Slug = "studio-apartment",
+                            SortOrder = 1,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000102"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Compact unit with shared or integrated basic facilities",
+                            IsActive = true,
+                            Name = "Bedsitter / Single Room",
+                            Slug = "bedsitter-single-room",
+                            SortOrder = 2,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000103"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "1 enclosed bedroom + living area",
+                            IsActive = true,
+                            Name = "1-Bedroom Apartment",
+                            Slug = "1-bedroom-apartment",
+                            SortOrder = 3,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000104"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "2 enclosed bedrooms + living area",
+                            IsActive = true,
+                            Name = "2-Bedroom Apartment",
+                            Slug = "2-bedroom-apartment",
+                            SortOrder = 4,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000105"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "3 or more enclosed bedrooms",
+                            IsActive = true,
+                            Name = "3+ Bedroom Apartment",
+                            Slug = "3-plus-bedroom-apartment",
+                            SortOrder = 5,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000106"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Top-floor luxury unit with custom layout or terrace",
+                            IsActive = true,
+                            Name = "Penthouse",
+                            Slug = "penthouse",
+                            SortOrder = 6,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000107"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Single-story standalone house",
+                            IsActive = true,
+                            Name = "Bungalow",
+                            Slug = "bungalow",
+                            SortOrder = 7,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000108"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Two-story residential unit, often in a compound or town block",
+                            IsActive = true,
+                            Name = "Maisonette",
+                            Slug = "maisonette",
+                            SortOrder = 8,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000109"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000001"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Multi-story attached or detached family home",
+                            IsActive = true,
+                            Name = "Townhouse / Villa",
+                            Slug = "townhouse-villa",
+                            SortOrder = 9,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000201"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000002"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Enclosed, dedicated workspace for a team or business",
+                            IsActive = true,
+                            Name = "Private Office Suite",
+                            Slug = "private-office-suite",
+                            SortOrder = 1,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000202"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000002"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Full or partial open floor plate for custom fit-out",
+                            IsActive = true,
+                            Name = "Open-Plan Office Floor",
+                            Slug = "open-plan-office-floor",
+                            SortOrder = 2,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000203"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000002"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Dedicated desk or hot-desk space",
+                            IsActive = true,
+                            Name = "Shared Workspace / Co-Working Desk",
+                            Slug = "shared-workspace-co-working-desk",
+                            SortOrder = 3,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000204"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000002"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Bookable collaborative rooms or boardrooms",
+                            IsActive = true,
+                            Name = "Meeting & Conference Room",
+                            Slug = "meeting-conference-room",
+                            SortOrder = 4,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000301"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000003"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Street-facing or prime lobby commercial store",
+                            IsActive = true,
+                            Name = "Ground-Floor Shop",
+                            Slug = "ground-floor-shop",
+                            SortOrder = 1,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000302"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000003"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Small-footprint retail pod or market stall",
+                            IsActive = true,
+                            Name = "Stall / Kiosk",
+                            Slug = "stall-kiosk",
+                            SortOrder = 2,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000303"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000003"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Large open display space for vehicles, furniture, or heavy inventory",
+                            IsActive = true,
+                            Name = "Showroom",
+                            Slug = "showroom",
+                            SortOrder = 3,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000304"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000003"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Multi-tenant commercial complex or shopping arcade block",
+                            IsActive = true,
+                            Name = "Commercial Building / Arcade",
+                            Slug = "commercial-building-arcade",
+                            SortOrder = 4,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000401"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000004"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Large industrial space for logistics, general storage, or light manufacturing",
+                            IsActive = true,
+                            Name = "Go-Down / Warehouse",
+                            Slug = "go-down-warehouse",
+                            SortOrder = 1,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000402"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000004"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Small-to-medium lock-up unit for general or personal inventory",
+                            IsActive = true,
+                            Name = "Store Room / Self-Storage",
+                            Slug = "store-room-self-storage",
+                            SortOrder = 2,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000403"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000004"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Temperature-controlled facility for perishables and pharmaceuticals",
+                            IsActive = true,
+                            Name = "Refrigerated Storage / Cold Room",
+                            Slug = "refrigerated-storage-cold-room",
+                            SortOrder = 3,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000404"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000004"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Specialized storage compliant with dangerous goods handling",
+                            IsActive = true,
+                            Name = "Hazardous Materials (HazMat) Unit",
+                            Slug = "hazmat-unit",
+                            SortOrder = 4,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000405"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000004"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Customs-controlled secure storage",
+                            IsActive = true,
+                            Name = "Bonded Warehouse",
+                            Slug = "bonded-warehouse",
+                            SortOrder = 5,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000501"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000005"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Banquet halls, event grounds, and pop-up venues",
+                            IsActive = true,
+                            Name = "Event & Function Space",
+                            Slug = "event-function-space",
+                            SortOrder = 1,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000502"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000005"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Delivery-only commercial cooking facility",
+                            IsActive = true,
+                            Name = "Cloud Kitchen",
+                            Slug = "cloud-kitchen",
+                            SortOrder = 2,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000503"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000005"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Fulfillment-only mini-hub for rapid e-commerce/grocery delivery",
+                            IsActive = true,
+                            Name = "Dark Store",
+                            Slug = "dark-store",
+                            SortOrder = 3,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-0000-0000-000000000504"),
+                            CategoryId = new Guid("a1000000-0000-0000-0000-000000000005"),
+                            City = "",
+                            Country = "",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Rented vehicle parking slot or private lock-up garage",
+                            IsActive = true,
+                            Name = "Parking Bay & Garage",
+                            Slug = "parking-bay-garage",
+                            SortOrder = 4,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
                 });
 
             modelBuilder.Entity("StayHere.Domain.Entities.TenantApplication", b =>
@@ -1428,7 +2180,7 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
-                        .HasDefaultValue("DocumentsPending")
+                        .HasDefaultValue("PendingApproval")
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("TermsAcceptedAt")
@@ -1451,7 +2203,10 @@ namespace StayHere.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("ListingId", "CustomerId");
+                    b.HasIndex("ListingId", "CustomerId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tenant_applications_active_listing_customer")
+                        .HasFilter("status NOT IN ('Cancelled', 'Rejected')");
 
                     b.ToTable("tenant_applications", (string)null);
                 });
@@ -1693,15 +2448,30 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("StayHere.Domain.Entities.AiConversationMessage", b =>
+                {
+                    b.HasOne("StayHere.Domain.Entities.AiConversation", null)
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("StayHere.Domain.Entities.ApplicationDocument", b =>
                 {
                     b.HasOne("StayHere.Domain.Entities.TenantApplication", "Application")
                         .WithMany("Documents")
                         .HasForeignKey("ApplicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("StayHere.Domain.Entities.ShortStayBooking", "ShortStayBooking")
+                        .WithMany("Documents")
+                        .HasForeignKey("ShortStayBookingId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Application");
+
+                    b.Navigation("ShortStayBooking");
                 });
 
             modelBuilder.Entity("StayHere.Domain.Entities.CustomerProperty", b =>
@@ -1720,6 +2490,17 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                     b.HasOne("StayHere.Domain.Entities.Customer", null)
                         .WithMany("Documents")
                         .HasForeignKey("CustomerId");
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.Enquiry", b =>
+                {
+                    b.HasOne("StayHere.Domain.Entities.Listing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
                 });
 
             modelBuilder.Entity("StayHere.Domain.Entities.Listing", b =>
@@ -1960,7 +2741,36 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ApplicationId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("StayHere.Domain.Entities.ShortStayBooking", "ShortStayBooking")
+                        .WithMany("Payments")
+                        .HasForeignKey("ShortStayBookingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Application");
+
+                    b.Navigation("ShortStayBooking");
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.SavedListing", b =>
+                {
+                    b.HasOne("StayHere.Domain.Entities.Listing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.ShortStayBooking", b =>
+                {
+                    b.HasOne("StayHere.Domain.Entities.Listing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
                 });
 
             modelBuilder.Entity("StayHere.Domain.Entities.TenantApplication", b =>
@@ -1994,6 +2804,11 @@ namespace StayHere.Infrastructure.Persistence.Migrations
                     b.Navigation("Listing");
                 });
 
+            modelBuilder.Entity("StayHere.Domain.Entities.AiConversation", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
             modelBuilder.Entity("StayHere.Domain.Entities.Customer", b =>
                 {
                     b.Navigation("Documents");
@@ -2004,6 +2819,13 @@ namespace StayHere.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("StayHere.Domain.Entities.Organization", b =>
                 {
                     b.Navigation("StaffMembers");
+                });
+
+            modelBuilder.Entity("StayHere.Domain.Entities.ShortStayBooking", b =>
+                {
+                    b.Navigation("Documents");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("StayHere.Domain.Entities.TenantApplication", b =>

@@ -18,6 +18,35 @@ const PROPERTY_TYPES = ["Apartment", "House", "Villa", "Studio", "Townhouse", "P
 const LISTING_TYPES = ["Rent", "Sale", "AirBnB"];
 const CITIES = ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Thika"];
 
+/** Canonical tokens match ListingQueryIntentExtractor's amenity synonym matching server-side, so a
+ * chip here and the equivalent free-text phrase ("swimming pool") return the same results. */
+const AMENITIES = [
+  { value: "pool", label: "Pool" },
+  { value: "parking", label: "Parking" },
+  { value: "gym", label: "Gym" },
+  { value: "elevator", label: "Elevator" },
+  { value: "security", label: "Security" },
+  { value: "wifi", label: "WiFi" },
+  { value: "furnished", label: "Furnished" },
+  { value: "garden", label: "Garden" },
+  { value: "generator", label: "Generator" },
+  { value: "balcony", label: "Balcony" },
+  { value: "cctv", label: "CCTV" },
+  { value: "pet friendly", label: "Pet Friendly" },
+];
+
+/** Tenure only applies to Sale/Rent listings - no Tenure filter for AirBnB/ShortStay. */
+const TENURE_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  Sale: [
+    { value: "CompleteTurnkey", label: "Complete / Turnkey" },
+    { value: "OffPlanUnderConstruction", label: "Off-Plan / Under Construction" },
+  ],
+  Rent: [
+    { value: "LongTermLease", label: "Long-Term Lease" },
+    { value: "ShortTermServicedVacation", label: "Short-Term / Serviced / Vacation" },
+  ],
+};
+
 function FiltersPanel({
   filters,
   onChange,
@@ -116,7 +145,11 @@ function FiltersPanel({
           {LISTING_TYPES.map((t) => (
             <button
               key={t}
-              onClick={() => onChange("listingType", filters.listingType === t ? undefined : t)}
+              onClick={() => {
+                const next = filters.listingType === t ? undefined : t;
+                onChange("listingType", next);
+                onChange("tenure", undefined);
+              }}
               className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
                 filters.listingType === t
                   ? "border-brand-gold bg-brand-gold/15 text-brand-gold"
@@ -128,6 +161,39 @@ function FiltersPanel({
           ))}
         </div>
       </div>
+
+      {/* Tenure — only visible when Listing Type is Sale or Rent */}
+      <AnimatePresence>
+        {filters.listingType && TENURE_OPTIONS[filters.listingType as string] && (
+          <motion.div
+            key="tenure"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden"
+          >
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-brand-muted">
+              Tenure
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {TENURE_OPTIONS[filters.listingType as string].map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => onChange("tenure", filters.tenure === t.value ? undefined : t.value)}
+                  className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
+                    filters.tenure === t.value
+                      ? "border-brand-teal bg-brand-teal/15 text-brand-teallight"
+                      : "border-white/10 text-brand-muted hover:border-brand-teal/40 hover:text-white"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* City */}
       <div>
@@ -166,6 +232,34 @@ function FiltersPanel({
                 }`}
               >
                 {t}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Amenities */}
+      <div>
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-brand-muted">
+          Amenities
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {AMENITIES.map((a) => {
+            const selected = (filters.amenities as string[] | undefined) ?? [];
+            const sel = selected.includes(a.value);
+            return (
+              <button
+                key={a.value}
+                onClick={() =>
+                  onChange("amenities", sel ? selected.filter((x) => x !== a.value) : [...selected, a.value])
+                }
+                className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
+                  sel
+                    ? "border-brand-teal bg-brand-teal/15 text-brand-teallight"
+                    : "border-white/10 text-brand-muted hover:border-brand-teal/40 hover:text-white"
+                }`}
+              >
+                {a.label}
               </button>
             );
           })}
@@ -229,6 +323,7 @@ const EMPTY_FILTERS: SearchBody = {
   city: undefined,
   propertyTypes: undefined,
   bedrooms: undefined,
+  amenities: undefined,
   minPrice: undefined,
   maxPrice: undefined,
   location: undefined,
@@ -288,9 +383,16 @@ export function ExplorePage() {
     try {
       let data: unknown;
       if (isSearch) {
+        // Translate UI filter-state field names to the server's actual field names (`bedrooms` →
+        // `minBedrooms`, `amenities[]` → comma-separated `amenity`) and send the free-text search
+        // box as `query` so the backend's semantic intent parser (bedroom-count words, amenity
+        // synonyms like "swimming pool") can run on it, rather than misrouting it into `location`.
+        const { bedrooms, amenities, ...rest } = filters;
         const body: SearchBody = {
-          ...filters,
-          ...(query.trim() ? { location: query.trim() } : {}),
+          ...rest,
+          ...(bedrooms ? { minBedrooms: bedrooms } : {}),
+          ...(amenities && amenities.length ? { amenity: amenities.join(",") } : {}),
+          ...(query.trim() ? { query: query.trim() } : {}),
           page: pg,
           pageSize: 12,
         };
@@ -304,6 +406,11 @@ export function ExplorePage() {
       setHasMore(items.length === 12);
       setListings((prev) => append ? [...prev, ...items] : items);
     } catch {
+      // Stop infinite-scroll from retrying forever: if the sentinel never grows new content (a
+      // failed append leaves the list the same length, so it stays in view), the IntersectionObserver
+      // keeps firing and page keeps incrementing (seen in practice reaching page 80+) instead of
+      // surfacing one clean error.
+      setHasMore(false);
       toast("Failed to load listings", "error");
     }
   }, [query, filters]);

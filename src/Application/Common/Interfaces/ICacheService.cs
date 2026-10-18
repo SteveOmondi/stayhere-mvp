@@ -20,4 +20,14 @@ public interface ICacheService
     /// and return a map of full-key → count. Resets the counters in one pass.
     /// </summary>
     Task<IReadOnlyDictionary<string, long>> GetAndClearCountersAsync(string keyPrefix);
+
+    /// <summary>
+    /// Atomic fixed-window rate limit check: increments <paramref name="key"/>'s counter (setting
+    /// it to expire after <paramref name="window"/> on its first increment) and returns whether
+    /// the caller is still within <paramref name="maxCount"/> for this window. Safe across however
+    /// many Function instances are running - the counter lives in Redis, not in any one process.
+    /// Fails OPEN (always allows) if Redis is unavailable - a cache outage should never be able to
+    /// lock real users out of sending messages.
+    /// </summary>
+    Task<bool> TryConsumeRateLimitAsync(string key, int maxCount, TimeSpan window);
 }

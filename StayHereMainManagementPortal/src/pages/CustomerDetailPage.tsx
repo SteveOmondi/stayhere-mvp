@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, customersApi } from "../lib/api";
 import { usePortal } from "../context/PortalContext";
+import { DocumentPreviewModal } from "../components/DocumentPreviewModal";
 
 export function CustomerDetailPage() {
   const { customerId } = useParams<{ customerId: string }>();
   const { toast } = usePortal();
   const [c, setC] = useState<Record<string, unknown> | null>(null);
   const [docs, setDocs] = useState<unknown[]>([]);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     if (!customerId) return;
@@ -60,15 +62,21 @@ export function CustomerDetailPage() {
                 return (
                   <li key={String(o.id ?? i)}>
                     {String(o.documentType)} —{" "}
-                    <a href={String(o.fileUrl)} className="text-brand-gold underline text-xs" target="_blank" rel="noreferrer">
+                    <button
+                      onClick={() => setPreviewDoc({ url: String(o.fileUrl), title: String(o.documentType) })}
+                      className="text-brand-gold underline text-xs"
+                    >
                       file
-                    </a>
+                    </button>
                   </li>
                 );
               })}
             </ul>
           </div>
         </div>
+      )}
+      {previewDoc && (
+        <DocumentPreviewModal url={previewDoc.url} title={previewDoc.title} onClose={() => setPreviewDoc(null)} />
       )}
     </div>
   );

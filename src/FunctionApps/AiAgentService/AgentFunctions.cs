@@ -1,7 +1,9 @@
 using System.Net;
+using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.AiAgent.Models;
 using StayHere.Application.Common.Interfaces;
@@ -16,12 +18,35 @@ public class AgentFunctions
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly IAiAgentService _agentService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<AgentFunctions> _logger;
 
-    public AgentFunctions(IAiAgentService agentService, ILogger<AgentFunctions> logger)
+    public AgentFunctions(IAiAgentService agentService, IConfiguration configuration, ILogger<AgentFunctions> logger)
     {
         _agentService = agentService;
+        _configuration = configuration;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// The caller's UserId from their verified JWT (set by AuthenticationMiddleware into
+    /// FunctionContext.Items["User"]) - the ONLY source of identity for Sage's personal tools.
+    /// Mirrors ListingFunctions.GetUserIdFromRequest's pattern for local SKIP_AUTH testing.
+    /// </summary>
+    private Guid? GetCallerUserId(HttpRequestData req)
+    {
+        if (string.Equals(_configuration["SKIP_AUTH"], "true", StringComparison.OrdinalIgnoreCase)
+            && req.Headers.TryGetValues("X-User-Id", out var vals)
+            && Guid.TryParse(vals.FirstOrDefault(), out var headerGuid))
+        {
+            return headerGuid;
+        }
+
+        if (!req.FunctionContext.Items.TryGetValue("User", out var principalObj) || principalObj is not ClaimsPrincipal principal)
+            return null;
+
+        var id = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("nameid");
+        return Guid.TryParse(id, out var claimsGuid) ? claimsGuid : null;
     }
 
     [Function("AgentChat")]
@@ -41,7 +66,8 @@ public class AgentFunctions
                 return await WriteJsonAsync(req, HttpStatusCode.BadRequest, new { error = "Invalid request. Query is required." });
             }
 
-            var response = await _agentService.ChatAsync(chatRequest);
+            var callerUserId = GetCallerUserId(req);
+            var response = await _agentService.ChatAsync(chatRequest, callerUserId);
             return await WriteJsonAsync(req, HttpStatusCode.OK, response);
         }
         catch (Exception ex)
@@ -124,6 +150,57 @@ public class AgentFunctions
         {
             _logger.LogError(ex, "Agent listing search failed");
             return await WriteJsonAsync(req, HttpStatusCode.InternalServerError, new { error = ex.Message });
+        }
+    }
+
+    [Function("AgentListConversations")]
+    [Authorize("Tenant", "PropertyOwner", "PropertyManager", "Admin")]
+    [OpenApiOperation(operationId: "AgentListConversations", tags: new[] { "AI Agent" }, Summary = "List the caller's own Sage conversations")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IReadOnlyList<AgentConversationSummaryDto>))]
+    public async Task<HttpResponseData> ListConversations(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "conversations")] HttpRequestData req)
+    {
+        try
+        {
+            var callerUserId = GetCallerUserId(req);
+            if (callerUserId == null)
+                return await WriteJsonAsync(req, HttpStatusCode.Unauthorized, new { error = "Sign in to view your chat history." });
+
+            var conversations = await _agentService.ListConversationsAsync(callerUserId.Value);
+            return await WriteJsonAsync(req, HttpStatusCode.OK, conversations);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "List conversations failed");
+            return await WriteJsonAsync(req, HttpStatusCode.InternalServerError, new { error = "Internal server error", message = ex.Message });
+        }
+    }
+
+    [Function("AgentGetConversation")]
+    [Authorize("Tenant", "PropertyOwner", "PropertyManager", "Admin")]
+    [OpenApiOperation(operationId: "AgentGetConversation", tags: new[] { "AI Agent" }, Summary = "Get one of the caller's own Sage conversations")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(AgentConversationDetailDto))]
+    public async Task<HttpResponseData> GetConversation(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "conversations/{id}")] HttpRequestData req,
+        string id)
+    {
+        try
+        {
+            var callerUserId = GetCallerUserId(req);
+            if (callerUserId == null)
+                return await WriteJsonAsync(req, HttpStatusCode.Unauthorized, new { error = "Sign in to view this conversation." });
+
+            var conversation = await _agentService.GetConversationAsync(callerUserId.Value, id);
+            if (conversation == null)
+                return await WriteJsonAsync(req, HttpStatusCode.NotFound, new { error = "Conversation not found." });
+
+            return await WriteJsonAsync(req, HttpStatusCode.OK, conversation);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Get conversation failed");
+            return await WriteJsonAsync(req, HttpStatusCode.InternalServerError, new { error = "Internal server error", message = ex.Message });
         }
     }
 

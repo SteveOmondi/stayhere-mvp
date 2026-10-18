@@ -8,7 +8,6 @@ const LS = {
   authToken:   "sh_client_auth_token",
   profile:     "sh_client_customer_profile",
   favorites:   "sh_client_favorites",
-  cart:        "sh_client_cart",
 } as const;
 
 const DEV_PROXY = {
@@ -137,7 +136,7 @@ export function clearCustomerProfile(): void {
   localStorage.removeItem(LS.profile);
 }
 
-/* ── Favorites & cart persistence ────────────────────────────────── */
+/* ── Favorites persistence (guest-only fallback; signed-in users are server-backed) ─ */
 function readIds(key: string): string[] {
   try {
     const raw = localStorage.getItem(key);
@@ -151,6 +150,3 @@ function readIds(key: string): string[] {
 export const loadFavorites = (): string[] => readIds(LS.favorites);
 export const saveFavorites = (ids: string[]): void =>
   localStorage.setItem(LS.favorites, JSON.stringify(ids));
-export const loadCart = (): string[] => readIds(LS.cart);
-export const saveCart = (ids: string[]): void =>
-  localStorage.setItem(LS.cart, JSON.stringify(ids));

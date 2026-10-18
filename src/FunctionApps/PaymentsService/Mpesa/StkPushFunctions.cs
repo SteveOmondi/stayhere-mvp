@@ -65,67 +65,128 @@ public class StkPushFunctions
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             var dto = JsonSerializer.Deserialize<StkInitiateRequest>(body, _json);
 
-            if (dto is null || dto.ApplicationId == Guid.Empty)
-                return await Error(req, HttpStatusCode.BadRequest, "applicationId is required.");
+            if (dto is null)
+                return await Error(req, HttpStatusCode.BadRequest, "Request body required.");
             if (string.IsNullOrWhiteSpace(dto.PhoneNumber))
                 return await Error(req, HttpStatusCode.BadRequest, "phoneNumber is required.");
 
-            var app = await _db.TenantApplications
-                .Include(a => a.Payments)
-                .FirstOrDefaultAsync(a => a.Id == dto.ApplicationId);
-
-            if (app is null)
-                return await Error(req, HttpStatusCode.NotFound, "Application not found.");
-
-            if (app.Status is not ("TermsAccepted" or "PaymentPending"))
-                return await Error(req, HttpStatusCode.Conflict,
-                    $"STK Push can only be initiated after terms acceptance (current: {app.Status}).");
-
-            var terms = await _db.PropertyTerms
-                .Where(t => t.ListingId == app.ListingId && t.IsActive)
-                .FirstOrDefaultAsync();
-
-            var amount = ResolveAmount(dto, terms);
-            if (amount <= 0)
+            var hasApplication = dto.ApplicationId is { } appId && appId != Guid.Empty;
+            var hasBooking = dto.ShortStayBookingId is { } bookingId && bookingId != Guid.Empty;
+            if (hasApplication == hasBooking) // neither, or both - exactly one is required
                 return await Error(req, HttpStatusCode.BadRequest,
-                    "amount must be greater than zero. Provide it explicitly or configure PropertyTerms.");
+                    "Exactly one of applicationId or shortStayBookingId is required.");
 
-            var phone = NormalisePhone(dto.PhoneNumber);
+            string phone = NormalisePhone(dto.PhoneNumber);
+            RentalPayment payment;
 
-            var stkResult = await _mpesa.InitiateStkPushAsync(
-                phone,
-                amount,
-                accountReference: $"APP{dto.ApplicationId.ToString("N")[..8].ToUpper()}");
-
-            var payment = new RentalPayment
+            if (hasBooking)
             {
-                Id = Guid.NewGuid(),
-                ApplicationId = dto.ApplicationId,
-                PaymentType = dto.PaymentType ?? "SecurityDeposit",
-                Amount = amount,
-                Currency = terms?.Currency ?? "KES",
-                Method = "Mpesa",
-                TransactionSource = "STK_PUSH",
-                Status = stkResult.Success ? "Pending" : "Failed",
-                PhoneNumber = phone,
-                MerchantRequestId = stkResult.MerchantRequestId,
-                MpesaCheckoutRequestId = stkResult.CheckoutRequestId,
-                Notes = stkResult.Success ? null : stkResult.ErrorMessage,
-                InitiatedAt = DateTime.UtcNow
-            };
+                var booking = await _db.ShortStayBookings
+                    .FirstOrDefaultAsync(b => b.Id == dto.ShortStayBookingId);
+                if (booking is null)
+                    return await Error(req, HttpStatusCode.NotFound, "Booking not found.");
+                if (booking.Status != "PendingPayment")
+                    return await Error(req, HttpStatusCode.Conflict,
+                        $"STK Push can only be initiated for a pending booking (current: {booking.Status}).");
 
-            app.Status = "PaymentPending";
-            app.UpdatedAt = DateTime.UtcNow;
-            _db.RentalPayments.Add(payment);
-            await _db.SaveChangesAsync();
+                var amount = dto.Amount > 0 ? dto.Amount : booking.BookingFeeAmount;
+                if (amount <= 0)
+                    return await Error(req, HttpStatusCode.BadRequest, "amount must be greater than zero.");
 
-            if (!stkResult.Success)
-                return await Json(req, HttpStatusCode.BadGateway, new
+                var accountReference = $"STAY{booking.Id.ToString("N")[..8].ToUpper()}";
+
+                var stkResult = await _mpesa.InitiateStkPushAsync(phone, amount, accountReference);
+                payment = new RentalPayment
                 {
-                    error = "STK Push failed — see errorDetail.",
-                    errorDetail = stkResult.ErrorMessage,
-                    paymentId = payment.Id
-                });
+                    Id = Guid.NewGuid(),
+                    ShortStayBookingId = booking.Id,
+                    PaymentType = "ShortStayBookingFee",
+                    Amount = amount,
+                    Currency = booking.Currency,
+                    Method = "Mpesa",
+                    TransactionSource = "STK_PUSH",
+                    Status = stkResult.Success ? "Pending" : "Failed",
+                    PhoneNumber = phone,
+                    MerchantRequestId = stkResult.MerchantRequestId,
+                    MpesaCheckoutRequestId = stkResult.CheckoutRequestId,
+                    Notes = stkResult.Success ? null : stkResult.ErrorMessage,
+                    InitiatedAt = DateTime.UtcNow
+                };
+
+                booking.UpdatedAt = DateTime.UtcNow;
+                _db.RentalPayments.Add(payment);
+
+                if (!stkResult.Success)
+                {
+                    await _db.SaveChangesAsync();
+                    return await Json(req, HttpStatusCode.BadGateway, new
+                    {
+                        error = "STK Push failed — see errorDetail.",
+                        errorDetail = stkResult.ErrorMessage,
+                        paymentId = payment.Id
+                    });
+                }
+            }
+            else
+            {
+                var app = await _db.TenantApplications
+                    .Include(a => a.Payments)
+                    .FirstOrDefaultAsync(a => a.Id == dto.ApplicationId);
+
+                if (app is null)
+                    return await Error(req, HttpStatusCode.NotFound, "Application not found.");
+
+                if (app.Status is not ("TermsAccepted" or "PaymentPending"))
+                    return await Error(req, HttpStatusCode.Conflict,
+                        $"STK Push can only be initiated after terms acceptance (current: {app.Status}).");
+
+                var terms = await _db.PropertyTerms
+                    .Where(t => t.ListingId == app.ListingId && t.IsActive)
+                    .FirstOrDefaultAsync();
+
+                var amount = ResolveAmount(dto, terms);
+                if (amount <= 0)
+                    return await Error(req, HttpStatusCode.BadRequest,
+                        "amount must be greater than zero. Provide it explicitly or configure PropertyTerms.");
+
+                var accountReference = $"APP{app.Id.ToString("N")[..8].ToUpper()}";
+
+                var stkResult = await _mpesa.InitiateStkPushAsync(phone, amount, accountReference);
+                payment = new RentalPayment
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationId = app.Id,
+                    PaymentType = dto.PaymentType ?? "SecurityDeposit",
+                    Amount = amount,
+                    Currency = terms?.Currency ?? "KES",
+                    Method = "Mpesa",
+                    TransactionSource = "STK_PUSH",
+                    Status = stkResult.Success ? "Pending" : "Failed",
+                    PhoneNumber = phone,
+                    MerchantRequestId = stkResult.MerchantRequestId,
+                    MpesaCheckoutRequestId = stkResult.CheckoutRequestId,
+                    Notes = stkResult.Success ? null : stkResult.ErrorMessage,
+                    InitiatedAt = DateTime.UtcNow
+                };
+
+                app.Status = "PaymentPending";
+                app.UpdatedAt = DateTime.UtcNow;
+                _db.RentalPayments.Add(payment);
+
+                if (!stkResult.Success)
+                {
+                    await _db.SaveChangesAsync();
+                    return await Json(req, HttpStatusCode.BadGateway, new
+                    {
+                        error = "STK Push failed — see errorDetail.",
+                        errorDetail = stkResult.ErrorMessage,
+                        paymentId = payment.Id
+                    });
+                }
+            }
+
+            // Both branches above already saved+returned on failure, so reaching here means success.
+            await _db.SaveChangesAsync();
 
             return await Json(req, HttpStatusCode.Created, new
             {
@@ -197,6 +258,7 @@ public class StkPushFunctions
 
             var payment = await _db.RentalPayments
                 .Include(p => p.Application)
+                .Include(p => p.ShortStayBooking)
                 .FirstOrDefaultAsync(p => p.MpesaCheckoutRequestId == checkoutId);
 
             if (payment is null)
@@ -206,6 +268,9 @@ public class StkPushFunctions
             }
 
             payment.RawCallbackPayload = raw;
+            // Guard against crediting twice if Safaricom redelivers this callback (network retry,
+            // duplicate webhook, or the QueryStkStatus self-heal having already confirmed it).
+            var alreadyConfirmed = payment.Status == "Confirmed";
 
             if (resultCode == 0)
             {
@@ -253,6 +318,18 @@ public class StkPushFunctions
                     payment.Application.Status = "Active";
                     payment.Application.UpdatedAt = DateTime.UtcNow;
                 }
+                else if (payment.ShortStayBooking is { Status: "PendingPayment" })
+                {
+                    payment.ShortStayBooking.Status = "Confirmed";
+                    payment.ShortStayBooking.ConfirmedAt = DateTime.UtcNow;
+                    payment.ShortStayBooking.UpdatedAt = DateTime.UtcNow;
+                }
+
+                if (!alreadyConfirmed)
+                {
+                    var listingId = payment.Application?.ListingId ?? payment.ShortStayBooking?.ListingId;
+                    await WalletCreditHelper.CreditOwnerWalletAsync(_db, _log, payment, listingId);
+                }
 
                 _log.LogInformation(
                     "STK Push confirmed — payment {PaymentId}, receipt {Receipt}.",
@@ -283,14 +360,17 @@ public class StkPushFunctions
     // ── Query STK status ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Asks Safaricom for the current status of an STK Push transaction.
-    /// Useful when the callback has not arrived within the expected window
-    /// (Safaricom callback SLA is up to 2 minutes).
-    ///
-    /// Also returns the local DB record for the same checkoutRequestId.
+    /// Asks Safaricom for the current status of an STK Push transaction and self-heals the local
+    /// record from it - this is the fallback path for when the STK callback never arrives at all
+    /// (confirmed live: a dev/sandbox callback URL can go completely unreached by Safaricom even
+    /// though the underlying transaction genuinely succeeded - the webhook is not reliable enough
+    /// to be the ONLY way a payment ever gets marked Confirmed). Callable by the customer
+    /// themselves (not Admin-only as before) since this is exactly what the client's "I've
+    /// already paid - Check Status" button needs to call instead of just re-reading our own
+    /// (possibly stale) DB row.
     /// </summary>
     [Function("QueryStkStatus")]
-    [Authorize("Admin")]
+    [Authorize("Tenant", "PropertyOwner", "PropertyManager", "Admin")]
     public async Task<HttpResponseData> QueryStkStatus(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get",
             Route = "payments/mpesa/stk/query/{checkoutRequestId}")] HttpRequestData req,
@@ -298,10 +378,51 @@ public class StkPushFunctions
     {
         var safaricomResult = await _mpesa.QueryStkStatusAsync(checkoutRequestId);
 
-        var local = await _db.RentalPayments
-            .Where(p => p.MpesaCheckoutRequestId == checkoutRequestId)
-            .Select(p => new { p.Id, p.Status, p.Amount, p.PhoneNumber, p.InitiatedAt, p.ConfirmedAt })
-            .FirstOrDefaultAsync();
+        var payment = await _db.RentalPayments
+            .Include(p => p.Application)
+            .Include(p => p.ShortStayBooking)
+            .FirstOrDefaultAsync(p => p.MpesaCheckoutRequestId == checkoutRequestId);
+
+        if (payment is not null && payment.Status == "Pending")
+        {
+            if (safaricomResult.IsSuccess)
+            {
+                payment.Status = "Confirmed";
+                payment.ConfirmedAt = DateTime.UtcNow;
+                // The Query API only ever returns a result code/description, never the M-Pesa
+                // receipt number - that still only ever arrives via the callback's
+                // CallbackMetadata. If the callback eventually does land after this, its receipt
+                // number still gets attached (StkCallback only overwrites fields it actually has).
+
+                if (payment.Application is { Status: "PaymentPending" })
+                {
+                    payment.Application.Status = "Active";
+                    payment.Application.UpdatedAt = DateTime.UtcNow;
+                }
+                else if (payment.ShortStayBooking is { Status: "PendingPayment" })
+                {
+                    payment.ShortStayBooking.Status = "Confirmed";
+                    payment.ShortStayBooking.ConfirmedAt = DateTime.UtcNow;
+                    payment.ShortStayBooking.UpdatedAt = DateTime.UtcNow;
+                }
+
+                var listingId = payment.Application?.ListingId ?? payment.ShortStayBooking?.ListingId;
+                await WalletCreditHelper.CreditOwnerWalletAsync(_db, _log, payment, listingId);
+
+                _log.LogInformation(
+                    "STK status query self-healed payment {PaymentId} to Confirmed - callback never arrived.",
+                    payment.Id);
+                await _db.SaveChangesAsync();
+            }
+            else if (!safaricomResult.IsPending)
+            {
+                // A definite terminal failure (wrong PIN, cancelled, insufficient funds, DS
+                // timeout, ...) - resolve it instead of leaving it stuck as Pending forever.
+                payment.Status = "Failed";
+                payment.Notes = $"[{safaricomResult.ResultCode}] {safaricomResult.ResultDesc}";
+                await _db.SaveChangesAsync();
+            }
+        }
 
         return await Json(req, HttpStatusCode.OK, new
         {
@@ -313,7 +434,17 @@ public class StkPushFunctions
                 isSuccess = safaricomResult.IsSuccess,
                 isPending = safaricomResult.IsPending
             },
-            localRecord = local
+            localRecord = payment is null ? null : new
+            {
+                id = payment.Id,
+                status = payment.Status,
+                amount = payment.Amount,
+                phoneNumber = payment.PhoneNumber,
+                initiatedAt = payment.InitiatedAt,
+                confirmedAt = payment.ConfirmedAt,
+                applicationId = payment.ApplicationId,
+                shortStayBookingId = payment.ShortStayBookingId
+            }
         });
     }
 
@@ -352,8 +483,10 @@ public class StkPushFunctions
 }
 
 // ── Request DTO ────────────────────────────────────────────────────────────────
+/// <summary>Exactly one of ApplicationId/ShortStayBookingId must be set - see InitiateStkPush.</summary>
 public record StkInitiateRequest(
-    Guid ApplicationId,
+    Guid? ApplicationId,
+    Guid? ShortStayBookingId,
     string PhoneNumber,
     string? PaymentType,
     decimal Amount);

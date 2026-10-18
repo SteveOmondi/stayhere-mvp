@@ -49,6 +49,7 @@ public class ListingSearchCriteria
     public string? LocationText { get; set; }
     public PropertyType? PropertyType { get; set; }
     public ListingType? ListingType { get; set; }
+    public Tenure? Tenure { get; set; }
     public decimal? MinPrice { get; set; }
     public decimal? MaxPrice { get; set; }
     public int? MinBedrooms { get; set; }

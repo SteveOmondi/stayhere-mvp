@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { propertiesApi, listingsApi, customersApi, ApiError } from "../lib/api";
+import { propertiesApi, listingsApi, customersApi, shortStayApi, ApiError, type ShortStayBooking } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
 import {
   IcoBuilding, IcoListing, IcoUser, IcoWallet, IcoTrendUp,
   IcoMapPin, IcoChevRight, IcoVacant, IcoTeam, IcoRefresh,
-  IcoActivity, IcoNotice, IcoOnboard,
+  IcoActivity, IcoNotice, IcoOnboard, IcoKey,
 } from "../components/icons";
 
 /* ── Animated counter hook ───────────────────────────────── */
@@ -98,6 +98,8 @@ export function DashboardPage() {
   const [stats, setStats] = useState<Stats>({ properties:0, listings:0, occupied:0, vacant:0, customers:0, loading:true });
   const [recentListings, setRecentListings] = useState<Record<string, unknown>[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [stayBookings, setStayBookings] = useState<ShortStayBooking[]>([]);
+  const [shortStayListingCount, setShortStayListingCount] = useState(0);
 
   const propCount   = useCounter(stats.loading ? 0 : stats.properties, 800);
   const listCount   = useCounter(stats.loading ? 0 : stats.listings, 900);
@@ -108,10 +110,11 @@ export function DashboardPage() {
     if (!userId) return;
     setRefreshing(true);
     try {
-      const [propsData, listData, custData] = await Promise.allSettled([
+      const [propsData, listData, custData, stayData] = await Promise.allSettled([
         propertiesApi.byOwner(userId, 1, 1),
         listingsApi.byOwner(userId, 1, 50),
         customersApi.byOwner(userId),
+        shortStayApi.byOwner(userId),
       ]);
       if (signal?.aborted) return;
       const propPg  = propsData.status === "fulfilled" ? asPaginated<unknown>(propsData.value) : null;
@@ -122,6 +125,8 @@ export function DashboardPage() {
       const vacant   = listItems.length - occupied;
       setStats({ properties: propPg?.totalCount ?? 0, listings: listPg?.totalCount ?? 0, occupied, vacant, customers: custArr.length, loading: false });
       setRecentListings(listItems.slice(0, 4) as Record<string, unknown>[]);
+      setShortStayListingCount(listItems.filter(l => (l as Record<string, unknown>).listingType === "ShortStay").length);
+      setStayBookings(stayData.status === "fulfilled" ? stayData.value : []);
     } catch (e) {
       if (signal?.aborted) return;
       toast(e instanceof ApiError ? e.message : "Failed to load stats", "error");
@@ -145,6 +150,48 @@ export function DashboardPage() {
   ];
 
   const occupancyPct = stats.listings > 0 ? Math.round((stats.occupied / stats.listings) * 100) : 0;
+
+  /* ── Short-stay earnings + occupancy (real data, derived from the owner's confirmed bookings) ── */
+  const stayStats = useMemo(() => {
+    const earningBookings = stayBookings.filter(b => b.status === "Confirmed" || b.status === "Completed");
+    const totalEarnings = earningBookings.reduce((sum, b) => sum + b.bookingFeeAmount, 0);
+
+    const now = new Date();
+    const thisMonthEarnings = earningBookings
+      .filter(b => b.confirmedAt && new Date(b.confirmedAt).getMonth() === now.getMonth()
+        && new Date(b.confirmedAt).getFullYear() === now.getFullYear())
+      .reduce((sum, b) => sum + b.bookingFeeAmount, 0);
+
+    // Monthly revenue for the current calendar year, Jan→Dec, for the chart below.
+    const monthlyRevenue = Array(12).fill(0);
+    for (const b of earningBookings) {
+      if (!b.confirmedAt) continue;
+      const d = new Date(b.confirmedAt);
+      if (d.getFullYear() === now.getFullYear()) monthlyRevenue[d.getMonth()] += b.bookingFeeAmount;
+    }
+
+    // Occupied vs available nights over the next 30 days, across the owner's ShortStay listings.
+    const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const windowEnd = new Date(windowStart.getTime() + 30 * 86400000);
+    let occupiedNights = 0;
+    for (const b of stayBookings) {
+      if (b.status !== "Confirmed") continue;
+      const checkIn = new Date(b.checkInDate);
+      const checkOut = new Date(b.checkOutDate);
+      const overlapStart = checkIn > windowStart ? checkIn : windowStart;
+      const overlapEnd = checkOut < windowEnd ? checkOut : windowEnd;
+      const nights = Math.round((overlapEnd.getTime() - overlapStart.getTime()) / 86400000);
+      if (nights > 0) occupiedNights += nights;
+    }
+    const availableNights = shortStayListingCount * 30;
+    const occupancyPct = availableNights > 0 ? Math.round((occupiedNights / availableNights) * 100) : 0;
+
+    return {
+      totalEarnings, thisMonthEarnings, monthlyRevenue, occupiedNights, availableNights, occupancyPct,
+      confirmedCount: earningBookings.length,
+      hasListings: shortStayListingCount > 0,
+    };
+  }, [stayBookings, shortStayListingCount]);
 
   return (
     <div className="space-y-6">
@@ -269,6 +316,65 @@ export function DashboardPage() {
           <Link to="/listings" className="mt-4 btn-secondary w-full justify-center text-xs py-2">View All Units</Link>
         </div>
       </div>
+
+      {/* ── Short-Stay Performance (real data: confirmed booking fees + occupied nights) ── */}
+      {stayStats.hasListings && (
+        <div className="grid lg:grid-cols-3 gap-5">
+          <div className="card p-6 lg:col-span-2 animate-slide-up-2">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-brand-900 flex items-center gap-1.5"><IcoKey size={15} className="text-brand-teal" />Short-Stay Revenue</h3>
+                <p className="text-xs text-brand-500 mt-0.5">Confirmed booking fees · {new Date().getFullYear()}</p>
+              </div>
+            </div>
+            <RevenueChart data={stayStats.monthlyRevenue} />
+            <div className="mt-4 grid grid-cols-3 divide-x divide-black/[0.06]">
+              {[
+                { label: "This Month", val: `KES ${stayStats.thisMonthEarnings.toLocaleString()}` },
+                { label: "Total Earned", val: `KES ${stayStats.totalEarnings.toLocaleString()}` },
+                { label: "Confirmed Stays", val: String(stayStats.confirmedCount) },
+              ].map(m => (
+                <div key={m.label} className="px-4 first:pl-0 last:pr-0">
+                  <div className="text-[10px] text-brand-400 uppercase tracking-wide">{m.label}</div>
+                  <div className="text-base font-bold text-brand-900 mt-0.5">{m.val}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Short-stay occupancy donut (next 30 days) */}
+          <div className="card p-6 flex flex-col animate-slide-up-3">
+            <h3 className="font-semibold text-brand-900 mb-1">Short-Stay Occupancy</h3>
+            <p className="text-xs text-brand-500 mb-3">Next 30 days</p>
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <svg viewBox="0 0 120 120" className="w-32 h-32 mb-4">
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#f1f5f9" strokeWidth="14" />
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#c9a227" strokeWidth="14"
+                  strokeDasharray={`${2 * Math.PI * 48 * stayStats.occupancyPct / 100} ${2 * Math.PI * 48}`}
+                  strokeDashoffset={2 * Math.PI * 48 * 0.25}
+                  strokeLinecap="round"
+                  style={{ transition: "stroke-dasharray 1.2s ease-out" }}
+                />
+                <text x="60" y="55" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#0f172a">{stayStats.occupancyPct}%</text>
+                <text x="60" y="70" textAnchor="middle" fontSize="9" fill="#94a3b8">Booked</text>
+              </svg>
+              <div className="w-full space-y-2.5">
+                {[
+                  { label: "Nights Booked", val: stayStats.occupiedNights, color: "#c9a227" },
+                  { label: "Nights Available", val: Math.max(stayStats.availableNights - stayStats.occupiedNights, 0), color: "#f1f5f9" },
+                ].map(r => (
+                  <div key={r.label} className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: r.color }} />
+                    <span className="text-xs text-brand-600 flex-1">{r.label}</span>
+                    <span className="text-xs font-bold text-brand-900">{r.val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Link to="/bookings" className="mt-4 btn-secondary w-full justify-center text-xs py-2">View Stays</Link>
+          </div>
+        </div>
+      )}
 
       {/* ── Recent Listings + Quick Actions ────────────────── */}
       <div className="grid lg:grid-cols-3 gap-5">

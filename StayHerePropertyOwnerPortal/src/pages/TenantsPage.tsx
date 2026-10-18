@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { customersApi, ApiError } from "../lib/api";
 import { useOwner } from "../context/OwnerContext";
 import { IcoUser, IcoMail, IcoPhone, IcoShield, IcoDocument, IcoSearch, IcoEye, IcoX, IcoRefresh } from "../components/icons";
+import { DocumentPreviewModal } from "../components/DocumentPreviewModal";
 
 type Tenant = { id: string; email: string; firstName: string; lastName: string; phone?: string; accountStatus?: string; kycStatus?: string };
 
@@ -26,6 +27,7 @@ export function TenantsPage() {
   const [selected, setSelected] = useState<Tenant | null>(null);
   const [docs, setDocs]        = useState<DocRow[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
 
   const load = async () => {
     if (!userId) return;
@@ -196,7 +198,14 @@ export function TenantsPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           {d.status && <span className={`badge text-[10px] ${d.status.toLowerCase().includes("approv") ? "badge-success" : d.status.toLowerCase().includes("pend") ? "badge-warning" : "badge-neutral"}`}>{d.status}</span>}
-                          {d.url && <a href={d.url} target="_blank" rel="noreferrer" className="btn-ghost text-xs text-brand-teal py-1">View</a>}
+                          {d.url && (
+                            <button
+                              onClick={() => setPreviewDoc({ url: d.url!, title: d.type ?? d.name })}
+                              className="btn-ghost text-xs text-brand-teal py-1"
+                            >
+                              View
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -206,6 +215,9 @@ export function TenantsPage() {
             </div>
           </div>
         </div>
+      )}
+      {previewDoc && (
+        <DocumentPreviewModal url={previewDoc.url} title={previewDoc.title} onClose={() => setPreviewDoc(null)} />
       )}
     </div>
   );

@@ -1,58 +1,16 @@
 {
   "info": {
-    "_postman_id": "stayhere-mobile-app-v1",
-    "name": "StayHere — Mobile App APIs",
-    "description": "All API endpoints used in the StayHere mobile application.\n\nBase URL: https://apim-dev-5c27bcf3.azure-api.net\n\n🚀 QUICK SETUP:\n1. Run '01 Sign Up' (once) or skip if account exists\n2. Run '02 Login - Request OTP' → check email for 6-digit code\n3. Run '03 Login - Verify OTP' → token + customerId auto-saved to variables\n4. All subsequent requests will use {{token}} and {{customerId}} automatically\n\n📌 VARIABLES (set automatically after login):\n  - {{token}} — JWT Bearer token\n  - {{customerId}} — your customer ID\n  - {{listingId}} — set manually after browsing listings\n  - {{bookingId}} — set automatically after Step 1\n  - {{applicationId}} — set automatically after Step 2\n  - {{conversationId}} — set automatically after first AI Recommend call",
+    "name": "StayHere Mobile App APIs",
+    "_postman_id": "64d34577-2d89-4a1a-8abe-aa03b0bfbbfb",
+    "description": "API calls a StayHere mobile client makes, in the exact order a user walks through the StayHereClientApp web flow: sign up/log in, browse, favorite/ask Sage/enquire, then book a viewing, a short stay, or apply for a long-term lease, pay via M-Pesa, and manage your profile/bookings afterwards.\n\nNo separate mobile app project exists in this repo yet - this collection is the API contract/spec for building one, kept in sync with StayHereClientApp's actual usage.\n\nSwitch the 'StayHere - Local Dev' / 'StayHere - Production' environment to point every request at the right backend - do not hardcode hosts into requests.\n\nSet the 'token' variable (from step 03) before calling anything past Authentication.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "https://apim-dev-5c27bcf3.azure-api.net",
-      "type": "string"
-    },
-    {
-      "key": "token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "customerId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "listingId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "bookingId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "applicationId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "conversationId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "userId",
-      "value": "",
-      "type": "string"
-    }
-  ],
   "item": [
     {
       "name": "🔐 1. Authentication",
       "item": [
         {
-          "name": "00 Register + Onboard (One Step)",
+          "name": "01 Register (Sign-up + Onboard in one step)",
           "request": {
             "method": "POST",
             "header": [
@@ -61,15 +19,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Jane Wambui\",\n  \"email\": \"jane@example.com\",\n  \"phoneNumber\": \"+254700000000\",\n  \"role\": \"Tenant\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
               "host": [
@@ -80,40 +29,19 @@
                 "register"
               ]
             },
-            "description": "Creates a user account AND provisions their role-specific profile in one request. Combines /auth/signup + /auth/onboard. role: Tenant | PropertyOwner. Response: { succeeded, message, userId, profileId, role, user }"
-          },
-          "response": []
-        },
-        {
-          "name": "01 Sign Up",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Jane Wambui\",\n  \"email\": \"jane@example.com\",\n  \"phoneNumber\": \"+254700000000\"\n}",
+              "raw": "{\n  \"Email\": \"jane.doe@example.com\",\n  \"FullName\": \"Jane Doe\",\n  \"Role\": \"Tenant\",\n  \"PhoneNumber\": \"{{customerPhone}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "url": {
-              "raw": "{{baseUrl}}/auth/signup",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "signup"
-              ]
+            "auth": {
+              "type": "noauth"
             },
-            "description": "Create a new Tenant account. phoneNumber is optional.\n\nResponse 200: { \"message\": \"Account created successfully\" }\nError 409: Email already in use"
+            "description": "Preferred path for a brand-new mobile signup - combines Signup + Onboard into one call. Returns userId/profileId; if it 400s partway through, retry with POST auth/onboard using the returned userId instead of calling this again."
           },
           "response": []
         },
@@ -127,15 +55,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"Email\": \"jane@example.com\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
               "host": [
@@ -146,32 +65,24 @@
                 "login"
               ]
             },
-            "description": "⚠️ IMPORTANT: Field name must be Pascal-case: 'Email' or 'PhoneNumber' (not lowercase).\n\nAlternative body (phone login):\n{ \"PhoneNumber\": \"+254700000000\" }\n\nResponse 200: { \"message\": \"OTP sent to your email\" }"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Email\": \"jane.doe@example.com\",\n  \"PhoneNumber\": null,\n  \"EntraToken\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Supply Email OR PhoneNumber (not both) to trigger an OTP. Supplying EntraToken instead performs a full SSO login and skips OTP entirely."
           },
           "response": []
         },
         {
           "name": "03 Login - Verify OTP",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if (json.token) {",
-                  "  pm.collectionVariables.set('token', json.token);",
-                  "  pm.collectionVariables.set('customerId', json.customerId);",
-                  "  console.log('✅ Token and customerId saved to collection variables');",
-                  "  console.log('Role:', json.role);",
-                  "  if (json.role !== 'Tenant') {",
-                  "    console.warn('⚠️ WARNING: Role is ' + json.role + ' — mobile app is Tenant-only!');",
-                  "  }",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [
@@ -180,44 +91,110 @@
                 "value": "application/json"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verifyotp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verifyotp"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"Email\": \"jane@example.com\",\n  \"Otp\": \"123456\"\n}",
+              "raw": "{\n  \"Email\": \"jane.doe@example.com\",\n  \"PhoneNumber\": null,\n  \"otp\": \"{{otpCode}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Returns {token, user} on success - store token in the 'token' environment variable for every subsequent request."
+          },
+          "response": []
+        },
+        {
+          "name": "04 Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/auth/verify-otp",
+              "raw": "{{baseUrl}}/auth/profiles/{{userId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "auth",
-                "verify-otp"
+                "profiles",
+                "{{userId}}"
               ]
-            },
-            "description": "Submit the 6-digit OTP received by email.\n\n✅ On success: token and customerId are auto-saved to collection variables.\n⚠️ Mobile app must reject any role other than 'Tenant'.\n\nResponse 200:\n{\n  \"token\": \"eyJhbGci...\",\n  \"role\": \"Tenant\",\n  \"userId\": \"usr_abc123\",\n  \"customerId\": \"cust_xyz789\"\n}"
+            }
           },
           "response": []
         }
       ]
     },
     {
-      "name": "🏠 2. Listings — Browse",
+      "name": "📚 2. Reference / Filter Data",
       "item": [
         {
-          "name": "04 Get Featured Listings",
+          "name": "05 Get Categories",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "06 Get Subcategories By Country (filter dropdown)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/subcategories/country/Kenya",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories",
+                "country",
+                "Kenya"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏠 3. Browse Listings",
+      "item": [
+        {
+          "name": "07 Get Featured Listings",
+          "request": {
+            "method": "GET",
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/property/listings/featured?limit=6",
               "host": [
@@ -235,20 +212,17 @@
                 }
               ]
             },
-            "description": "Home screen — featured/promoted listings carousel.\n\nKey response fields:\n- id, title, primaryImageUrl, images[], price, bedrooms, bathrooms, location, listingType, isFeatured"
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
         {
-          "name": "05 Get Available Listings",
+          "name": "08 Get Available Listings",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/property/listings/available?page=1&pageSize=10",
               "host": [
@@ -270,33 +244,22 @@
                 }
               ]
             },
-            "description": "Home screen + Explore — paginated available listings.\nIncrement page for infinite scroll. Default pageSize: 10."
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
         {
-          "name": "06 Search Listings",
+          "name": "09 Search Listings",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"query\": \"2 bedroom Kilimani\",\n  \"listingType\": \"Rent\",\n  \"minPrice\": 20000,\n  \"maxPrice\": 80000,\n  \"bedrooms\": 2,\n  \"county\": \"Nairobi\",\n  \"page\": 1,\n  \"pageSize\": 10\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{baseUrl}}/property/listings/search",
               "host": [
@@ -308,20 +271,26 @@
                 "search"
               ]
             },
-            "description": "Explore screen — fire this instead of GET available when any filter or search query is active.\n\nAll fields optional. listingType: 'Rent' | 'Buy' | 'AirBnB'"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"City\": \"Nairobi\",\n  \"PropertyType\": \"Apartment\",\n  \"ListingType\": \"Rent\",\n  \"MinPrice\": 20000,\n  \"MaxPrice\": 80000,\n  \"MinBedrooms\": 1,\n  \"Page\": 1,\n  \"PageSize\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
         {
-          "name": "07 Get Listing Detail",
+          "name": "10 Get Listing Detail",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/property/listings/{{listingId}}",
               "host": [
@@ -333,20 +302,17 @@
                 "{{listingId}}"
               ]
             },
-            "description": "Listing Detail screen — full property data including images array, amenities, and property terms reference.\n\n📌 Set {{listingId}} manually from listings response."
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
         {
-          "name": "08 Increment View Count",
+          "name": "11 Increment View Count",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/property/listings/{{listingId}}/view",
               "host": [
@@ -359,116 +325,325 @@
                 "view"
               ]
             },
-            "description": "Fire once on Listing Detail mount. Fire-and-forget — ignore response. No body required."
-          },
-          "response": []
-        },
-        {
-          "name": "09 Rate Listing",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"rating\": 5\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/property/listings/{{listingId}}/rate",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "property",
-                "listings",
-                "{{listingId}}",
-                "rate"
-              ]
-            },
-            "description": "Submit a 1-5 star rating for a listing. Show star selector in Listing Detail screen.\n\nrating: integer 1 to 5"
-          },
-          "response": []
-        },
-        {
-          "name": "10 Get Counties (Filter Dropdown)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/staticdata/counties",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "staticdata",
-                "counties"
-              ]
-            },
-            "description": "Load once on app start, cache locally. Used to populate county/location filter dropdown in Explore screen."
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         }
       ]
     },
     {
-      "name": "🏘 3. Rental Flow — Step 1: Book Viewing",
+      "name": "❤️ 4. Favorites",
       "item": [
         {
-          "name": "11 Book a Viewing",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if (json.bookingId) {",
-                  "  pm.collectionVariables.set('bookingId', json.bookingId);",
-                  "  console.log('✅ bookingId saved:', json.bookingId);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "12 Save Listing",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/saved-listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "saved-listings"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"viewingDate\": \"2026-07-01\",\n  \"viewingTime\": \"10:00\",\n  \"viewingType\": \"InPerson\"\n}",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "13 Get Saved Listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/saved-listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "saved-listings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "14 Unsave Listing",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/saved-listings/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "saved-listings",
+                "{{listingId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🤖 5. Sage AI Assistant",
+      "item": [
+        {
+          "name": "15 Chat with Sage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "chat"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Query\": \"I need a 2 bedroom apartment in Nairobi under 40000 KES\",\n  \"ConversationId\": \"{{conversationId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "16 Respond & Recommend Listings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/respondandrecommend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "respondandrecommend"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Query\": \"Show me affordable listings in Westlands with parking\",\n  \"ConversationId\": \"{{conversationId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "17 Get My Conversations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "conversations"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "💬 6. Enquiries (in-app messaging with owner)",
+      "item": [
+        {
+          "name": "18 Create/Open Enquiry Thread",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
+            "description": "Idempotent - calling again for the same listing returns the existing thread (200) instead of creating a duplicate."
+          },
+          "response": []
+        },
+        {
+          "name": "19 Get My Enquiries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries/mine?maxResults=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries",
+                "mine"
+              ],
+              "query": [
+                {
+                  "key": "maxResults",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "20 Get Enquiry Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries/{{enquiryId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries",
+                "{{enquiryId}}",
+                "messages"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "21 Send Enquiry Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries/{{enquiryId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries",
+                "{{enquiryId}}",
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Hi, is this unit still available for viewing this weekend?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "22 Mark Enquiry Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries/{{enquiryId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries",
+                "{{enquiryId}}",
+                "read"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📅 7. Book a Viewing (optional, before applying)",
+      "item": [
+        {
+          "name": "23 Book a Viewing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/property/bookings",
               "host": [
@@ -479,96 +654,218 @@
                 "bookings"
               ]
             },
-            "description": "Step 1 of 6 — Schedule a property viewing.\n\nviewingType: 'InPerson' | 'Virtual'\nviewingDate: ISO date string YYYY-MM-DD\nviewingTime: HH:MM (24h)\n\nResponse 201: { bookingId, status: 'Confirmed', viewingDate }\n✅ bookingId is auto-saved to {{bookingId}}"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "🏘 4. Rental Flow — Step 2: Apply",
-      "item": [
-        {
-          "name": "12 Submit Application",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if (json.applicationId) {",
-                  "  pm.collectionVariables.set('applicationId', json.applicationId);",
-                  "  console.log('✅ applicationId saved:', json.applicationId);",
-                  "  console.log('Status:', json.status);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"bookingId\": \"{{bookingId}}\",\n  \"employmentType\": \"Employed\",\n  \"monthlyIncome\": 120000,\n  \"employer\": \"Safaricom PLC\"\n}",
+              "raw": "{\n  \"ListingId\": \"{{listingId}}\",\n  \"CustomerId\": \"{{customerId}}\",\n  \"ViewingDate\": \"2026-11-05T00:00:00Z\",\n  \"ViewingTime\": \"14:00\",\n  \"ViewingType\": \"Physical\",\n  \"Notes\": \"Interested in the master bedroom size.\",\n  \"ContactPhone\": \"{{customerPhone}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            },
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "24 Get My Viewing Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/property/applications",
+              "raw": "{{baseUrl}}/property/bookings/customer/{{customerId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "property",
-                "applications"
+                "bookings",
+                "customer",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "25 Cancel Viewing Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/bookings/{{viewingBookingId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "bookings",
+                "{{viewingBookingId}}",
+                "cancel"
               ]
             },
-            "description": "Step 2 of 6 — Submit a formal rental application.\n\nemploymentType: 'Employed' | 'SelfEmployed' | 'Unemployed' | 'Student'\nmonthlyIncome: number in KES\n\nResponse 201: { applicationId, status: 'DocumentsPending' }\n✅ applicationId is auto-saved to {{applicationId}}"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"OwnerNotes\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }
       ]
     },
     {
-      "name": "🏘 5. Rental Flow — Step 3: Upload Documents",
+      "name": "🏖️ 8. Short-Stay Booking Flow (nightly stays)",
       "item": [
         {
-          "name": "13 Get Presigned Upload URL",
+          "name": "26 Get Listing Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/listings/{{listingId}}/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "listings",
+                "{{listingId}}",
+                "availability"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "27 Create Short-Stay Booking",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/property/short-stay-bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "short-stay-bookings"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"folder\": \"applications/docs\",\n  \"fileName\": \"national_id.pdf\",\n  \"contentType\": \"application/pdf\"\n}",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"checkInDate\": \"2026-11-20\",\n  \"checkOutDate\": \"2026-11-22\",\n  \"guestName\": \"Jane Doe\",\n  \"guestPhone\": \"{{customerPhone}}\",\n  \"guestEmail\": \"{{customerEmail}}\",\n  \"numberOfGuests\": 2,\n  \"specialRequests\": \"Late check-in around 9pm.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
+            "description": "listingId must be a ShortStay-type listing. The booking fee (half of one night's price) is computed server-side. Returns 409 if the dates overlap an existing booking."
+          },
+          "response": []
+        },
+        {
+          "name": "28 Initiate M-Pesa STK Push (Booking Fee)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mpesa/stk/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "mpesa",
+                "stk",
+                "initiate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shortStayBookingId\": \"{{shortStayBookingId}}\",\n  \"phoneNumber\": \"{{customerPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "29 Query STK Status (poll every ~4s until Confirmed)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mpesa/stk/query/{{checkoutRequestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "mpesa",
+                "stk",
+                "query",
+                "{{checkoutRequestId}}"
+              ]
+            },
+            "description": "Self-healing: if Safaricom's callback never arrives, calling this directly resolves the payment from Safaricom's own record and promotes the booking to Confirmed."
+          },
+          "response": []
+        },
+        {
+          "name": "30 Get Short-Stay Booking By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/short-stay-bookings/{{shortStayBookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "short-stay-bookings",
+                "{{shortStayBookingId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "31 Get Presigned Upload URL (ID docs)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/property/upload/presigned-url",
               "host": [
@@ -580,60 +877,190 @@
                 "presigned-url"
               ]
             },
-            "description": "Step 3 Phase 1 — Get a time-limited presigned URL for direct upload to Cloudflare R2.\n\nResponse:\n{\n  uploadUrl: \"https://stayhere...r2.cloudflarestorage.com/...?X-Amz-Signature=...\",\n  fileKey: \"applications/docs/national_id.pdf\",\n  publicUrl: \"https://pub-89021444cd6a4a81bacfa5c1dd0427ea.r2.dev/applications/docs/national_id.pdf\",\n  contentType: \"application/pdf\",\n  expiresAt: \"...\"\n}\n\n⚠️ Presigned URLs expire in 15 minutes — do not cache.\n\nAllowed folders:\n- applications/docs\n- applications/signatures\n- properties/images"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Folder\": \"short-stay-bookings/documents\",\n  \"FileName\": \"id-front.jpg\",\n  \"ContentType\": \"image/jpeg\",\n  \"ExpiryMinutes\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
         {
-          "name": "14 PUT File to R2 (Direct Upload)",
+          "name": "32 PUT File to R2 (Direct Upload)",
           "request": {
             "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/pdf",
-                "description": "⚠️ Must exactly match 'contentType' from presigned URL response — NOT a Bearer header"
-              }
-            ],
-            "body": {
-              "mode": "file",
-              "file": {
-                "src": ""
-              }
-            },
+            "header": [],
             "url": {
-              "raw": "PASTE_uploadUrl_FROM_STEP_13_RESPONSE_HERE",
+              "raw": "{{baseUrl}}/PASTE_uploadUrl_FROM_STEP_31_RESPONSE_HERE",
               "host": [
-                "PASTE_uploadUrl_FROM_STEP_13_RESPONSE_HERE"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "PASTE_uploadUrl_FROM_STEP_31_RESPONSE_HERE"
               ]
             },
-            "description": "Step 3 Phase 2 — Upload the file directly to Cloudflare R2 using the presigned URL.\n\n⚠️ CRITICAL RULES:\n1. Use PUT method (not POST)\n2. Set Content-Type header to EXACTLY the 'contentType' value from step 13 response\n3. Do NOT add Authorization: Bearer header — R2 uses SigV4 embedded in the URL\n4. Body = raw file bytes (not multipart/form-data)\n\nIn mobile app: use HttpPut with the file's byte stream as the body.\nResponse: 200 OK (empty body) = success\nResponse: 403 = Content-Type mismatch — fix the header"
+            "description": "Raw PUT of the file bytes to the uploadUrl returned by step 31, with a matching Content-Type header. Not a StayHere API call."
           },
           "response": []
         },
         {
-          "name": "15 Submit Document URLs to Application",
+          "name": "33 Submit ID Verification Document",
           "request": {
-            "method": "PATCH",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/property/short-stay-bookings/{{shortStayBookingId}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "short-stay-bookings",
+                "{{shortStayBookingId}}",
+                "documents"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"idDocumentUrl\": \"https://pub-89021444cd6a4a81bacfa5c1dd0427ea.r2.dev/applications/docs/national_id.pdf\",\n  \"payslipUrls\": [\n    \"https://pub-89021444cd6a4a81bacfa5c1dd0427ea.r2.dev/applications/docs/payslip_jan.pdf\",\n    \"https://pub-89021444cd6a4a81bacfa5c1dd0427ea.r2.dev/applications/docs/payslip_feb.pdf\",\n    \"https://pub-89021444cd6a4a81bacfa5c1dd0427ea.r2.dev/applications/docs/payslip_mar.pdf\"\n  ],\n  \"bankStatementUrl\": \"https://pub-89021444cd6a4a81bacfa5c1dd0427ea.r2.dev/applications/docs/bank_statement.pdf\",\n  \"signatureUrl\": \"https://pub-89021444cd6a4a81bacfa5c1dd0427ea.r2.dev/applications/signatures/signature.png\"\n}",
+              "raw": "{\n  \"documentType\": \"IdFront\",\n  \"fileUrl\": \"https://pub-stayhere.r2.dev/short-stay-bookings/documents/id-front.jpg\",\n  \"fileName\": \"id-front.jpg\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
+            "description": "documentType must be IdFront | IdBack | Selfie. Only allowed once the booking is Confirmed (paid)."
+          },
+          "response": []
+        },
+        {
+          "name": "34 Get My Short-Stay Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/short-stay-bookings/customer/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "short-stay-bookings",
+                "customer",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏘️ 9. Long-Term Rental Flow (lease application)",
+      "item": [
+        {
+          "name": "35 Submit Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ListingId\": \"{{listingId}}\",\n  \"CustomerId\": \"{{customerId}}\",\n  \"ViewingBookingId\": \"{{viewingBookingId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Idempotent - returns the existing non-cancelled/rejected application (200) instead of creating a duplicate for the same listing+customer."
+          },
+          "response": []
+        },
+        {
+          "name": "36 Get Presigned Upload URL (lease docs)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/upload/presigned-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "upload",
+                "presigned-url"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Folder\": \"applications/documents\",\n  \"FileName\": \"national-id.pdf\",\n  \"ContentType\": \"application/pdf\",\n  \"ExpiryMinutes\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "37 PUT File to R2 (Direct Upload)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/PASTE_uploadUrl_FROM_STEP_36_RESPONSE_HERE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "PASTE_uploadUrl_FROM_STEP_36_RESPONSE_HERE"
+              ]
+            },
+            "description": "Raw PUT of the file bytes to the uploadUrl returned by step 36. Not a StayHere API call."
+          },
+          "response": []
+        },
+        {
+          "name": "38 Submit Document to Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/property/applications/{{applicationId}}/documents",
               "host": [
@@ -646,25 +1073,43 @@
                 "documents"
               ]
             },
-            "description": "Step 3 Phase 3 — After uploading all files to R2, submit their publicUrls to the application record.\n\nSubmit publicUrl values collected from step 13 responses.\nApplication status moves to 'UnderReview' after this call."
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"DocumentType\": \"NationalID\",\n  \"FileUrl\": \"https://pub-stayhere.r2.dev/applications/documents/national-id.pdf\",\n  \"FileName\": \"national-id.pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
-        }
-      ]
-    },
-    {
-      "name": "🏘 6. Rental Flow — Step 4: Review Terms",
-      "item": [
+        },
         {
-          "name": "16 Get Listing Terms",
+          "name": "39 Submit Application For Review",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications/{{applicationId}}/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications",
+                "{{applicationId}}",
+                "submit"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "40 Get Listing Terms",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/property/listings/{{listingId}}/terms",
               "host": [
@@ -677,18 +1122,20 @@
                 "terms"
               ]
             },
-            "description": "Step 4 — Fetch lease terms for display. Only show this screen when applicationStatus === 'Approved'.\n\nResponse:\n{\n  termsId, rentAmount, depositAmount,\n  leaseDurationMonths, moveInDate, termsContent\n}"
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
         {
-          "name": "17 Accept Terms",
+          "name": "41 Accept Terms",
           "request": {
             "method": "PATCH",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
             "url": {
@@ -703,97 +1150,80 @@
                 "accept-terms"
               ]
             },
-            "description": "Step 4 — User confirms acceptance of lease terms. No request body required.\n\nResponse 200: { status: 'TermsAccepted' }\nAdvance to Step 5 (Payment)."
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"SignatureUrl\": \"https://pub-stayhere.r2.dev/profiles/documents/signature.png\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
-        }
-      ]
-    },
-    {
-      "name": "🏘 7. Rental Flow — Step 5: Payment",
-      "item": [
+        },
         {
-          "name": "18 Initiate M-Pesa STK Push",
+          "name": "42 Initiate M-Pesa STK Push (Security Deposit)",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mpesa/stk/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "mpesa",
+                "stk",
+                "initiate"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phoneNumber\": \"254712345678\",\n  \"amount\": 45000\n}",
+              "raw": "{\n  \"applicationId\": \"{{applicationId}}\",\n  \"phoneNumber\": \"{{customerPhone}}\",\n  \"paymentType\": \"SecurityDeposit\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "url": {
-              "raw": "{{baseUrl}}/property/applications/{{applicationId}}/payment/initiate",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "property",
-                "applications",
-                "{{applicationId}}",
-                "payment",
-                "initiate"
-              ]
-            },
-            "description": "Step 5 — Trigger M-Pesa STK Push to tenant's phone.\n\n⚠️ Phone format: 254XXXXXXXXX (no + prefix, no spaces)\nConvert: 07XXXXXXXX → 2547XXXXXXXX\n\nResponse 200: { checkoutRequestId, message: 'STK Push sent' }\n\nAfter this: poll '19 Check Payment Status' every 4 seconds."
+            "description": "FIXED: the old 'property/applications/{id}/payment/initiate' route was removed when M-Pesa moved to its own PaymentsService function app - always use this payments/mpesa/stk/initiate route instead."
           },
           "response": []
         },
         {
-          "name": "19 Check Payment Status (Poll every 4s)",
+          "name": "43 Query STK Status (poll every ~4s until Confirmed)",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/property/applications/{{applicationId}}/payment/status",
+              "raw": "{{baseUrl}}/payments/mpesa/stk/query/{{checkoutRequestId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "property",
-                "applications",
-                "{{applicationId}}",
-                "payment",
-                "status"
+                "payments",
+                "mpesa",
+                "stk",
+                "query",
+                "{{checkoutRequestId}}"
               ]
             },
-            "description": "Step 5 — Poll this every 4 seconds after initiating STK Push.\n\nResponse: { status: 'Pending' | 'Completed' | 'Failed', mpesaReceiptNumber }\n\nStop polling when status !== 'Pending'.\nOn 'Completed' → advance to Step 6 (Onboarding)\nOn 'Failed' → show error + offer retry (re-call step 18, no new application needed)"
+            "description": "FIXED: replaces the old non-existent 'property/applications/{id}/payment/status' route. Self-heals the payment/application from Safaricom's own record if the callback never arrived."
           },
           "response": []
-        }
-      ]
-    },
-    {
-      "name": "🏘 8. Rental Flow — Step 6: Onboarding",
-      "item": [
+        },
         {
-          "name": "20 Get Onboarding Details",
+          "name": "44 Get Onboarding Details",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/property/applications/{{applicationId}}/onboarding",
               "host": [
@@ -805,26 +1235,15 @@
                 "{{applicationId}}",
                 "onboarding"
               ]
-            },
-            "description": "Step 6 — Fetch move-in instructions after payment is confirmed (status = 'Completed').\n\nResponse:\n{\n  applicationId, status: 'Active',\n  moveInDate, propertyAddress,\n  accessInstructions, emergencyContact,\n  leaseDocumentUrl\n}\n\nRender 'Welcome Home' screen. Offer 'Download Lease' using leaseDocumentUrl."
+            }
           },
           "response": []
-        }
-      ]
-    },
-    {
-      "name": "📋 9. My Applications",
-      "item": [
+        },
         {
-          "name": "21 Get My Applications",
+          "name": "45 Get My Applications",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/property/applications/customer/{{customerId}}",
               "host": [
@@ -836,8 +1255,27 @@
                 "customer",
                 "{{customerId}}"
               ]
-            },
-            "description": "My Applications screen — all rental applications for the logged-in tenant.\n\nStatus → Progress Bar mapping:\n  DocumentsPending → 16%\n  UnderReview → 33%\n  Approved → 50%\n  TermsAccepted → 66%\n  PaymentPending → 83%\n  Active → 100%\n\nResumable statuses (show 'Continue' button):\n  DocumentsPending, Approved, TermsAccepted, PaymentPending"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "46 Cancel Application",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications/{{applicationId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications",
+                "{{applicationId}}",
+                "cancel"
+              ]
+            }
           },
           "response": []
         }
@@ -847,13 +1285,31 @@
       "name": "👤 10. Customer Profile",
       "item": [
         {
-          "name": "22 Get Customer Profile",
+          "name": "47 Get Customer Profile",
           "request": {
             "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "48 Update Customer Profile",
+          "request": {
+            "method": "PUT",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
             "url": {
@@ -866,144 +1322,153 @@
                 "{{customerId}}"
               ]
             },
-            "description": "Dashboard / Profile screen — customer details, rented properties, and saved listings."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "🤖 11. Sage AI",
-      "item": [
-        {
-          "name": "23 AI — Respond & Recommend",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if (json.data && json.data.conversationId) {",
-                  "  pm.collectionVariables.set('conversationId', json.data.conversationId);",
-                  "  console.log('✅ conversationId saved:', json.data.conversationId);",
-                  "  console.log('Listings found:', json.data.recommendedListings.length);",
-                  "  console.log('Confidence:', json.data.confidence);",
-                  "}"
-                ],
-                "type": "text/javascript"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FirstName\": \"Jane\",\n  \"LastName\": \"Doe\",\n  \"PreferredLanguage\": \"en\",\n  \"PreferredCurrency\": \"KES\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"query\": \"2 bedroom under 100k in westlands\",\n  \"conversationId\": null,\n  \"maxResults\": 5,\n  \"temperature\": 0.7\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/aiagent/respondandrecommend",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "aiagent",
-                "respondandrecommend"
-              ]
-            },
-            "description": "Primary AI mode — natural language query returns:\n1. AI-generated text response (message field) — display as AI reply bubble\n2. Ranked listing recommendations (data.recommendedListings) — render as property cards with matchScore badge\n\nFor follow-up queries: pass the returned conversationId to maintain context.\n\nResponse shape:\n{\n  status: '000',  // '000' = success\n  message: 'AI text response...',\n  data: {\n    recommendedListings: [{ listingId, listingCode, title, location, price, bedrooms, bathrooms, amenities, matchScore, imageUrl, listingUrl }],\n    conversationId: '...',  // save to {{conversationId}}\n    confidence: 0.65,\n    extractedIntent: { locations, minBedrooms, maxBedrooms, maxPrice, minPrice }\n  }\n}\n\n✅ conversationId is auto-saved to {{conversationId}} after this request."
           },
           "response": []
         },
         {
-          "name": "24 AI — Respond & Recommend (Follow-up)",
+          "name": "49 Add Customer Document",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "documents"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"show me options with a balcony\",\n  \"conversationId\": \"{{conversationId}}\",\n  \"maxResults\": 5,\n  \"temperature\": 0.7\n}",
+              "raw": "{\n  \"EntityType\": \"Customer\",\n  \"EntityId\": \"{{customerId}}\",\n  \"DocumentType\": \"NationalID\",\n  \"FileUrl\": \"https://pub-stayhere.r2.dev/profiles/documents/id.pdf\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/aiagent/respondandrecommend",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "aiagent",
-                "respondandrecommend"
-              ]
-            },
-            "description": "Follow-up query using the conversationId from the previous AI call. Maintains conversation context for refined searches."
+            }
           },
           "response": []
         },
         {
-          "name": "25 AI — Chat with Sage",
+          "name": "50 Get Customer Documents",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"message\": \"What areas in Nairobi are good for families?\",\n  \"conversationHistory\": []\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/aiagent/chat",
+              "raw": "{{baseUrl}}/customers/{{customerId}}/documents",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "aiagent",
-                "chat"
+                "customers",
+                "{{customerId}}",
+                "documents"
               ]
-            },
-            "description": "Secondary AI mode — conversational chat. Maintains context via conversationHistory array.\n\nFor each turn, append previous messages to conversationHistory:\n[\n  { role: 'user', content: 'previous question' },\n  { role: 'assistant', content: 'previous answer' }\n]\n\nResponse: { reply: '...', listings: [...] }\nlistings[] may be empty — only render cards when present."
+            }
           },
           "response": []
         }
       ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://apim-dev-5c27bcf3.azure-api.net",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "listingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "viewingBookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shortStayBookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "checkoutRequestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "enquiryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerPhone",
+      "value": "254712345678",
+      "type": "string"
+    },
+    {
+      "key": "customerEmail",
+      "value": "jane.doe@example.com",
+      "type": "string"
+    },
+    {
+      "key": "otpCode",
+      "value": "123456",
+      "type": "string"
     }
   ]
 }

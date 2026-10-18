@@ -33,6 +33,7 @@ namespace StayHere.PropertyService.Functions;
 ///   properties/videos           | video/mp4, video/webm
 ///   properties/floor-plans      | application/pdf
 ///   applications/documents      | image/jpeg, image/png, application/pdf
+///   short-stay-bookings/documents | image/jpeg, image/png
 ///   profiles/avatars            | image/jpeg, image/png
 ///
 /// Authorised roles: PropertyOwner, PropertyManager, Tenant, Admin.
@@ -54,6 +55,7 @@ public class UploadFunctions
         "properties/videos",
         "properties/floor-plans",
         "applications/documents",
+        "short-stay-bookings/documents",
         "profiles/avatars",
         "profiles/documents",
     };

@@ -1,0 +1,7 @@
+{
+  "contents": [{"role":"user","parts":[{"text":"Analyze this floor plan and report every room."},{"inlineData":{"mimeType":"image/png","data":"iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAG0lEQVR4nGP4z8BANiJf56jmUc2jmkc1U0UzADHNjoAymaoJAAAAAElFTkSuQmCC"}}]}],
+  "systemInstruction": {"parts":[{"text":"You are analyzing a floor plan."}]},
+  "tools": [{"functionDeclarations":[{"name":"report_rooms","description":"Report rooms","parameters":{"type":"OBJECT","properties":{"rooms":{"type":"ARRAY","items":{"type":"OBJECT","properties":{"label":{"type":"STRING"}}}}}}}]}],
+  "toolConfig": {"functionCallingConfig":{"mode":"ANY","allowedFunctionNames":["report_rooms"]}},
+  "generationConfig": {"thinkingConfig":{"thinkingBudget":-1}}
+}

@@ -7,8 +7,7 @@ type Category = {
   id: string;
   name: string;
   description?: string;
-  country?: string;
-  city?: string;
+  iconUrl?: string;
   isActive?: boolean;
   slug?: string;
   sortOrder?: number;
@@ -25,8 +24,7 @@ function mapCat(x: unknown): Category | null {
     id: String(id),
     name: String(r.name ?? r.categoryName ?? ""),
     description: r.description ? String(r.description) : undefined,
-    country: r.country ? String(r.country) : undefined,
-    city: r.city ? String(r.city) : undefined,
+    iconUrl: r.iconUrl ? String(r.iconUrl) : undefined,
     isActive: typeof r.isActive === "boolean" ? r.isActive : true,
     slug: r.slug ? String(r.slug) : undefined,
     sortOrder: typeof r.sortOrder === "number" ? r.sortOrder : undefined,
@@ -35,7 +33,9 @@ function mapCat(x: unknown): Category | null {
   };
 }
 
-const EMPTY_FORM = { name: "", description: "", country: "Kenya", city: "Nairobi", slug: "", sortOrder: "" };
+// Category has no Country/City fields on the backend (only Subcategory does) - a category is a
+// global top-level grouping, not geo-scoped.
+const EMPTY_FORM = { name: "", description: "", iconUrl: "", slug: "", sortOrder: "", isActive: true };
 
 export function CategoriesPage() {
   const { toast, reloadKey } = usePortal();
@@ -78,10 +78,10 @@ export function CategoriesPage() {
     setForm({
       name: c.name,
       description: c.description ?? "",
-      country: c.country ?? "Kenya",
-      city: c.city ?? "Nairobi",
+      iconUrl: c.iconUrl ?? "",
       slug: c.slug ?? "",
       sortOrder: c.sortOrder != null ? String(c.sortOrder) : "",
+      isActive: c.isActive !== false,
     });
     setShowModal(true);
   }
@@ -92,10 +92,10 @@ export function CategoriesPage() {
     setSaving(true);
     const body: Record<string, unknown> = {
       name: form.name.trim(),
-      country: form.country.trim() || "Kenya",
-      city: form.city.trim() || "Nairobi",
+      isActive: form.isActive,
     };
     if (form.description.trim()) body.description = form.description.trim();
+    if (form.iconUrl.trim()) body.iconUrl = form.iconUrl.trim();
     if (form.slug.trim()) body.slug = form.slug.trim();
     if (form.sortOrder.trim()) body.sortOrder = Number(form.sortOrder);
     try {
@@ -115,15 +115,23 @@ export function CategoriesPage() {
     }
   }
 
-  async function handleDelete(c: Category) {
-    if (!confirm(`Delete category "${c.name}"?`)) return;
+  // The DELETE endpoint soft-deactivates (sets isActive=false) rather than destroying the row, so
+  // this doubles as both the deactivate and reactivate action depending on current state.
+  async function handleToggleActive(c: Category) {
+    const activating = c.isActive === false;
+    if (!activating && !confirm(`Deactivate category "${c.name}"? It will stop appearing as an option for new listings, but existing listings that reference it are unaffected.`)) return;
     setDeleting(c.id);
     try {
-      await staticApi.deleteCategory(c.id);
-      toast("Category deleted.", "success");
+      if (activating) {
+        await staticApi.updateCategory(c.id, { isActive: true });
+        toast("Category reactivated.", "success");
+      } else {
+        await staticApi.deleteCategory(c.id);
+        toast("Category deactivated.", "success");
+      }
       void load();
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : "Delete failed", "error");
+      toast(e instanceof ApiError ? e.message : "Update failed", "error");
     } finally {
       setDeleting(null);
     }
@@ -221,11 +229,16 @@ export function CategoriesPage() {
                     <IcoEdit size={13} />
                   </button>
                   <button
-                    onClick={() => void handleDelete(c)}
+                    onClick={() => void handleToggleActive(c)}
                     disabled={deleting === c.id}
-                    className="btn-icon hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                    title={c.isActive === false ? "Reactivate category" : "Deactivate category"}
+                    className={c.isActive === false
+                      ? "btn-icon hover:bg-green-50 hover:text-green-600 disabled:opacity-40"
+                      : "btn-icon hover:bg-red-50 hover:text-red-600 disabled:opacity-40"}
                   >
-                    {deleting === c.id ? <IcoLoader size={13} /> : <IcoTrash size={13} />}
+                    {deleting === c.id
+                      ? <IcoLoader size={13} />
+                      : c.isActive === false ? <IcoRefresh size={13} /> : <IcoTrash size={13} />}
                   </button>
                 </div>
               </div>
@@ -233,11 +246,6 @@ export function CategoriesPage() {
               <div className="font-semibold text-brand-900 mb-1">{c.name}</div>
               {c.description && (
                 <div className="text-xs text-brand-500 line-clamp-2 mb-2">{c.description}</div>
-              )}
-              {(c.country || c.city) && (
-                <div className="text-[10px] text-brand-400 mb-2">
-                  {[c.city, c.country].filter(Boolean).join(", ")}
-                </div>
               )}
 
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -298,27 +306,14 @@ export function CategoriesPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="portal-field">
-                  <label className="portal-label">Country <span className="text-red-500">*</span></label>
-                  <input
-                    required
-                    className="portal-input"
-                    placeholder="e.g. Kenya"
-                    value={form.country}
-                    onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
-                  />
-                </div>
-                <div className="portal-field">
-                  <label className="portal-label">City <span className="text-red-500">*</span></label>
-                  <input
-                    required
-                    className="portal-input"
-                    placeholder="e.g. Nairobi"
-                    value={form.city}
-                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
-                  />
-                </div>
+              <div className="portal-field">
+                <label className="portal-label">Icon URL</label>
+                <input
+                  className="portal-input"
+                  placeholder="https://…/icon.svg"
+                  value={form.iconUrl}
+                  onChange={e => setForm(f => ({ ...f, iconUrl: e.target.value }))}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -342,6 +337,17 @@ export function CategoriesPage() {
                   />
                 </div>
               </div>
+
+              {editTarget && (
+                <label className="flex items-center gap-2 text-sm text-brand-700">
+                  <input
+                    type="checkbox"
+                    checked={form.isActive}
+                    onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
+                  />
+                  Active (uncheck to deactivate this category)
+                </label>
+              )}
 
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { uploadApi, uploadToR2 } from "../lib/api";
+import { compressImageFile } from "../lib/imageCompression";
 import { IcoPlus, IcoLoader } from "./icons";
 
 export type ImageSection = { key: string; label: string };
@@ -30,9 +31,10 @@ export function StructuredImageUploader({ sections, value, onChange, uploadFolde
     if (!file) return;
     setSlot(sectionKey, slotIdx, true);
     try {
-      const ct = file.type || "image/jpeg";
-      const { uploadUrl, publicUrl, contentType } = await uploadApi.getPresignedUrl(uploadFolder, file.name, ct);
-      await uploadToR2(uploadUrl, file, contentType);
+      const compressed = await compressImageFile(file);
+      const ct = compressed.type || "image/jpeg";
+      const { uploadUrl, publicUrl, contentType } = await uploadApi.getPresignedUrl(uploadFolder, compressed.name, ct);
+      await uploadToR2(uploadUrl, compressed, contentType);
       const existing = [...(value[sectionKey] ?? [])];
       existing[slotIdx] = publicUrl;
       onChange({ ...value, [sectionKey]: existing.filter(Boolean) });

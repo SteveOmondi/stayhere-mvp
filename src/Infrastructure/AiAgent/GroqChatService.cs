@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.Common.Interfaces;
@@ -31,7 +32,9 @@ public class GroqChatService : IChatService
     {
         var apiKey = _configuration["Groq:ApiKey"]?.Trim()
                      ?? Environment.GetEnvironmentVariable("GROQ_API_KEY")?.Trim();
-        var model = _configuration["Groq:Model"] ?? "llama-3.3-70b-versatile";
+        // llama-3.3-70b-versatile was decommissioned by Groq; gpt-oss-120b is the current
+        // tool-calling-capable default (verified against /openai/v1/models for this account).
+        var model = _configuration["Groq:Model"] ?? "openai/gpt-oss-120b";
 
         if (string.IsNullOrEmpty(apiKey))
         {
@@ -102,6 +105,156 @@ public class GroqChatService : IChatService
         }
 
         throw new HttpRequestException("Groq chat failed after retries.");
+    }
+
+    public async Task<ChatCompletionResult> GenerateWithToolsAsync(
+        IReadOnlyList<ChatMessage> messages,
+        IReadOnlyList<ChatToolDefinition> tools,
+        int maxTokens = 1000,
+        double temperature = 0.7,
+        CancellationToken cancellationToken = default,
+        string? forcedToolName = null)
+    {
+        var apiKey = _configuration["Groq:ApiKey"]?.Trim()
+                     ?? Environment.GetEnvironmentVariable("GROQ_API_KEY")?.Trim();
+        // llama-3.3-70b-versatile was decommissioned by Groq; gpt-oss-120b is the current
+        // tool-calling-capable default (verified against /openai/v1/models for this account).
+        var model = _configuration["Groq:Model"] ?? "openai/gpt-oss-120b";
+
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            _logger.LogError("Groq API key is not configured (Groq:ApiKey)");
+            throw new InvalidOperationException("Groq API key is not configured. Set Groq:ApiKey in local.settings.json or environment.");
+        }
+
+        const string url = "https://api.groq.com/openai/v1/chat/completions";
+
+        var body = new JsonObject
+        {
+            ["model"] = model,
+            ["messages"] = BuildMessagesArray(messages),
+            ["max_tokens"] = maxTokens,
+            ["temperature"] = temperature,
+            ["stream"] = false
+        };
+
+        if (tools.Count > 0)
+        {
+            body["tools"] = new JsonArray(tools.Select(t => (JsonNode)new JsonObject
+            {
+                ["type"] = "function",
+                ["function"] = new JsonObject
+                {
+                    ["name"] = t.Name,
+                    ["description"] = t.Description,
+                    ["parameters"] = JsonNode.Parse(t.ParametersJsonSchema)
+                }
+            }).ToArray());
+            body["tool_choice"] = string.IsNullOrEmpty(forcedToolName)
+                ? "auto"
+                : new JsonObject { ["type"] = "function", ["function"] = new JsonObject { ["name"] = forcedToolName } };
+        }
+
+        var maxAttempts = int.TryParse(_configuration["Groq:MaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 4;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = JsonContent.Create(body)
+                };
+                httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
+
+                var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    var delay = ParseRetryAfter(response) ?? TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                    _logger.LogWarning("Groq tool-call chat rate limited (429). Attempt {Attempt}/{Max}. Waiting {Delay}s", attempt, maxAttempts, delay.TotalSeconds);
+                    if (attempt == maxAttempts)
+                        response.EnsureSuccessStatusCode();
+                    await Task.Delay(delay, cancellationToken);
+                    continue;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("Groq returned {Status} for tool-call chat. Response: {Body}", (int)response.StatusCode, errorBody);
+                    response.EnsureSuccessStatusCode();
+                }
+
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var root = JsonNode.Parse(json)?.AsObject();
+                var message = root?["choices"]?.AsArray().FirstOrDefault()?["message"]?.AsObject();
+
+                if (message == null)
+                {
+                    _logger.LogWarning("Groq tool-call chat returned no message");
+                    return new ChatCompletionResult("I apologize, but I couldn't generate a response at this time.", null);
+                }
+
+                var toolCallsNode = message["tool_calls"] as JsonArray;
+                if (toolCallsNode is { Count: > 0 })
+                {
+                    var calls = toolCallsNode
+                        .Select(tc => tc?.AsObject())
+                        .Where(tc => tc != null)
+                        .Select(tc => new ChatToolCall(
+                            tc!["id"]?.GetValue<string>() ?? Guid.NewGuid().ToString(),
+                            tc["function"]?["name"]?.GetValue<string>() ?? string.Empty,
+                            tc["function"]?["arguments"]?.GetValue<string>() ?? "{}"))
+                        .Where(c => c.Name.Length > 0)
+                        .ToList();
+
+                    if (calls.Count > 0)
+                        return new ChatCompletionResult(null, calls);
+                }
+
+                var content = message["content"]?.GetValue<string>()?.Trim() ?? string.Empty;
+                return new ChatCompletionResult(content, null);
+            }
+            catch (HttpRequestException ex) when (attempt < maxAttempts)
+            {
+                _logger.LogWarning(ex, "Groq tool-call chat attempt {Attempt} failed; retrying", attempt);
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), cancellationToken);
+            }
+        }
+
+        throw new HttpRequestException("Groq tool-call chat failed after retries.");
+    }
+
+    private static JsonArray BuildMessagesArray(IReadOnlyList<ChatMessage> messages)
+    {
+        var array = new JsonArray();
+        foreach (var msg in messages)
+        {
+            var node = new JsonObject { ["role"] = msg.Role };
+
+            if (msg.Content != null)
+                node["content"] = msg.Content;
+
+            if (msg.ToolCalls is { Count: > 0 })
+            {
+                node["tool_calls"] = new JsonArray(msg.ToolCalls.Select(tc => (JsonNode)new JsonObject
+                {
+                    ["id"] = tc.Id,
+                    ["type"] = "function",
+                    ["function"] = new JsonObject { ["name"] = tc.Name, ["arguments"] = tc.ArgumentsJson }
+                }).ToArray());
+            }
+
+            if (msg.ToolCallId != null)
+                node["tool_call_id"] = msg.ToolCallId;
+
+            if (msg.Role == "tool" && msg.Name != null)
+                node["name"] = msg.Name;
+
+            array.Add(node);
+        }
+        return array;
     }
 
     private static string GetSystemPrompt() =>

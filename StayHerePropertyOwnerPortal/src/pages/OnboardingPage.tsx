@@ -3,6 +3,7 @@ import { customersApi, ApiError } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
 import { IcoOnboard, IcoUser, IcoDocument, IcoCheck, IcoX, IcoLoader, IcoSearch, IcoEye, IcoShield, IcoRefresh } from "../components/icons";
+import { DocumentPreviewModal } from "../components/DocumentPreviewModal";
 
 type Tenant = {
   id: string; firstName: string; lastName: string; email: string; phone?: string;
@@ -39,6 +40,7 @@ export function OnboardingPage() {
   const [selected, setSelected] = useState<Tenant | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
   const [addDocForm, setAddDocForm] = useState({ documentType: "", documentUrl: "" });
   const [addingDoc, setAddingDoc] = useState(false);
   const [showAddDoc, setShowAddDoc] = useState(false);
@@ -255,9 +257,12 @@ export function OnboardingPage() {
                       <div className="flex items-center gap-2">
                         {d.status && <span className={`badge ${d.status.toLowerCase() === "approved" ? "badge-success" : d.status.toLowerCase() === "rejected" ? "badge-error" : "badge-warning"}`}>{d.status}</span>}
                         {d.documentUrl && (
-                          <a href={d.documentUrl} target="_blank" rel="noreferrer" className="btn-ghost p-1.5 text-teal-700 hover:bg-teal-50">
+                          <button
+                            onClick={() => setPreviewDoc({ url: d.documentUrl!, title: d.documentType ?? "Document" })}
+                            className="btn-ghost p-1.5 text-teal-700 hover:bg-teal-50"
+                          >
                             <IcoEye size={13} />
-                          </a>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -274,6 +279,9 @@ export function OnboardingPage() {
             </div>
           </div>
         </div>
+      )}
+      {previewDoc && (
+        <DocumentPreviewModal url={previewDoc.url} title={previewDoc.title} onClose={() => setPreviewDoc(null)} />
       )}
     </div>
   );

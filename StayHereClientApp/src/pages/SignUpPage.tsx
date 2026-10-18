@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { authApi, ApiError } from "../lib/api";
+import { PhoneInput } from "../components/PhoneInput";
 import { IcoArrowRight, IcoCheck, IcoLoader, IcoUser, IcoX } from "../components/icons";
 import { GradientBlobs, Logo } from "../components/ui";
 
@@ -27,7 +28,7 @@ export function SignUpPage() {
       });
       setStep("success");
     } catch (err) {
-      setError(err instanceof ApiError ? err.body : String(err));
+      setError(err instanceof ApiError ? err.userMessage : String(err));
     } finally { setLoading(false); }
   }
 
@@ -73,7 +74,7 @@ export function SignUpPage() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-brand-muted">Phone (optional)</label>
-                    <input type="tel" value={form.phoneNumber} onChange={set("phoneNumber")} placeholder="+254 700 000 000" className="input-dark" />
+                    <PhoneInput value={form.phoneNumber} onChange={(v) => setForm((f) => ({ ...f, phoneNumber: v }))} />
                   </div>
                   <button type="submit" disabled={loading} className="btn-gold w-full justify-center mt-2 disabled:opacity-50">
                     {loading ? <IcoLoader size={18} /> : <><span>Create Account</span><IcoArrowRight size={17} /></>}

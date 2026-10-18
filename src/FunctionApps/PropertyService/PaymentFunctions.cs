@@ -66,14 +66,20 @@ public class PaymentFunctions
                 .OrderByDescending(p => p.ConfirmedAt)
                 .FirstOrDefault();
 
+            // NOTE: explicit camelCase names throughout, including the nested objects - `new
+            // { listing.Id }` / `new { confirmedPayment.Amount }` shorthand preserves the entity's
+            // PascalCase verbatim, and this host has no camelCase naming policy configured (see
+            // PropertyTermsFunctions.ToDto's note on the same bug). The client's OnboardingStep
+            // reads e.g. `pmt.mpesaReceiptNumber` / `pmt.reference`, which would silently never
+            // match a shorthand-projected "MpesaReceiptNumber" / "Reference" on the wire.
             return await Json(req, HttpStatusCode.OK, new
             {
                 applicationId = app.Id,
                 listing = listing is null ? null : new
                 {
-                    listing.Id,
-                    listing.Title,
-                    listing.ListingCode,
+                    id = listing.Id,
+                    title = listing.Title,
+                    listingCode = listing.ListingCode,
                     address = listing.Location is null
                         ? null
                         : $"{listing.Location.Street}, {listing.Location.Suburb}, {listing.Location.City}"
@@ -83,14 +89,14 @@ public class PaymentFunctions
                 itemsToCarry = terms?.ItemsToCarry,
                 payment = confirmedPayment is null ? null : new
                 {
-                    confirmedPayment.Amount,
-                    confirmedPayment.Currency,
-                    confirmedPayment.Method,
-                    confirmedPayment.TransactionSource,
-                    confirmedPayment.MpesaReceiptNumber,
-                    confirmedPayment.MpesaTransactionId,
-                    confirmedPayment.Reference,
-                    confirmedPayment.ConfirmedAt
+                    amount = confirmedPayment.Amount,
+                    currency = confirmedPayment.Currency,
+                    method = confirmedPayment.Method,
+                    transactionSource = confirmedPayment.TransactionSource,
+                    mpesaReceiptNumber = confirmedPayment.MpesaReceiptNumber,
+                    mpesaTransactionId = confirmedPayment.MpesaTransactionId,
+                    reference = confirmedPayment.Reference,
+                    confirmedAt = confirmedPayment.ConfirmedAt
                 },
                 activatedAt = app.UpdatedAt,
                 message = "Congratulations! Your tenancy is confirmed. Welcome to your new home."

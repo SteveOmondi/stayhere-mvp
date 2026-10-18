@@ -59,7 +59,7 @@ export function LoginPage() {
       toast(`OTP sent to ${identifier}. Enter the code below.`, "info");
       setStep("otp");
     } catch (err) {
-      const msg = err instanceof ApiError ? `${err.status}: ${err.body}` : String(err);
+      const msg = err instanceof ApiError ? err.userMessage : String(err);
       setError(msg);
       console.error("OTP request failed:", err);
     } finally {
@@ -106,7 +106,7 @@ export function LoginPage() {
         console.warn("OTP verify — succeeded=false or no token:", res);
       }
     } catch (err) {
-      const msg = err instanceof ApiError ? `${err.status}: ${err.body}` : String(err);
+      const msg = err instanceof ApiError ? err.userMessage : String(err);
       setError(msg);
       console.error("OTP verify failed:", err);
     } finally {

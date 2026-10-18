@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using StayHere.Application.AiAgent.Services;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Application.Properties.Models;
 using StayHere.Domain.Entities;
@@ -74,6 +75,7 @@ public class ListingService : IListingService
             amenities = merged;
         }
 
+        var listingTypeValue = ParseListingType(request.ListingType);
         var listing = new Listing
         {
             Id = Guid.NewGuid(),
@@ -86,7 +88,8 @@ public class ListingService : IListingService
             Price = request.Price,
             PriceCurrency = request.PriceCurrency ?? "KES",
             PropertyType = ParsePropertyType(request.PropertyType),
-            ListingType = ParseListingType(request.ListingType),
+            ListingType = listingTypeValue,
+            Tenure = ResolveTenureForCreate(listingTypeValue, request.Tenure),
             Bedrooms = request.Bedrooms,
             Bathrooms = request.Bathrooms,
             IsFurnished = request.IsFurnished,
@@ -95,6 +98,7 @@ public class ListingService : IListingService
             PrimaryImageUrl = request.PrimaryImageUrl,
             Images = NormalizeListingImages(request.Images),
             StructuredImages = MapToListingImages(request.StructuredImages),
+            FloorPlan = MapToFloorPlan(request.FloorPlan),
             SizeSqft = request.SizeSqft,
             YearBuilt = request.YearBuilt,
             Developer = request.Developer,
@@ -148,6 +152,7 @@ public class ListingService : IListingService
             amenities = property.SharedAmenities.Union(amenities).ToList();
         }
 
+        var listingTypeValue = ParseListingType(request.ListingType);
         var listing = new Listing
         {
             Id = Guid.NewGuid(),
@@ -160,7 +165,8 @@ public class ListingService : IListingService
             Price = request.Price,
             PriceCurrency = request.PriceCurrency ?? "KES",
             PropertyType = ParsePropertyType(request.PropertyType),
-            ListingType = ParseListingType(request.ListingType),
+            ListingType = listingTypeValue,
+            Tenure = ResolveTenureForCreate(listingTypeValue, request.Tenure),
             Bedrooms = request.Bedrooms,
             Bathrooms = request.Bathrooms,
             IsFurnished = request.IsFurnished,
@@ -169,6 +175,7 @@ public class ListingService : IListingService
             PrimaryImageUrl = request.PrimaryImageUrl,
             Images = NormalizeListingImages(request.Images),
             StructuredImages = MapToListingImages(request.StructuredImages),
+            FloorPlan = MapToFloorPlan(request.FloorPlan),
             SizeSqft = request.SizeSqft,
             YearBuilt = request.YearBuilt,
             Developer = request.Developer,
@@ -292,8 +299,24 @@ public class ListingService : IListingService
         return await CreatePaginatedResponseAsync(listings, listings.Count(), page, pageSize);
     }
 
+    /// <summary>Fetch size used when free-text/amenity matching forces in-memory filtering (see
+    /// <see cref="SearchListingsAsync"/>) - large enough to cover realistic result sets at MVP scale
+    /// without needing a real DB-level amenity column (Amenities is a JSON-text column; EF can't
+    /// translate a LINQ predicate over it into SQL).</summary>
+    private const int SemanticSearchFetchSize = 1000;
+
     public async Task<PaginatedResult<ListingResponseDto>> SearchListingsAsync(ListingSearchRequest request)
     {
+        // Free-text box input ("two bedroom with a swimming pool in westlands") is parsed into the
+        // same structured signals the filter UI produces - explicit structured fields always win so
+        // a user's actual filter selection is never silently overridden by a looser text guess.
+        var intent = string.IsNullOrWhiteSpace(request.Query)
+            ? null
+            : ListingQueryIntentExtractor.Extract(request.Query);
+
+        var amenityText = string.Join(", ", new[] { request.Amenity, intent?.AmenityKeywords }
+            .Where(s => !string.IsNullOrWhiteSpace(s)));
+
         var criteria = new ListingSearchCriteria
         {
             PropertyId = request.PropertyId,
@@ -302,13 +325,14 @@ public class ListingService : IListingService
             Country = request.Country,
             Suburb = request.Suburb,
             Street = request.Street,
-            LocationText = TrimOrNull(request.Location),
+            LocationText = TrimOrNull(request.Location) ?? intent?.Locations,
             PropertyType = string.IsNullOrEmpty(request.PropertyType) ? null : ParsePropertyType(request.PropertyType),
             ListingType = string.IsNullOrEmpty(request.ListingType) ? null : ParseListingType(request.ListingType),
-            MinPrice = request.MinPrice,
-            MaxPrice = request.MaxPrice,
-            MinBedrooms = request.MinBedrooms,
-            MaxBedrooms = request.MaxBedrooms,
+            Tenure = ParseTenure(request.Tenure),
+            MinPrice = request.MinPrice ?? intent?.MinPrice,
+            MaxPrice = request.MaxPrice ?? intent?.MaxPrice,
+            MinBedrooms = request.MinBedrooms ?? intent?.MinBedrooms,
+            MaxBedrooms = request.MaxBedrooms ?? intent?.MaxBedrooms,
             MinBathrooms = request.MinBathrooms,
             IsFurnished = request.IsFurnished,
             AvailabilityStatus = string.IsNullOrEmpty(request.AvailabilityStatus) ? null : ParseAvailabilityStatus(request.AvailabilityStatus),
@@ -320,9 +344,23 @@ public class ListingService : IListingService
             SortBy = request.SortBy,
             SortDescending = request.SortDescending
         };
-        var totalCount = await _listingRepository.GetSearchCountAsync(criteria);
-        var listings = await _listingRepository.SearchAsync(criteria);
-        return await CreatePaginatedResponseAsync(listings, totalCount, request.Page, request.PageSize);
+
+        if (string.IsNullOrWhiteSpace(amenityText))
+        {
+            var totalCount = await _listingRepository.GetSearchCountAsync(criteria);
+            var listings = await _listingRepository.SearchAsync(criteria);
+            return await CreatePaginatedResponseAsync(listings, totalCount, request.Page, request.PageSize);
+        }
+
+        // Amenity matching isn't SQL-translatable (Amenities is a JSON-text column), so fetch a broad
+        // candidate set under every other filter and match amenities + paginate in memory instead.
+        criteria.Page = 1;
+        criteria.PageSize = SemanticSearchFetchSize;
+        var candidates = (await _listingRepository.SearchAsync(criteria))
+            .Where(l => ListingQueryIntentExtractor.MatchesAllAmenities(l, amenityText))
+            .ToList();
+        var page = candidates.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize);
+        return await CreatePaginatedResponseAsync(page, candidates.Count, request.Page, request.PageSize);
     }
 
     public async Task<ListingResponseDto?> UpdateListingAsync(Guid id, Guid requesterId, UpdateListingRequest request)
@@ -337,7 +375,13 @@ public class ListingService : IListingService
         if (request.Price.HasValue) listing.Price = request.Price.Value;
         if (request.PriceCurrency != null) listing.PriceCurrency = request.PriceCurrency;
         if (request.PropertyType != null) listing.PropertyType = ParsePropertyType(request.PropertyType);
-        if (request.ListingType != null) listing.ListingType = ParseListingType(request.ListingType);
+        if (request.ListingType != null)
+        {
+            listing.ListingType = ParseListingType(request.ListingType);
+            // Clear a stale Tenure if the listing moved to a type Tenure doesn't apply to (ShortStay/Lease).
+            if (AllowedTenuresFor(listing.ListingType) == null) listing.Tenure = null;
+        }
+        if (request.Tenure != null) listing.Tenure = ResolveTenureForUpdate(listing.ListingType, request.Tenure);
         if (request.Bedrooms.HasValue) listing.Bedrooms = request.Bedrooms.Value;
         if (request.Bathrooms.HasValue) listing.Bathrooms = request.Bathrooms.Value;
         if (request.IsFurnished.HasValue) listing.IsFurnished = request.IsFurnished.Value;
@@ -347,6 +391,7 @@ public class ListingService : IListingService
         if (request.PrimaryImageUrl != null) listing.PrimaryImageUrl = request.PrimaryImageUrl;
         if (request.Images != null) listing.Images = NormalizeListingImages(request.Images);
         if (request.StructuredImages != null) listing.StructuredImages = MapToListingImages(request.StructuredImages);
+        if (request.FloorPlan != null) listing.FloorPlan = MapToFloorPlan(request.FloorPlan);
         if (request.SizeSqft.HasValue) listing.SizeSqft = request.SizeSqft;
         if (request.YearBuilt.HasValue) listing.YearBuilt = request.YearBuilt;
         if (request.Developer != null) listing.Developer = request.Developer;
@@ -582,7 +627,8 @@ public class ListingService : IListingService
                 SizeSqft: listing.SizeSqft,
                 YearBuilt: listing.YearBuilt,
                 IsFurnished: listing.IsFurnished,
-                Developer: listing.Developer
+                Developer: listing.Developer,
+                Tenure: listing.Tenure?.ToString()
             ),
             Location: new LocationDto(
                 listing.Location.Country,
@@ -620,7 +666,8 @@ public class ListingService : IListingService
                 : null,
             Subcategory: listing.SubcategoryId.HasValue && subcategoryName != null
                 ? new ListingCategoryDto(listing.SubcategoryId.Value, subcategoryName)
-                : null
+                : null,
+            FloorPlan: MapToFloorPlanDto(listing.FloorPlan)
         );
     }
 
@@ -670,6 +717,42 @@ public class ListingService : IListingService
         );
     }
 
+    private static ListingFloorPlan? MapToFloorPlan(FloorPlanDto? dto)
+    {
+        if (dto == null) return null;
+        return new ListingFloorPlan(
+            Rooms: dto.Rooms.Select(r => new FloorPlanRoom(r.Id, r.Label, r.Points)).ToList(),
+            Openings: dto.Openings.Select(o => new FloorPlanOpening(o.Id, o.From, o.To, o.Position, o.WidthMeters, o.Type)).ToList(),
+            MetersPerPixel: dto.MetersPerPixel,
+            SourceFileKey: dto.SourceFileKey,
+            SourceFileType: dto.SourceFileType,
+            DigitizedAt: dto.DigitizedAt,
+            DigitizedByRole: dto.DigitizedByRole,
+            AiProvider: dto.AiProvider,
+            Hotspots: dto.Hotspots?.Select(h => new FloorPlanHotspot(h.Id, h.RoomId, h.Label, h.Order)).ToList() ?? [],
+            AllowedCatalogIds: dto.AllowedCatalogIds ?? [],
+            DefaultLayout: dto.DefaultLayout?.Select(i => new FloorPlanLayoutItem(i.CatalogId, i.RoomId, i.Position, i.RotationY)).ToList() ?? []
+        );
+    }
+
+    private static FloorPlanDto? MapToFloorPlanDto(ListingFloorPlan? floorPlan)
+    {
+        if (floorPlan == null) return null;
+        return new FloorPlanDto(
+            Rooms: floorPlan.Rooms.Select(r => new FloorPlanRoomDto(r.Id, r.Label, r.Points)).ToList(),
+            Openings: floorPlan.Openings.Select(o => new FloorPlanOpeningDto(o.Id, o.From, o.To, o.Position, o.WidthMeters, o.Type)).ToList(),
+            MetersPerPixel: floorPlan.MetersPerPixel,
+            SourceFileKey: floorPlan.SourceFileKey,
+            SourceFileType: floorPlan.SourceFileType,
+            DigitizedAt: floorPlan.DigitizedAt,
+            DigitizedByRole: floorPlan.DigitizedByRole,
+            AiProvider: floorPlan.AiProvider,
+            Hotspots: (floorPlan.Hotspots ?? []).Select(h => new FloorPlanHotspotDto(h.Id, h.RoomId, h.Label, h.Order)).ToList(),
+            AllowedCatalogIds: floorPlan.AllowedCatalogIds ?? [],
+            DefaultLayout: (floorPlan.DefaultLayout ?? []).Select(i => new FloorPlanLayoutItemDto(i.CatalogId, i.RoomId, i.Position, i.RotationY)).ToList()
+        );
+    }
+
     private async Task TryComputeAndPersistEmbeddingAsync(Listing listing)
     {
         await TryComputeEmbeddingOnListingAsync(listing);
@@ -705,4 +788,49 @@ public class ListingService : IListingService
         Enum.TryParse<ListingType>(value, true, out var result) ? result : ListingType.Rent;
     private static AvailabilityStatus ParseAvailabilityStatus(string value) =>
         Enum.TryParse<AvailabilityStatus>(value, true, out var result) ? result : AvailabilityStatus.Available;
+
+    /// <summary>Lenient parse for search filtering - never throws, null on unrecognized/blank value.</summary>
+    private static Tenure? ParseTenure(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && Enum.TryParse<Tenure>(value, true, out var result) ? result : null;
+
+    /// <summary>Which Tenure values are valid for a given ListingType; null means Tenure doesn't apply
+    /// (ShortStay/Lease) - any submitted value is ignored rather than rejected for those types.</summary>
+    private static Tenure[]? AllowedTenuresFor(ListingType listingType) => listingType switch
+    {
+        ListingType.Sale => new[] { Tenure.CompleteTurnkey, Tenure.OffPlanUnderConstruction },
+        ListingType.Rent => new[] { Tenure.LongTermLease, Tenure.ShortTermServicedVacation },
+        _ => null
+    };
+
+    /// <summary>Resolves Tenure on listing creation. Sale/Rent listings must supply one of their
+    /// allowed values (throws ArgumentException otherwise); any other ListingType silently ignores
+    /// a submitted Tenure since it doesn't apply.</summary>
+    private static Tenure? ResolveTenureForCreate(ListingType listingType, string? tenureValue)
+    {
+        var allowed = AllowedTenuresFor(listingType);
+        if (allowed == null) return null;
+
+        if (string.IsNullOrWhiteSpace(tenureValue) || !Enum.TryParse<Tenure>(tenureValue, true, out var tenure) || !allowed.Contains(tenure))
+            throw new ArgumentException(
+                $"Tenure is required for {listingType} listings and must be one of: {string.Join(", ", allowed)}.",
+                nameof(tenureValue));
+
+        return tenure;
+    }
+
+    /// <summary>Resolves an explicitly-submitted Tenure value on update against the listing's
+    /// (possibly just-changed) ListingType. Only call this when the request actually supplies a
+    /// Tenure - existing listings without one shouldn't be forced to add it on unrelated edits.</summary>
+    private static Tenure? ResolveTenureForUpdate(ListingType listingType, string tenureValue)
+    {
+        var allowed = AllowedTenuresFor(listingType);
+        if (allowed == null) return null;
+
+        if (!Enum.TryParse<Tenure>(tenureValue, true, out var tenure) || !allowed.Contains(tenure))
+            throw new ArgumentException(
+                $"Tenure must be one of: {string.Join(", ", allowed)} for {listingType} listings.",
+                nameof(tenureValue));
+
+        return tenure;
+    }
 }

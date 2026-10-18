@@ -5,6 +5,7 @@ import { customerApi } from "../lib/api";
 import { formatKes, primaryImage, resolveLocation } from "../lib/format";
 import { useApp } from "../context/AppContext";
 import { GradientBlobs, CardSkeleton } from "../components/ui";
+import { DocumentPreviewModal } from "../components/DocumentPreviewModal";
 import {
   IcoArrowRight, IcoBell, IcoBed, IcoBath, IcoBuilding, IcoCalendar,
   IcoCheck, IcoKey, IcoLoader, IcoLocation, IcoWallet, IcoX,
@@ -116,6 +117,7 @@ export function MyPropertiesPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "history" | "docs">("active");
   const [payModal, setPayModal] = useState<PayModal>({ open: false, amount: "", paying: false });
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
 
   const customerId = customerProfile?.id ?? customerProfile?.customerId ?? authUser?.id;
 
@@ -284,22 +286,20 @@ export function MyPropertiesPage() {
           ) : (
             <div className="space-y-3">
               {docs.map((doc, i) => (
-                <motion.a
+                <motion.button
                   key={i}
-                  href={doc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => setPreviewDoc({ url: doc.url, title: doc.name })}
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="card-dark flex items-center gap-4 p-4 hover:border-brand-gold/30 transition"
+                  className="card-dark flex w-full items-center gap-4 p-4 text-left hover:border-brand-gold/30 transition"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gold/10">
                     <IcoBell size={18} className="text-brand-gold" />
                   </div>
                   <span className="flex-1 text-sm text-white">{doc.name}</span>
                   <IcoArrowRight size={16} className="text-brand-muted shrink-0" />
-                </motion.a>
+                </motion.button>
               ))}
             </div>
           )
@@ -309,6 +309,9 @@ export function MyPropertiesPage() {
       <AnimatePresence>
         {payModal.open && <PayModal modal={payModal} onClose={() => setPayModal((m) => ({ ...m, open: false }))} />}
       </AnimatePresence>
+      {previewDoc && (
+        <DocumentPreviewModal url={previewDoc.url} title={previewDoc.title} onClose={() => setPreviewDoc(null)} />
+      )}
     </div>
   );
 }

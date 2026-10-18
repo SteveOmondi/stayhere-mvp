@@ -125,24 +125,28 @@ public class C2bFunctions
             var billRef = root.GetPropertyOrNull("BillRefNumber")?.GetString() ?? string.Empty;
             var transAmount = root.GetPropertyOrNull("TransAmount")?.GetString() ?? "0";
 
-            if (!TryParseApplicationRef(billRef, out var appShortId))
+            if (!TryParsePayableRef(billRef, out var prefix, out var shortId))
             {
                 _log.LogWarning("C2B validation rejected: unrecognised BillRefNumber '{Ref}'.", billRef);
                 return await C2bResponse(req, "C2B00011", "Invalid account number format.");
             }
 
-            var app = await FindApplicationByShortId(appShortId);
-            if (app is null)
+            var (app, booking) = await FindPayableByShortId(prefix, shortId);
+            if (app is null && booking is null)
             {
-                _log.LogWarning("C2B validation rejected: no application matching short ID '{Id}'.", appShortId);
+                _log.LogWarning("C2B validation rejected: no application/booking matching short ID '{Id}'.", shortId);
                 return await C2bResponse(req, "C2B00011", "Account number not found.");
             }
 
-            if (app.Status is not ("TermsAccepted" or "PaymentPending" or "Active"))
+            var acceptableStatus = app is not null
+                ? app.Status is "TermsAccepted" or "PaymentPending" or "Active"
+                : booking!.Status is "PendingPayment" or "Confirmed";
+            if (!acceptableStatus)
             {
                 _log.LogWarning(
-                    "C2B validation rejected: application {AppId} is in status '{Status}'.",
-                    app.Id, app.Status);
+                    "C2B validation rejected: {Kind} {Id} is in status '{Status}'.",
+                    app is not null ? "application" : "booking", app?.Id ?? booking!.Id,
+                    app?.Status ?? booking!.Status);
                 return await C2bResponse(req, "C2B00011",
                     "Account is not in a state to accept payments.");
             }
@@ -155,8 +159,8 @@ public class C2bFunctions
             }
 
             _log.LogInformation(
-                "C2B validation accepted for application {AppId}, amount {Amount}.",
-                app.Id, amount);
+                "C2B validation accepted for {Kind} {Id}, amount {Amount}.",
+                app is not null ? "application" : "booking", app?.Id ?? booking!.Id, amount);
             return await C2bResponse(req, "0", "Accepted");
         }
         catch (Exception ex)
@@ -238,16 +242,18 @@ public class C2bFunctions
                 ? "C2B_PAYBILL"
                 : "C2B_TILL";
 
-            // Attempt to match to a TenantApplication via BillRefNumber
+            // Attempt to match to a TenantApplication or ShortStayBooking via BillRefNumber
             TenantApplication? app = null;
-            if (TryParseApplicationRef(billRef, out var appShortId))
-                app = await FindApplicationByShortId(appShortId);
+            ShortStayBooking? booking = null;
+            if (TryParsePayableRef(billRef, out var prefix, out var shortId))
+                (app, booking) = await FindPayableByShortId(prefix, shortId);
 
             var payment = new RentalPayment
             {
                 Id = Guid.NewGuid(),
                 ApplicationId = app?.Id,
-                PaymentType = "Mpesa",
+                ShortStayBookingId = booking?.Id,
+                PaymentType = booking is not null ? "ShortStayBookingFee" : "Mpesa",
                 Amount = amount,
                 Currency = "KES",
                 Method = "Mpesa",
@@ -279,14 +285,25 @@ public class C2bFunctions
             {
                 app.Status = "Active";
                 app.UpdatedAt = DateTime.UtcNow;
+                await WalletCreditHelper.CreditOwnerWalletAsync(_db, _log, payment, app.ListingId);
                 _log.LogInformation(
                     "C2B payment confirmed — application {AppId} promoted to Active. Receipt: {TransId}.",
                     app.Id, transId);
             }
-            else if (app is null)
+            else if (booking is not null && booking.Status == "PendingPayment")
+            {
+                booking.Status = "Confirmed";
+                booking.ConfirmedAt = DateTime.UtcNow;
+                booking.UpdatedAt = DateTime.UtcNow;
+                await WalletCreditHelper.CreditOwnerWalletAsync(_db, _log, payment, booking.ListingId);
+                _log.LogInformation(
+                    "C2B payment confirmed — short-stay booking {BookingId} promoted to Confirmed. Receipt: {TransId}.",
+                    booking.Id, transId);
+            }
+            else if (app is null && booking is null)
             {
                 _log.LogWarning(
-                    "C2B confirmation saved without matching application (BillRefNumber='{Ref}'). " +
+                    "C2B confirmation saved without matching application/booking (BillRefNumber='{Ref}'). " +
                     "Admin reconciliation required for payment {PaymentId}.",
                     billRef, payment.Id);
             }
@@ -304,29 +321,50 @@ public class C2bFunctions
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// BillRefNumber format: APP{first 8 hex chars of application Guid, uppercase}.
-    /// Example: for Guid d3a7f1c2-..., BillRefNumber = "APPD3A7F1C2".
+    /// BillRefNumber format: APP{first 8 hex chars of a TenantApplication Guid, uppercase} for a
+    /// long-term lease, or STAY{first 8 hex chars of a ShortStayBooking Guid} for a nightly stay -
+    /// both generated the exact same way as the STK Push AccountReference (see StkPushFunctions),
+    /// so a guest can pay by paybill with the same reference an STK prompt would have used.
+    /// Example: for Guid d3a7f1c2-..., BillRefNumber = "APPD3A7F1C2" or "STAYD3A7F1C2".
     /// </summary>
-    private static bool TryParseApplicationRef(string billRef, out string shortId)
+    private static bool TryParsePayableRef(string billRef, out string prefix, out string shortId)
     {
+        prefix = string.Empty;
         shortId = string.Empty;
-        if (string.IsNullOrWhiteSpace(billRef))
-            return false;
+        if (string.IsNullOrWhiteSpace(billRef)) return false;
         var upper = billRef.Trim().ToUpperInvariant();
-        if (!upper.StartsWith("APP") || upper.Length < 11)
-            return false;
-        shortId = upper[3..]; // strip "APP" prefix
-        return true;
+
+        if (upper.StartsWith("STAY") && upper.Length >= 12)
+        {
+            prefix = "STAY";
+            shortId = upper[4..];
+            return true;
+        }
+        if (upper.StartsWith("APP") && upper.Length >= 11)
+        {
+            prefix = "APP";
+            shortId = upper[3..];
+            return true;
+        }
+        return false;
     }
 
-    private async Task<TenantApplication?> FindApplicationByShortId(string shortId)
+    private async Task<(TenantApplication? App, ShortStayBooking? Booking)> FindPayableByShortId(
+        string prefix, string shortId)
     {
-        // Match the first 8 hex chars of the GUID (no hyphens, uppercase)
-        return await _db.TenantApplications
-            .Where(a => a.Id.ToString().Replace("-", "")
-                .ToUpper()
-                .StartsWith(shortId))
+        // Match the first 8 hex chars of the GUID (no hyphens, uppercase).
+        if (prefix == "STAY")
+        {
+            var booking = await _db.ShortStayBookings
+                .Where(b => b.Id.ToString().Replace("-", "").ToUpper().StartsWith(shortId))
+                .FirstOrDefaultAsync();
+            return (null, booking);
+        }
+
+        var app = await _db.TenantApplications
+            .Where(a => a.Id.ToString().Replace("-", "").ToUpper().StartsWith(shortId))
             .FirstOrDefaultAsync();
+        return (app, null);
     }
 
     private static async Task<HttpResponseData> C2bResponse(

@@ -17,7 +17,7 @@ const STATUS_STYLES: Record<string, { dot: string; text: string; badge: string }
 const TABS = ["All", "Pending", "Confirmed", "Completed", "Cancelled"] as const;
 
 export function BookingsPage() {
-  const { owner } = useOwner();
+  const { userId } = useOwner();
   const [bookings, setBookings] = useState<ViewingBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<string>("All");
@@ -26,7 +26,7 @@ export function BookingsPage() {
   const [ownerNotes, setOwnerNotes] = useState("");
   const [meetingLink, setMeetingLink] = useState("");
 
-  const ownerId = owner?.id ?? "";
+  const ownerId = userId;
 
   function load() {
     if (!ownerId) return;
@@ -74,8 +74,8 @@ export function BookingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-brand-900">Viewing Bookings</h1>
-          <p className="text-sm text-brand-500 mt-0.5">Manage all property viewing requests from prospective tenants</p>
+          <h1 className="text-2xl font-bold text-brand-900">Viewings</h1>
+          <p className="text-sm text-brand-500 mt-0.5">Viewing requests across your listings</p>
         </div>
         <button onClick={load} className="btn-ghost border border-brand-200 flex items-center gap-1.5 text-sm">
           <IcoRefresh size={14} /> Refresh

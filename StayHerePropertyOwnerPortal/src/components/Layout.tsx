@@ -5,7 +5,7 @@ import {
   IcoDashboard, IcoBuilding, IcoListing, IcoUser, IcoTeam,
   IcoAnalytics, IcoNotice, IcoOnboard, IcoSettings,
   IcoBell, IcoLogout, IcoWallet, IcoX, IcoChevRight,
-  IcoCalendar, IcoClipboard, IcoTerms,
+  IcoCalendar, IcoClipboard, IcoTerms, IcoChat,
 } from "./icons";
 
 const NAV = [
@@ -16,6 +16,7 @@ const NAV = [
   ]},
   { group: "Rental Flow", items: [
     { to: "/bookings",     label: "Viewings",          Icon: IcoCalendar  },
+    { to: "/enquiries",    label: "Enquiries",         Icon: IcoChat      },
     { to: "/applications", label: "Applications",      Icon: IcoClipboard },
     { to: "/terms",        label: "Property Terms",    Icon: IcoTerms     },
   ]},
@@ -35,13 +36,13 @@ const NAV = [
 
 const BREADCRUMBS: Record<string, string> = {
   "/dashboard": "Dashboard", "/properties": "My Properties", "/listings": "Units & Listings",
-  "/bookings": "Viewings", "/applications": "Applications", "/terms": "Property Terms",
+  "/bookings": "Viewings", "/enquiries": "Enquiries", "/applications": "Applications", "/terms": "Property Terms",
   "/tenants": "Tenants", "/team": "My Team", "/onboarding": "Tenant Onboarding",
   "/analytics": "Analytics", "/noticeboard": "Notice Board", "/settings": "Settings",
 };
 
 export function Layout() {
-  const { owner, authUser, logout, toasts, dismissToast } = useOwner();
+  const { owner, authUser, logout, toasts, dismissToast, totalUnreadEnquiries } = useOwner();
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const title = BREADCRUMBS["/" + pathname.split("/").filter(Boolean)[0]] ?? "Portal";
@@ -93,7 +94,14 @@ export function Layout() {
               {group.items.map(({ to, label, Icon }) => (
                 <NavLink key={to} to={to} title={collapsed ? label : undefined}
                   className={({ isActive }) => `nav-item ${isActive ? "active" : ""} ${collapsed ? "justify-center px-0" : ""}`}>
-                  <Icon size={18} className="shrink-0" />
+                  <span className="relative shrink-0">
+                    <Icon size={18} />
+                    {to === "/enquiries" && totalUnreadEnquiries > 0 && (
+                      <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-teal px-1 text-[9px] font-bold text-white">
+                        {totalUnreadEnquiries}
+                      </span>
+                    )}
+                  </span>
                   {!collapsed && <span className="truncate">{label}</span>}
                 </NavLink>
               ))}
@@ -143,10 +151,12 @@ export function Layout() {
               <span className="w-1.5 h-1.5 rounded-full bg-teal-500 dot-online" />
               Live
             </div>
-            <button className="relative p-2.5 rounded-xl text-brand-600 hover:bg-slate-100 transition-colors">
+            <NavLink to="/enquiries" className="relative p-2.5 rounded-xl text-brand-600 hover:bg-slate-100 transition-colors">
               <IcoBell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-teal ring-2 ring-white" />
-            </button>
+              {totalUnreadEnquiries > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-teal ring-2 ring-white" />
+              )}
+            </NavLink>
             {owner?.fullName && (
               <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-teal-50 text-teal-800">
                 <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"

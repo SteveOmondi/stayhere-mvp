@@ -4,9 +4,11 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import {
   IcoBell,
+  IcoCalendar,
   IcoChevDown,
   IcoHeart,
   IcoHeartFilled,
+  IcoKey,
   IcoLogout,
   IcoMenu,
   IcoSparkle,
@@ -23,7 +25,7 @@ const NAV_LINKS = [
 ];
 
 export function Navbar() {
-  const { isAuthenticated, authUser, favorites, cart, logout } = useApp();
+  const { isAuthenticated, authUser, favorites, enquiries, totalUnreadEnquiries, logout } = useApp();
   const [scrolled,     setScrolled]     = useState(false);
   const [mobileOpen,   setMobileOpen]   = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -116,9 +118,9 @@ export function Navbar() {
               aria-label="Enquiries"
             >
               <IcoBell size={19} />
-              {cart.length > 0 && (
+              {totalUnreadEnquiries > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-teal text-[9px] font-bold text-white">
-                  {cart.length}
+                  {totalUnreadEnquiries}
                 </span>
               )}
             </Link>
@@ -154,6 +156,20 @@ export function Navbar() {
                         className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-white/75 hover:bg-white/5 hover:text-white transition-colors"
                       >
                         <IcoUser size={15} /> My Properties
+                      </Link>
+                      <Link
+                        to="/bookings"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-white/75 hover:bg-white/5 hover:text-white transition-colors"
+                      >
+                        <IcoCalendar size={15} /> My Bookings
+                      </Link>
+                      <Link
+                        to="/my-applications"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-white/75 hover:bg-white/5 hover:text-white transition-colors"
+                      >
+                        <IcoKey size={15} /> My Applications
                       </Link>
                       <Link
                         to="/favorites"
@@ -238,7 +254,8 @@ export function Navbar() {
 
               {[
                 { to: "/favorites", label: `Favorites${favorites.length > 0 ? ` (${favorites.length})` : ""}` },
-                { to: "/cart",      label: `Enquiries${cart.length > 0 ? ` (${cart.length})` : ""}` },
+                { to: "/cart",      label: `Enquiries${enquiries.length > 0 ? ` (${enquiries.length})` : ""}` },
+                ...(isAuthenticated ? [{ to: "/my-applications", label: "My Applications" }] : []),
               ].map(({ to, label }, i) => (
                 <motion.div
                   key={to}

@@ -1,7 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { ownerApi, ApiError } from "../lib/api";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { ownerApi, enquiryApi, ApiError, type EnquirySummary } from "../lib/api";
 import { loadConfig, setAuthToken, clearAuthToken, saveOwnerProfile, loadOwnerProfile, decodeJwt } from "../lib/config";
 import { asPaginated } from "../lib/paginated";
+import { playNotificationBeep } from "../lib/notifications";
 
 function isTokenExpired(token: string): boolean {
   try {
@@ -43,6 +44,9 @@ type Ctx = {
   toasts: Toast[];
   toast: (msg: string, type?: Toast["type"]) => void;
   dismissToast: (id: number) => void;
+  enquiries: EnquirySummary[];
+  totalUnreadEnquiries: number;
+  refreshEnquiries: () => Promise<void>;
 };
 
 const Ctx = createContext<Ctx | null>(null);
@@ -81,6 +85,12 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
   const [ownerLoading, setOwnerLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [enquiries, setEnquiries] = useState<EnquirySummary[]>([]);
+  // `initializedRef` keeps the FIRST post-login enquiry fetch from firing a beep/toast for
+  // messages that were already unread last session; only a RISE in unreadCount after that
+  // baseline triggers a notification (see refreshEnquiries below).
+  const initializedRef = useRef(false);
+  const prevUnreadRef = useRef<Record<string, number>>({});
 
   const bumpReload = useCallback(() => setReloadKey(k => k + 1), []);
 
@@ -157,6 +167,9 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(false);
     setAuthUser(null);
     setOwner(null);
+    setEnquiries([]);
+    initializedRef.current = false;
+    prevUnreadRef.current = {};
     console.log("%c🚪 Owner portal logged out", "color:#f59e0b;font-weight:bold");
   }, []);
 
@@ -174,13 +187,62 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
 
   const userId = authUser?.userId ?? "";
 
+  // Enquiries (the only channel a customer and this owner ever talk through) - polled gently so a
+  // customer's new message surfaces without a manual refresh.
+  const refreshEnquiries = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const list = await enquiryApi.ownerMine();
+      setEnquiries(list);
+
+      if (initializedRef.current) {
+        for (const e of list) {
+          const prev = prevUnreadRef.current[e.id] ?? 0;
+          if (e.unreadCount > prev) {
+            playNotificationBeep();
+            toast(`New message about ${e.listingTitle ?? "an enquiry"}`, "info");
+          }
+        }
+      } else {
+        initializedRef.current = true;
+      }
+      prevUnreadRef.current = Object.fromEntries(list.map((e) => [e.id, e.unreadCount]));
+    } catch {
+      // A failed poll shouldn't wipe existing state or spam notifications.
+    }
+  }, [isAuthenticated, toast]);
+
+  useEffect(() => {
+    void refreshEnquiries();
+  }, [refreshEnquiries]);
+
+  // Gated to only run while the tab is actually visible - an inactive/backgrounded tab does no
+  // network work at all here, so this never adds load anywhere else in the portal.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const tick = () => { if (document.visibilityState === "visible") void refreshEnquiries(); };
+    const interval = window.setInterval(tick, 35000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [isAuthenticated, refreshEnquiries]);
+
+  const totalUnreadEnquiries = useMemo(
+    () => enquiries.reduce((sum, e) => sum + e.unreadCount, 0),
+    [enquiries]
+  );
+
   const value = useMemo(() => ({
     isAuthenticated, authUser, userId, owner, ownerLoading,
     loginComplete, logout,
     reloadKey, bumpReload,
     toasts, toast, dismissToast,
+    enquiries, totalUnreadEnquiries, refreshEnquiries,
   }), [isAuthenticated, authUser, userId, owner, ownerLoading, loginComplete, logout,
-    reloadKey, bumpReload, toasts, toast, dismissToast]);
+    reloadKey, bumpReload, toasts, toast, dismissToast,
+    enquiries, totalUnreadEnquiries, refreshEnquiries]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

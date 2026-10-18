@@ -27,6 +27,56 @@ public record PropertyImages(
     public static PropertyImages Empty() => new([], [], []);
 }
 
+// ── Floor plan geometry ──────────────────────────────────────────────────────
+
+/// <summary>A single room's outline, as a polygon in meters (x, z on the floor plane).</summary>
+public record FloorPlanRoom(string Id, string Label, List<double[]> Points);
+
+/// <summary>
+/// A door or window opening in a wall, identified by the wall's two endpoints (meters) —
+/// NOT by room id + edge index, so it matches shared wall segments between adjoining rooms
+/// regardless of which room's polygon "owns" that edge, and survives room-shape corrections.
+/// </summary>
+public record FloorPlanOpening(
+    string Id,
+    double[] From,
+    double[] To,
+    double Position,      // 0-1 fraction from From to To
+    double WidthMeters,
+    string Type           // "door" | "window"
+);
+
+/// <summary>A named waypoint in the 3D scene, used for room-to-room navigation ("fly to Bedroom").</summary>
+public record FloorPlanHotspot(string Id, string RoomId, string Label, int Order);
+
+/// <summary>A single placed furniture piece in the 3D scene, referencing the shared furniture catalog by id.</summary>
+public record FloorPlanLayoutItem(string CatalogId, string RoomId, double[] Position, double RotationY);
+
+/// <summary>
+/// A digitized floor plan attached to a <see cref="Listing"/>. Optional — a listing with no
+/// floor plan simply has this null. Rooms/openings are stored in real-world meters, already
+/// converted from the AI's fraction-of-image coordinates using <see cref="MetersPerPixel"/> at
+/// digitization time, so no client needs the source image dimensions to render this geometry.
+/// <para>
+/// Hotspots/AllowedCatalogIds/DefaultLayout drive the 3D and 3D-Live renders and are optional —
+/// listings digitized before 3D support existed simply have these null/empty, and the 3D scene
+/// auto-seeds starter furniture from <see cref="Rooms"/> the first time it's opened.
+/// </para>
+/// </summary>
+public record ListingFloorPlan(
+    List<FloorPlanRoom> Rooms,
+    List<FloorPlanOpening> Openings,
+    double MetersPerPixel,
+    string SourceFileKey,
+    string SourceFileType,
+    DateTime DigitizedAt,
+    string DigitizedByRole,   // "owner" | "admin"
+    string? AiProvider = null,
+    List<FloorPlanHotspot>? Hotspots = null,
+    List<string>? AllowedCatalogIds = null,
+    List<FloorPlanLayoutItem>? DefaultLayout = null
+);
+
 // ── House rules ──────────────────────────────────────────────────────────────
 
 /// <summary>
@@ -89,4 +139,18 @@ public enum AvailabilityStatus
     Rented,
     OffMarket,
     ComingSoon
+}
+
+/// <summary>
+/// The financial/contractual structure of a listing. Only meaningful when
+/// <see cref="ListingType"/> is <see cref="ListingType.Sale"/> (CompleteTurnkey/OffPlanUnderConstruction)
+/// or <see cref="ListingType.Rent"/> (LongTermLease/ShortTermServicedVacation) - null for
+/// ShortStay/Lease listings.
+/// </summary>
+public enum Tenure
+{
+    CompleteTurnkey,
+    OffPlanUnderConstruction,
+    LongTermLease,
+    ShortTermServicedVacation
 }

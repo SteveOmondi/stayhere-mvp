@@ -16,4 +16,6 @@ public sealed class NoOpCacheService : ICacheService
 
     public Task<IReadOnlyDictionary<string, long>> GetAndClearCountersAsync(string keyPrefix) =>
         Task.FromResult<IReadOnlyDictionary<string, long>>(new Dictionary<string, long>());
+
+    public Task<bool> TryConsumeRateLimitAsync(string key, int maxCount, TimeSpan window) => Task.FromResult(true);
 }

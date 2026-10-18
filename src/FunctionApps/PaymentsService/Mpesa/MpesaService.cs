@@ -27,7 +27,14 @@ public class MpesaService
     private readonly MpesaOptions _opts;
     private readonly ILogger<MpesaService> _log;
 
-    private static readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web);
+    // Plain options, deliberately NOT JsonSerializerDefaults.Web - this serializer is only ever
+    // used for OUTBOUND requests to Safaricom's Daraja API (JsonContent below), which requires its
+    // exact PascalCase field names verbatim (BusinessShortCode, PartyA, PhoneNumber, ...). Web
+    // defaults apply camelCase naming, which silently renamed every field (businessShortCode,
+    // partyA, ...) that Safaricom doesn't recognize - confirmed live: Safaricom rejected every STK
+    // Push with "Invalid BusinessShortCode" regardless of the configured shortcode's actual value,
+    // because the field it was looking for was never present in the request at all.
+    private static readonly JsonSerializerOptions _json = new();
 
     public MpesaService(
         IHttpClientFactory httpFactory,
@@ -190,7 +197,12 @@ public class MpesaService
                 ResultCode: resultCode ?? "-1",
                 ResultDesc: resultDesc,
                 IsSuccess: resultCode == "0",
-                IsPending: resultCode is null or "1037",   // 1037 = request in progress
+                // Only a missing ResultCode means "still processing" - Safaricom omits it entirely
+                // while a transaction is in flight. 1037 ("DS timeout - user cannot be reached") is
+                // a TERMINAL failure, not "in progress" - it was previously misclassified as
+                // pending here, which would have left a timed-out STK prompt stuck as "Pending"
+                // forever instead of resolving to Failed.
+                IsPending: resultCode is null,
                 Raw: raw);
         }
         catch (Exception ex)

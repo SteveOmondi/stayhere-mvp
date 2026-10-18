@@ -1,26 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { listingsApi, type Listing } from "../lib/api";
-import { formatKes, listingLocation, listingPrice, listingTitle, isRent, primaryImage } from "../lib/format";
+import { formatKes } from "../lib/format";
 import { useApp } from "../context/AppContext";
-import { SkeletonGrid, SectionHeading } from "../components/ui";
-import { IcoArrowRight, IcoBath, IcoBed, IcoBell, IcoCheck, IcoLocation, IcoX } from "../components/icons";
+import { SectionHeading } from "../components/ui";
+import { IcoArrowRight, IcoBell, IcoChat, IcoLocation } from "../components/icons";
 
 export function CartPage() {
-  const { cart, removeFromCart, toast } = useApp();
+  const { enquiries, refreshEnquiries } = useApp();
   const navigate = useNavigate();
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(false);
 
+  // Pulls the latest list the moment this page opens - an owner may have replied, or Sage may
+  // have been asked about enquiries, since this context last refreshed.
   useEffect(() => {
-    if (!cart.length) { setListings([]); return; }
-    setLoading(true);
-    Promise.all(cart.map((id) => listingsApi.getById(id).catch(() => null)))
-      .then((res) => setListings(res.filter(Boolean) as Listing[]))
-      .catch(() => toast("Failed to load enquiries", "error"))
-      .finally(() => setLoading(false));
-  }, [cart]);
+    void refreshEnquiries();
+  }, [refreshEnquiries]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -28,20 +22,18 @@ export function CartPage() {
         <div className="mb-8 flex items-center justify-between">
           <SectionHeading
             title="My Enquiries"
-            subtitle={cart.length ? `${cart.length} ${cart.length === 1 ? "property" : "properties"} in your enquiry list` : undefined}
+            subtitle={enquiries.length ? `${enquiries.length} ${enquiries.length === 1 ? "property" : "properties"} in your enquiry list` : undefined}
           />
           <IcoBell size={28} className="text-brand-teallight" />
         </div>
 
-        {loading ? (
-          <SkeletonGrid count={2} />
-        ) : listings.length === 0 ? (
+        {enquiries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white/5">
               <IcoBell size={36} className="text-white/20" />
             </div>
             <h3 className="font-display text-xl font-semibold text-white">No enquiries yet</h3>
-            <p className="mt-2 text-brand-muted">Add listings you're interested in to enquire about them.</p>
+            <p className="mt-2 text-brand-muted">Enquire about listings you're interested in to start a chat with the owner.</p>
             <Link to="/explore" className="btn-gold mt-6">
               Browse Listings <IcoArrowRight size={17} />
             </Link>
@@ -49,9 +41,9 @@ export function CartPage() {
         ) : (
           <div className="space-y-4">
             <AnimatePresence>
-              {listings.map((l, i) => (
+              {enquiries.map((e, i) => (
                 <motion.div
-                  key={l.id}
+                  key={e.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20, height: 0 }}
@@ -59,44 +51,56 @@ export function CartPage() {
                   className="card-dark flex flex-col gap-4 overflow-hidden p-4 sm:flex-row"
                 >
                   {/* Image */}
-                  <div className="h-40 w-full shrink-0 overflow-hidden rounded-xl sm:h-32 sm:w-48 cursor-pointer" onClick={() => navigate(`/listing/${l.id}`)}>
-                    <img src={primaryImage(l)} alt={listingTitle(l)} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+                  <div
+                    className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl sm:h-32 sm:w-48 cursor-pointer"
+                    onClick={() => navigate(`/listing/${e.listingId}`)}
+                  >
+                    {e.listingImageUrl ? (
+                      <img src={e.listingImageUrl} alt={e.listingTitle ?? "Listing"} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-white/5 text-white/20">
+                        <IcoLocation size={28} />
+                      </div>
+                    )}
+                    {e.unreadCount > 0 && (
+                      <span className="absolute right-2 top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-teal px-1.5 text-[10px] font-bold text-white">
+                        {e.unreadCount}
+                      </span>
+                    )}
                   </div>
 
                   {/* Details */}
                   <div className="flex flex-1 flex-col gap-2">
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="font-display text-lg font-semibold text-white cursor-pointer hover:text-brand-gold transition" onClick={() => navigate(`/listing/${l.id}`)}>
-                        {listingTitle(l)}
+                      <h3 className="font-display text-lg font-semibold text-white cursor-pointer hover:text-brand-gold transition" onClick={() => navigate(`/listing/${e.listingId}`)}>
+                        {e.listingTitle ?? "StayHere listing"}
                       </h3>
-                      <button
-                        onClick={() => { removeFromCart(l.id); setListings((ls) => ls.filter((x) => x.id !== l.id)); }}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white/40 hover:bg-red-500/15 hover:text-red-400 transition"
-                      >
-                        <IcoX size={15} />
-                      </button>
                     </div>
-                    <div className="flex items-center gap-1.5 text-sm text-brand-muted">
-                      <IcoLocation size={14} className="text-brand-teal" />
-                      {listingLocation(l)}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-white/70">
-                      <span className="flex items-center gap-1"><IcoBed size={14} className="text-brand-muted" /> {l.bedrooms ?? 0} BR</span>
-                      <span className="flex items-center gap-1"><IcoBath size={14} className="text-brand-muted" /> {l.bathrooms ?? 0} BA</span>
-                    </div>
+                    {e.listingLocation && (
+                      <div className="flex items-center gap-1.5 text-sm text-brand-muted">
+                        <IcoLocation size={14} className="text-brand-teal" />
+                        {e.listingLocation}
+                      </div>
+                    )}
+                    {e.lastMessagePreview && (
+                      <p className="truncate text-sm text-white/60">{e.lastMessagePreview}</p>
+                    )}
                     <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">
                       <span className="text-xl font-bold text-gradient-gold">
-                        {formatKes(listingPrice(l))}{isRent(l) ? <span className="text-sm text-brand-muted">/mo</span> : null}
+                        {e.listingPrice != null ? formatKes(e.listingPrice) : null}
                       </span>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => navigate(`/listing/${l.id}`)}
+                          onClick={() => navigate(`/listing/${e.listingId}`)}
                           className="btn-ghost text-xs py-2 px-3"
                         >
                           View Details
                         </button>
-                        <button className="btn-teal text-xs py-2 px-3">
-                          <IcoCheck size={14} /> Contact Agent
+                        <button
+                          onClick={() => navigate(`/enquiries/${e.id}`)}
+                          className="btn-teal text-xs py-2 px-3"
+                        >
+                          <IcoChat size={14} /> Start Chat
                         </button>
                       </div>
                     </div>
@@ -108,7 +112,7 @@ export function CartPage() {
             {/* Summary */}
             <div className="card-dark p-5 mt-6">
               <h4 className="font-display text-lg text-white mb-1">Next Steps</h4>
-              <p className="text-sm text-brand-muted mb-4">Contact agents for the properties you're interested in to schedule viewings.</p>
+              <p className="text-sm text-brand-muted mb-4">Chat with each listing's owner right here on StayHere to schedule a viewing - no need to go anywhere else.</p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/contact" className="btn-gold text-sm">
                   <IcoArrowRight size={16} /> Contact Support

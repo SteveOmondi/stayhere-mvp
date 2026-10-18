@@ -4,6 +4,7 @@ import { usePortal } from "../context/PortalContext";
 import {
   IcoPlus, IcoX, IcoCheck, IcoLoader, IcoSearch, IcoRefresh, IcoChevronRight,
 } from "../components/icons";
+import { PhoneInput } from "../components/PhoneInput";
 
 type UserRow = {
   id: string; email: string; fullName: string; phone: string;
@@ -312,8 +313,7 @@ export function UserManagementPage() {
                 </div>
                 <div className="portal-field">
                   <label className="portal-label">Phone</label>
-                  <input className="portal-input" placeholder="+254 700 000000"
-                    value={signupForm.phone} onChange={e=>setSignupForm(f=>({...f,phone:e.target.value}))}/>
+                  <PhoneInput value={signupForm.phone} onChange={(v)=>setSignupForm(f=>({...f,phone:v}))}/>
                 </div>
               </div>
               <div className="portal-field">
@@ -375,8 +375,7 @@ export function UserManagementPage() {
                 </div>
                 <div className="portal-field">
                   <label className="portal-label">Phone <span className="text-red-500">*</span></label>
-                  <input required className="portal-input" placeholder="+254 700 000000"
-                    value={onboardForm.phone} onChange={e=>setOnboardForm(f=>({...f,phone:e.target.value}))}/>
+                  <PhoneInput required value={onboardForm.phone} onChange={(v)=>setOnboardForm(f=>({...f,phone:v}))}/>
                 </div>
               </div>
               <div className="flex gap-2 pt-2">

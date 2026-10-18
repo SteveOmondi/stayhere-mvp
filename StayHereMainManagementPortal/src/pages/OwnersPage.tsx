@@ -4,6 +4,7 @@ import { ApiError, ownersApi } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { usePortal } from "../context/PortalContext";
 import { IcoOwners, IcoPlus, IcoX, IcoCheck, IcoLoader, IcoChevronRight, IcoMail, IcoPhone, IcoWallet } from "../components/icons";
+import { PhoneInput } from "../components/PhoneInput";
 
 type OwnerRow = { id: string; fullName: string; phone: string; email: string; walletBalance?: number };
 
@@ -253,9 +254,7 @@ export function OwnersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="portal-field">
                   <label className="portal-label">Phone <span className="text-red-500">*</span></label>
-                  <input required className="portal-input" placeholder="+254 700 000000"
-                    value={form.phone}
-                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                  <PhoneInput required value={form.phone} onChange={(v) => setForm(f => ({ ...f, phone: v }))} />
                 </div>
                 <div className="portal-field">
                   <label className="portal-label">Email <span className="text-red-500">*</span></label>

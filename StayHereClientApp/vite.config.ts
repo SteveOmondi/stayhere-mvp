@@ -40,7 +40,13 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget(env.VITE_LOCAL_AUTH, "auth"),
           changeOrigin: true,
           secure: !isLocal(env.VITE_LOCAL_AUTH),
-          rewrite: (p) => p.replace(/^\/api\/auth/, ""),
+          // AuthService's own HttpTrigger routes are internally prefixed with "auth/" (e.g.
+          // Route = "auth/login"), unlike every other service, whose local routes are bare
+          // (PropertyService's is just "listings", not "property/listings"). APIM re-adds that
+          // "auth" segment itself via proxyTarget's apimPath, so stripping "/api/auth" is correct
+          // there — but locally there's no APIM to re-add it, so only "/api" should be stripped,
+          // or the request 404s against the real local route.
+          rewrite: (p) => isLocal(env.VITE_LOCAL_AUTH) ? p.replace(/^\/api/, "") : p.replace(/^\/api\/auth/, ""),
         },
         "/api/property": {
           target: proxyTarget(env.VITE_LOCAL_PROPERTY, "property"),
@@ -76,7 +82,12 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget(env.VITE_LOCAL_PAYMENTS, "payments"),
           changeOrigin: true,
           secure: !isLocal(env.VITE_LOCAL_PAYMENTS),
-          rewrite: (p) => p.replace(/^\/api\/payments/, ""),
+          // PaymentsService's own HttpTrigger routes are internally prefixed with "payments/" (e.g.
+          // Route = "payments/mpesa/stk/initiate"), same situation as AuthService above - only
+          // strip "/api" locally so that segment survives into the forwarded path, or every
+          // payments call 404s (or worse, silently reaches the wrong APIM operation) against the
+          // real local route.
+          rewrite: (p) => isLocal(env.VITE_LOCAL_PAYMENTS) ? p.replace(/^\/api/, "") : p.replace(/^\/api\/payments/, ""),
         },
       },
     },

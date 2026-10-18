@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ownerApi, authApi, ApiError } from "../lib/api";
 import { useOwner } from "../context/OwnerContext";
+import { PhoneInput } from "../components/PhoneInput";
 import { IcoTeam, IcoPlus, IcoPhone, IcoMail, IcoX, IcoCheck, IcoLoader, IcoSearch, IcoRefresh } from "../components/icons";
 
 type Member = { id: string; fullName: string; phone: string; email: string; kind: "Agent" | "Caretaker" };
@@ -190,8 +191,7 @@ export function TeamPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="field">
                   <label className="field-label">Phone</label>
-                  <input className="input" placeholder="+254 700 000000"
-                    value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/>
+                  <PhoneInput value={form.phone} onChange={(v) => setForm(f => ({ ...f, phone: v }))} />
                 </div>
                 <div className="field">
                   <label className="field-label">Email *</label>

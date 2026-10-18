@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using StayHere.Application.AiAgent.Models;
+using StayHere.Domain.Entities;
 
 namespace StayHere.Application.AiAgent.Services;
 
@@ -14,16 +15,32 @@ public static class ListingQueryIntentExtractor
         "eastleigh", "ngong", "thika", "mombasa", "kisumu", "nakuru", "eldoret", "nairobi"
     ];
 
+    /// <summary>Spelled-out counts so "two bedroom" matches the same as "2 bedroom"/"2br".</summary>
+    private static readonly Dictionary<string, int> WordNumbers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["zero"] = 0, ["single"] = 1, ["one"] = 1, ["two"] = 2, ["three"] = 3, ["four"] = 4, ["five"] = 5,
+        ["six"] = 6, ["seven"] = 7, ["eight"] = 8, ["nine"] = 9, ["ten"] = 10, ["eleven"] = 11, ["twelve"] = 12,
+    };
+
+    private static readonly Regex WordNumberBeforeBedroomWord = new(
+        @"\b(zero|single|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b(?=[\s-]*(?:or|to)?[\s-]*(?:\d+[\s-]*)?(?:bedroom|bedrooms|bed|beds|br)\b)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     public static AgentExtractedIntent Extract(string query)
     {
         var q = query.Trim();
         var lower = q.ToLowerInvariant();
 
+        // Only substitutes a number-word when it's immediately followed by a bedroom-ish word/unit,
+        // so "two bedroom near westlands" normalizes to "2 bedroom..." without touching unrelated
+        // words elsewhere in the query (e.g. "within two km").
+        var bedroomsLower = WordNumberBeforeBedroomWord.Replace(lower, m => WordNumbers[m.Value].ToString());
+
         int? minBedrooms = null;
         int? maxBedrooms = null;
 
         // "2 or 3 bedroom", "2-3 br", "2 to 3 bedrooms" → allow both counts
-        var bedRange = Regex.Match(lower, @"(\d+)\s*(?:or|-|to)\s*(\d+)\s*(?:bedroom|bedrooms|bed|beds|br)\b");
+        var bedRange = Regex.Match(bedroomsLower, @"(\d+)[\s-]*(?:or|-|to)[\s-]*(\d+)[\s-]*(?:bedroom|bedrooms|bed|beds|br)\b");
         if (bedRange.Success
             && int.TryParse(bedRange.Groups[1].Value, out var brLo)
             && int.TryParse(bedRange.Groups[2].Value, out var brHi))
@@ -33,7 +50,7 @@ public static class ListingQueryIntentExtractor
         }
         else
         {
-            var bedMatch = Regex.Match(lower, @"(\d+)\s*(?:bedroom|bedrooms|bed|beds|br)\b");
+            var bedMatch = Regex.Match(bedroomsLower, @"(\d+)[\s-]*(?:bedroom|bedrooms|bed|beds|br)\b");
             if (bedMatch.Success && int.TryParse(bedMatch.Groups[1].Value, out var beds))
                 minBedrooms = beds;
         }
@@ -125,6 +142,35 @@ public static class ListingQueryIntentExtractor
         ("furnished", "furnished"),
         ("pets", "pet friendly")
     ];
+
+    /// <summary>
+    /// True when <paramref name="listing"/> satisfies every comma-separated amenity keyword (matched
+    /// against its amenity list, title, and description - a listing rarely enumerates every synonym
+    /// in its structured Amenities field, e.g. "pool" vs "swimming pool" in the description).
+    /// </summary>
+    public static bool MatchesAllAmenities(Listing listing, string amenityKeywordsCommaSeparated)
+    {
+        var wanted = amenityKeywordsCommaSeparated
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.ToLowerInvariant())
+            .Where(s => s.Length > 0)
+            .ToList();
+        if (wanted.Count == 0) return true;
+
+        var amenities = listing.Amenities ?? [];
+        var blob = $"{listing.Title} {listing.Description} {string.Join(' ', amenities)}".ToLowerInvariant();
+
+        bool AmenityFieldContains(string sub) => amenities.Any(a => a.Contains(sub, StringComparison.OrdinalIgnoreCase));
+
+        return wanted.All(canonical => canonical switch
+        {
+            "elevator" => blob.Contains("elevator") || blob.Contains("lift"),
+            "wifi" => blob.Contains("wifi") || blob.Contains("wi-fi"),
+            "parking" => blob.Contains("parking") || blob.Contains("garage") || AmenityFieldContains("parking"),
+            "pool" => blob.Contains("pool") || blob.Contains("swimming"),
+            _ => blob.Contains(canonical) || AmenityFieldContains(canonical)
+        });
+    }
 
     private static bool TryParseMoney(string raw, bool thousandsSuffix, out decimal value)
     {

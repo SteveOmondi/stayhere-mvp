@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { PhoneInput } from "../components/PhoneInput";
 import { IcoCheck, IcoEmail, IcoLoader, IcoLocation, IcoPhone } from "../components/icons";
 import { GradientBlobs, SectionHeading } from "../components/ui";
 
@@ -117,7 +118,7 @@ export function ContactPage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-brand-muted">Phone</label>
-                      <input type="tel" value={form.phone} onChange={set("phone")} placeholder="+254…" className="input-dark" />
+                      <PhoneInput value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
                     </div>
                     <div>
                       <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-brand-muted">Subject *</label>

@@ -8,6 +8,7 @@ import {
 } from "../components/icons";
 import { LocationPicker } from "../components/LocationPicker";
 import { ListingFormModal } from "../components/ListingFormModal";
+import { compressImageFile } from "../lib/imageCompression";
 
 /* ─────────────────────────────────────── types ── */
 type Prop = {
@@ -148,7 +149,7 @@ function statusConfig(s: string): { dot: string; label: string } {
    Page component
 ══════════════════════════════════════════════════════ */
 export function PropertiesPage() {
-  const { owner, toast, reloadKey } = useOwner();
+  const { owner, userId, toast, reloadKey } = useOwner();
 
   /* ── property list ── */
   const [props, setProps]     = useState<PropWithStats[]>([]);
@@ -176,10 +177,10 @@ export function PropertiesPage() {
 
   /* ══ data loading ══ */
   const load = async () => {
-    if (!owner?.id) return;
+    if (!userId) return;
     setLoading(true);
     try {
-      const data = await propertiesApi.byOwner(owner.id, 1, 50);
+      const data = await propertiesApi.byOwner(userId, 1, 50);
       const pg   = asPaginated<unknown>(data);
       const raw  = (pg?.items ?? (Array.isArray(data) ? data : [])) as unknown[];
       const mapped = raw.map(mapProp).filter(Boolean) as Prop[];
@@ -200,14 +201,15 @@ export function PropertiesPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { void load(); }, [reloadKey, owner?.id]);
+  useEffect(() => { void load(); }, [reloadKey, userId]);
 
   /* ══ image helpers ══ */
   async function uploadImage(file: File): Promise<string> {
-    const ct = file.type || "image/jpeg";
+    const compressed = await compressImageFile(file);
+    const ct = compressed.type || "image/jpeg";
     const { uploadUrl, publicUrl, contentType: sCt } =
-      await uploadApi.getPresignedUrl("properties/images", file.name, ct);
-    await uploadToR2(uploadUrl, file, sCt);
+      await uploadApi.getPresignedUrl("properties/images", compressed.name, ct);
+    await uploadToR2(uploadUrl, compressed, sCt);
     return publicUrl;
   }
   async function handlePrimaryImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -219,7 +221,8 @@ export function PropertiesPage() {
   async function handleExtraImageChange(idx: number, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
     setExtraImgs(imgs => imgs.map((im, i) => i === idx ? { file, uploading: true } : im));
-    try   { const url = await uploadImage(file);
+    try   { setExtraImgs(imgs => imgs.map((im, i) => i === idx ? { file, url: "", uploading: false } : im));
+            const url = await uploadImage(file);
             setExtraImgs(imgs => imgs.map((im, i) => i === idx ? { file, url, uploading: false } : im)); }
     catch { setExtraImgs(imgs => imgs.map((im, i) => i === idx ? { ...im, uploading: false, error: "Upload failed" } : im));
             toast("Image upload failed", "error"); }

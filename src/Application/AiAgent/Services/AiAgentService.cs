@@ -1,7 +1,10 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StayHere.Application.AiAgent.Models;
+using StayHere.Application.AiAgent.Tools;
 using StayHere.Application.Common.Interfaces;
 using StayHere.Domain.Entities;
 using StayHere.Domain.Repositories;
@@ -11,12 +14,29 @@ namespace StayHere.Application.AiAgent.Services;
 public class AiAgentService : IAiAgentService
 {
     private const int KnowledgeCatalogPageSize = 500;
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    /// <summary>Tools whose JSON result becomes a rich frontend attachment, and the attachment
+    /// "type" each maps to. Kept as the last call of each type wins (a refined second search
+    /// replaces the first in what's shown).</summary>
+    private static readonly IReadOnlyDictionary<string, string> AttachableTools = new Dictionary<string, string>
+    {
+        [AgentToolCatalog.SearchListings] = "listings",
+        [AgentToolCatalog.GetRecommendations] = "listings",
+        [AgentToolCatalog.CompareListings] = "listings",
+        [AgentToolCatalog.GetListingDetails] = "listings",
+        [AgentToolCatalog.GetSavedListings] = "listings",
+        [AgentToolCatalog.GetNearbyPlaces] = "nearbyPlaces",
+        [AgentToolCatalog.SuggestNextStep] = "nextStep",
+    };
 
     private readonly IAgentKnowledgeBaseRepository _knowledgeBase;
     private readonly IChatService _chatService;
     private readonly IEmbeddingService _embeddingService;
     private readonly IAgentConversationRepository _conversations;
+    private readonly IAgentToolRegistry _toolRegistry;
     private readonly IListingRepository _listings;
+    private readonly ICustomerRepository _customers;
     private readonly ICacheService _cache;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AiAgentService> _logger;
@@ -26,7 +46,9 @@ public class AiAgentService : IAiAgentService
         IChatService chatService,
         IEmbeddingService embeddingService,
         IAgentConversationRepository conversations,
+        IAgentToolRegistry toolRegistry,
         IListingRepository listings,
+        ICustomerRepository customers,
         ICacheService cache,
         IConfiguration configuration,
         ILogger<AiAgentService> logger)
@@ -35,36 +57,431 @@ public class AiAgentService : IAiAgentService
         _chatService = chatService;
         _embeddingService = embeddingService;
         _conversations = conversations;
+        _toolRegistry = toolRegistry;
         _listings = listings;
+        _customers = customers;
         _cache = cache;
         _configuration = configuration;
         _logger = logger;
     }
 
-    public async Task<AgentChatResponse> ChatAsync(AgentChatRequest request, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Runs Sage's agent loop: the model may call any tool in <see cref="AgentToolCatalog"/> as many
+    /// times as it needs (capped by Groq:ToolCallingMaxIterations) before producing a final answer.
+    /// Every message in the turn - including intermediate tool calls/results - is persisted so the
+    /// conversation survives process restarts and scale-out (see EfAgentConversationRepository).
+    /// </summary>
+    public async Task<AgentChatResponse> ChatAsync(AgentChatRequest request, Guid? callerUserId = null, CancellationToken cancellationToken = default)
     {
         var conversationId = request.ConversationId ?? Guid.NewGuid().ToString();
+
+        // Resolved fresh every turn (a single indexed lookup) rather than cached on the conversation,
+        // to avoid any staleness if the caller's Customer record changes mid-conversation.
+        var toolContext = await ResolveToolContextAsync(callerUserId, cancellationToken);
 
         var searchResults = await _knowledgeBase.SearchAsync(request.Query, topK: 5, cancellationToken);
         var context = PrepareContext(searchResults);
         var history = await _conversations.GetHistoryAsync(conversationId, cancellationToken);
-        var prompt = BuildPrompt(request.Query, context, history);
 
-        var response = await _chatService.GenerateResponseAsync(
-            prompt,
-            request.MaxTokens,
-            request.Temperature,
-            cancellationToken);
+        var messages = new List<ChatMessage> { new() { Role = "system", Content = BuildAgentSystemPrompt(context, toolContext.IsAuthenticated) } };
+        messages.AddRange(history.TakeLast(16).Select(ToChatMessage));
+        messages.Add(new ChatMessage { Role = "user", Content = request.Query });
 
-        var confidence = CalculateConfidence(searchResults, response);
-        await PersistConversationExchangeAsync(conversationId, request.Query, response, cancellationToken);
+        var newMessages = new List<AiConversationMessage>
+        {
+            NewMessage(conversationId, "user", request.Query)
+        };
+
+        // Authenticated journey questions ("what's my status") can legitimately chain several tool
+        // calls (resolve applications -> payments -> next step) - give signed-in callers more room
+        // than anonymous browsing, which rarely needs more than one or two.
+        var configuredMax = int.TryParse(_configuration["Groq:ToolCallingMaxIterations"], out var mi) ? Math.Clamp(mi, 1, 8) : 4;
+        var maxIterations = toolContext.IsAuthenticated ? Math.Max(configuredMax, 6) : configuredMax;
+
+        // Security/proximity questions need get_nearby_places grounding, but "auto" tool choice has
+        // been observed in production to skip it and answer from listing amenities alone - even on
+        // a follow-up like "how far is each from the police station" where the listings were
+        // already resolved in an EARLIER turn, not this one (which is why this checks the whole
+        // loaded history, not just tool calls made during this turn). A couple of extra iterations
+        // are reserved so a multi-listing question ("how far is each of the 3...") can call
+        // get_nearby_places once per listing rather than being cut off after a single forced call.
+        var wantsNearbyPlaces = MatchesSecurityOrProximityIntent(request.Query);
+        var hasListingContext = messages.Any(m => m.Role == "tool" && m.Name is AgentToolCatalog.SearchListings
+            or AgentToolCatalog.GetListingDetails or AgentToolCatalog.CompareListings or AgentToolCatalog.GetRecommendations
+            && ToolResultHasListings(m.Content));
+        if (wantsNearbyPlaces) maxIterations += 2;
+
+        // "Most secure"/"cheapest"/"closest" etc. questions over several listings have the same
+        // failure mode as the nearby-places one above, confirmed in production: search_listings
+        // populates the "listings" card attachment first, in plain DB order, and the model's actual
+        // conclusion (reached AFTER gathering more data per-listing) never re-orders it - so the
+        // text names one listing as the winner while its card renders second. compare_listings
+        // fully REPLACES the attachment (unlike the accumulating get_listing_details path), in
+        // exactly the id order the model passes - so nudging one final call to it, with the
+        // model's own best-to-worst order, is what actually synchronizes text and cards.
+        // "Secure"/"safe" questions are a ranking question in disguise even without an explicit
+        // superlative ("give me a secure modern one bedroom" still means "pick me the more secure
+        // of the candidates you find") - confirmed in production: RankingIntentRegex alone missed
+        // this phrasing, so the model silently decided one listing was the better/safer pick in its
+        // own text without ever calling compare_listings, leaving the card order unchanged from
+        // search_listings' plain DB order while the text praised a DIFFERENT listing than card #1.
+        var wantsRankedOrder = MatchesRankingIntent(request.Query) || MatchesSecurityOrProximityIntent(request.Query);
+        var seenListingIds = new HashSet<string>(ExtractListingIdsFromHistory(messages));
+        if (wantsRankedOrder) maxIterations += 1;
+
+        string? finalText = null;
+        var attachments = new Dictionary<string, AgentAttachment>();
+        var nearbyPlacesCalled = false;
+        var nearbyPlacesNudgeSent = false;
+        var rankedOrderCalled = false;
+        var rankedOrderNudgeSent = false;
+
+        // Native AgentToolCatalog tools + whatever any configured external MCP servers currently
+        // expose (namespaced mcp__<server>__<tool>) - with no external servers configured this is
+        // exactly AgentToolCatalog.All, unchanged.
+        var availableTools = await _toolRegistry.GetAvailableToolsAsync(cancellationToken);
+
+        for (var iteration = 0; iteration < maxIterations; iteration++)
+        {
+            // A hard-forced tool_choice was tried here previously and turned out to be unsafe:
+            // Groq's tool_choice is an all-or-nothing constraint, so the moment the model's own
+            // judgment disagreed (e.g. the search came back with zero listings and it correctly
+            // wanted to just say so, or re-search a broader area instead) the API rejected BOTH the
+            // plain-text answer and any other tool call with a 400, burning the whole retry budget
+            // and failing the request outright. A one-time strong reminder INJECTED into the
+            // conversation - tool_choice always stays "auto" - gets the same grounding benefit
+            // without ever being able to reject a legitimate answer.
+            if (wantsNearbyPlaces && !nearbyPlacesCalled && hasListingContext && !nearbyPlacesNudgeSent)
+            {
+                messages.Add(new ChatMessage
+                {
+                    Role = "system",
+                    Content = "Reminder: this question needs get_nearby_places grounding for the listing(s) already " +
+                              "found before you answer - call it now. Skip this only if none of the listings found " +
+                              "so far are actually relevant to answer with."
+                });
+                nearbyPlacesNudgeSent = true;
+            }
+
+            if (wantsRankedOrder && seenListingIds.Count > 1 && !rankedOrderCalled && !rankedOrderNudgeSent)
+            {
+                messages.Add(new ChatMessage
+                {
+                    Role = "system",
+                    Content = $"Reminder: you're ranking {seenListingIds.Count} listings against each other for this " +
+                              "question. Before answering, call compare_listings with their ids/codes in YOUR OWN " +
+                              "best-to-worst order - whichever one you list FIRST is what gets shown FIRST to the " +
+                              "user, so it must be the one you actually recommend."
+                });
+                rankedOrderNudgeSent = true;
+            }
+
+            var result = await _chatService.GenerateWithToolsAsync(
+                messages, availableTools, request.MaxTokens, request.Temperature, cancellationToken);
+
+            if (!result.RequiresToolExecution)
+            {
+                finalText = result.Content;
+                break;
+            }
+
+            var toolCallsJson = JsonSerializer.Serialize(result.ToolCalls, JsonOptions);
+            messages.Add(new ChatMessage { Role = "assistant", Content = null, ToolCalls = result.ToolCalls });
+            newMessages.Add(NewMessage(conversationId, "assistant", "", toolCallsJson: toolCallsJson));
+
+            foreach (var call in result.ToolCalls!)
+            {
+                _logger.LogInformation("Sage tool call: {Tool} (conversation {ConversationId})", call.Name, conversationId);
+                var toolResult = await _toolRegistry.ExecuteAsync(call.Name, call.ArgumentsJson, toolContext, cancellationToken);
+                messages.Add(new ChatMessage { Role = "tool", Content = toolResult, ToolCallId = call.Id, Name = call.Name });
+                newMessages.Add(NewMessage(conversationId, "tool", toolResult, toolCallId: call.Id, toolName: call.Name));
+
+                if (call.Name == AgentToolCatalog.GetNearbyPlaces) nearbyPlacesCalled = true;
+                if (call.Name is AgentToolCatalog.SearchListings or AgentToolCatalog.GetListingDetails
+                    or AgentToolCatalog.CompareListings or AgentToolCatalog.GetRecommendations
+                    && ToolResultHasListings(toolResult))
+                {
+                    hasListingContext = true;
+                    foreach (var id in ExtractListingIds(toolResult)) seenListingIds.Add(id);
+                }
+                if (call.Name == AgentToolCatalog.CompareListings) rankedOrderCalled = true;
+
+                if (AttachableTools.TryGetValue(call.Name, out var attachmentType))
+                    TryAddAttachment(attachments, attachmentType, toolResult);
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(finalText))
+        {
+            // Iteration cap hit: force a final answer from whatever tool results were already gathered,
+            // with no further tools offered, rather than looping indefinitely or leaving the user hanging.
+            var forced = await _chatService.GenerateWithToolsAsync(
+                messages, Array.Empty<ChatToolDefinition>(), request.MaxTokens, request.Temperature, cancellationToken);
+            finalText = string.IsNullOrWhiteSpace(forced.Content)
+                ? "I looked into that but couldn't put together a full answer - could you narrow your question a bit?"
+                : forced.Content;
+        }
+
+        // Deterministic backstop, not just a system-prompt instruction: the model still
+        // occasionally defaults to markdown (bold, bullet markers, [link](url) syntax) out of
+        // habit despite being told not to - confirmed live even right after adding that rule.
+        // Style instructions have proven unreliable to enforce via the prompt alone elsewhere in
+        // this codebase (the forced tool_choice saga), so strip it server-side rather than retry
+        // the same probabilistic fix. Applied before persisting too, so conversation history stays
+        // clean on resume.
+        finalText = SanitizeForChat(finalText);
+
+        newMessages.Add(NewMessage(conversationId, "assistant", finalText));
+        await PersistTurnAsync(conversationId, newMessages, callerUserId, cancellationToken);
+
+        var confidence = CalculateConfidence(searchResults, finalText);
 
         return new AgentChatResponse(
-            response,
+            finalText,
             conversationId,
             searchResults.Select(r => r.Source).Distinct().ToList(),
             confidence,
-            DateTime.UtcNow);
+            DateTime.UtcNow,
+            attachments.Count > 0 ? attachments.Values.ToList() : null);
+    }
+
+    public async Task<IReadOnlyList<AgentConversationSummaryDto>> ListConversationsAsync(Guid callerUserId, CancellationToken cancellationToken = default)
+    {
+        var conversations = await _conversations.GetByUserIdAsync(callerUserId, cancellationToken);
+        return conversations
+            .Select(c => new AgentConversationSummaryDto(
+                c.Id,
+                c.Messages.FirstOrDefault(m => m.Role == "user")?.Content,
+                c.CreatedAt,
+                c.UpdatedAt))
+            .ToList();
+    }
+
+    public async Task<AgentConversationDetailDto?> GetConversationAsync(Guid callerUserId, string conversationId, CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversations.GetByIdAsync(conversationId, cancellationToken);
+        // Ownership check IS the auth boundary here - a non-owned or nonexistent conversation
+        // returns the same "not found" either way, so a caller can't distinguish "not yours" from
+        // "doesn't exist" and enumerate other people's conversation ids.
+        if (conversation == null || conversation.UserId != callerUserId)
+            return null;
+
+        var messages = conversation.Messages
+            .Where(m => m.Role is "user" or "assistant")
+            .Where(m => !string.IsNullOrWhiteSpace(m.Content)) // skip placeholder assistant messages that only carried tool_calls
+            .OrderBy(m => m.Timestamp)
+            .Select(m => new AgentConversationMessageDto(m.Role, m.Content, m.Timestamp))
+            .ToList();
+
+        return new AgentConversationDetailDto(conversation.Id, conversation.CreatedAt, conversation.UpdatedAt, messages);
+    }
+
+    private static readonly Regex SecurityOrProximityIntentRegex = new(
+        @"\b(secur|safe|safety|crime|police|transport|transit|matatu|bus\s*stop|station|commute|distance|far|close(?:st)?\s+to|near(?:by|est)?|walk(?:ing)?\s*(?:distance|time)?)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static bool MatchesSecurityOrProximityIntent(string query) =>
+        !string.IsNullOrWhiteSpace(query) && SecurityOrProximityIntentRegex.IsMatch(query);
+
+    private static readonly Regex RankingIntentRegex = new(
+        @"\b(most|best|top|safest|cheapest|closest|nearest|highest|lowest|biggest|largest|smallest)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static bool MatchesRankingIntent(string query) =>
+        !string.IsNullOrWhiteSpace(query) && RankingIntentRegex.IsMatch(query);
+
+    /// <summary>Pulls every listing "id" out of a search_listings/get_listing_details/
+    /// compare_listings/get_recommendations JSON result, whichever of the three shapes it's in
+    /// (flat single object, {listings:[...]}, or {comparisons:[...]}).</summary>
+    private static List<string> ExtractListingIds(string? toolResultJson)
+    {
+        var ids = new List<string>();
+        if (string.IsNullOrWhiteSpace(toolResultJson)) return ids;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(toolResultJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String)
+            {
+                ids.Add(idEl.GetString()!);
+                return ids;
+            }
+
+            foreach (var arrayKey in new[] { "listings", "comparisons" })
+            {
+                if (root.TryGetProperty(arrayKey, out var arr) && arr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in arr.EnumerateArray())
+                        if (item.TryGetProperty("id", out var iid) && iid.ValueKind == JsonValueKind.String)
+                            ids.Add(iid.GetString()!);
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // malformed tool output - nothing to extract
+        }
+
+        return ids;
+    }
+
+    /// <summary>Same extraction as <see cref="ExtractListingIds"/>, applied across every listing
+    /// tool result already in the loaded conversation history - mirrors how <c>hasListingContext</c>
+    /// above checks history, not just this turn, so a ranking follow-up on listings resolved earlier
+    /// still knows how many are actually in play.</summary>
+    private static IEnumerable<string> ExtractListingIdsFromHistory(IEnumerable<ChatMessage> messages) =>
+        messages.Where(m => m.Role == "tool" && m.Name is AgentToolCatalog.SearchListings
+            or AgentToolCatalog.GetListingDetails or AgentToolCatalog.CompareListings or AgentToolCatalog.GetRecommendations)
+            .SelectMany(m => ExtractListingIds(m.Content));
+
+    private static readonly Regex MarkdownLinkRegex = new(@"\[([^\]]+)\]\([^)]*\)", RegexOptions.Compiled);
+    private static readonly Regex MarkdownBoldRegex = new(@"\*\*(.+?)\*\*|__(.+?)__", RegexOptions.Compiled);
+    private static readonly Regex MarkdownListMarkerRegex = new(@"(?m)^[ \t]*(?:[-*•]|\d+\.)[ \t]+", RegexOptions.Compiled);
+
+    /// <summary>Deterministic markdown strip, not just a system-prompt instruction - the model
+    /// still occasionally bolds a phrase or links a page name out of habit despite being told not
+    /// to (confirmed live: "**My Bookings**" slipped through moments after that rule was added).
+    /// Drops link URLs entirely (the card/page it refers to speaks for itself), unwraps bold/italic
+    /// markers, and strips leading list-item markers.</summary>
+    private static string SanitizeForChat(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+
+        var result = MarkdownLinkRegex.Replace(text, "$1");
+        result = MarkdownBoldRegex.Replace(result, m => m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value);
+        result = MarkdownListMarkerRegex.Replace(result, "");
+        return result;
+    }
+
+    private async Task<AgentToolContext> ResolveToolContextAsync(Guid? callerUserId, CancellationToken cancellationToken)
+    {
+        if (!callerUserId.HasValue)
+            return AgentToolContext.Anonymous;
+
+        var customer = await _customers.GetByUserIdAsync(callerUserId.Value, cancellationToken);
+        return new AgentToolContext(callerUserId, customer?.Id);
+    }
+
+    /// <summary>
+    /// Whether a search_listings/get_listing_details/compare_listings/get_recommendations result
+    /// actually found a usable listing - a zero-result search ("no listings on Thika Road") must
+    /// NOT count as "listing context" for the get_nearby_places nudge above, since there is then
+    /// nothing to check proximity for.
+    /// </summary>
+    private static bool ToolResultHasListings(string? toolResultJson)
+    {
+        if (string.IsNullOrWhiteSpace(toolResultJson)) return false;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(toolResultJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("error", out _)) return false;
+
+            if (root.TryGetProperty("count", out var count))
+                return count.ValueKind == JsonValueKind.Number && count.GetInt32() > 0;
+
+            if (root.TryGetProperty("comparisons", out var comparisons) && comparisons.ValueKind == JsonValueKind.Array)
+                return comparisons.EnumerateArray().Any(c => !c.TryGetProperty("error", out _));
+
+            // get_listing_details returns the listing object directly (no count/comparisons
+            // wrapper) - reaching here with no "error" property means it succeeded.
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Parses a tool's JSON result into a rich attachment, keyed by type so a later call of
+    /// the same kind (e.g. a refined search) replaces rather than duplicates an earlier one. Never
+    /// throws - a malformed/error tool result simply produces no attachment, the plain-text reply
+    /// still carries the grounded (or honestly-unavailable) answer.</summary>
+    private static void TryAddAttachment(Dictionary<string, AgentAttachment> attachments, string type, string toolResultJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(toolResultJson);
+            var root = doc.RootElement;
+
+            if (type == "nextStep")
+            {
+                if (root.TryGetProperty("nextStep", out var nextStep) && nextStep.ValueKind != JsonValueKind.Null)
+                    attachments[type] = new AgentAttachment(type, nextStep.Clone());
+                return;
+            }
+
+            if (root.TryGetProperty("error", out _)) return; // nothing usable to show
+
+            // get_listing_details returns one flat listing object - no "listings"/"comparisons"
+            // wrapper the way search_listings/get_recommendations/compare_listings do - so without
+            // this it never rendered as a card at all (confirmed: asking about one specific listing
+            // only ever showed plain text). Normalize it into the same { listings: [...] } shape the
+            // card renderer already reads, and ACCUMULATE across multiple single-listing lookups in
+            // one turn (rather than each call overwriting the last) so asking about several
+            // listings one at a time - instead of via compare_listings - still shows a card for
+            // every one, not just the last.
+            if (type == "listings" && !root.TryGetProperty("listings", out _) && !root.TryGetProperty("comparisons", out _))
+            {
+                var mergedListings = new JsonArray();
+                if (attachments.TryGetValue(type, out var existing)
+                    && existing.Data.TryGetProperty("listings", out var existingArray)
+                    && existingArray.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in existingArray.EnumerateArray())
+                        mergedListings.Add(JsonNode.Parse(item.GetRawText()));
+                }
+
+                var newId = root.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+                var alreadyPresent = newId != null && mergedListings.Any(n => n?["id"]?.GetValue<string>() == newId);
+                if (!alreadyPresent)
+                    mergedListings.Add(JsonNode.Parse(root.GetRawText()));
+
+                var merged = new JsonObject { ["count"] = mergedListings.Count, ["listings"] = mergedListings };
+                attachments[type] = new AgentAttachment(type, JsonSerializer.SerializeToElement(merged));
+                return;
+            }
+
+            attachments[type] = new AgentAttachment(type, root.Clone());
+        }
+        catch (JsonException)
+        {
+            // malformed tool output - skip the attachment, the model still got the raw text
+        }
+    }
+
+    private static AiConversationMessage NewMessage(
+        string conversationId, string role, string content,
+        string? toolCallsJson = null, string? toolCallId = null, string? toolName = null) => new()
+    {
+        ConversationId = conversationId,
+        Role = role,
+        Content = content,
+        ToolCallsJson = toolCallsJson,
+        ToolCallId = toolCallId,
+        ToolName = toolName,
+        Timestamp = DateTime.UtcNow
+    };
+
+    private static ChatMessage ToChatMessage(AiConversationMessage m)
+    {
+        if (m.Role == "assistant" && !string.IsNullOrEmpty(m.ToolCallsJson))
+        {
+            var calls = JsonSerializer.Deserialize<List<ChatToolCall>>(m.ToolCallsJson, JsonOptions);
+            return new ChatMessage { Role = "assistant", Content = null, ToolCalls = calls };
+        }
+
+        return new ChatMessage
+        {
+            Role = m.Role,
+            Content = m.Content,
+            ToolCallId = m.ToolCallId,
+            Name = m.ToolName
+        };
     }
 
     public async Task<AgentRecommendResponse> RecommendAsync(AgentRecommendRequest request, CancellationToken cancellationToken = default)
@@ -247,16 +664,48 @@ public class AiAgentService : IAiAgentService
 
         conversation.Messages.Add(new AiConversationMessage
         {
+            ConversationId = conversationId,
             Role = "user",
             Content = userMessage,
             Timestamp = DateTime.UtcNow
         });
         conversation.Messages.Add(new AiConversationMessage
         {
+            ConversationId = conversationId,
             Role = "assistant",
             Content = assistantMessage,
             Timestamp = DateTime.UtcNow
         });
+        conversation.UpdatedAt = DateTime.UtcNow;
+        await _conversations.UpdateAsync(conversation, cancellationToken);
+    }
+
+    /// <summary>Persists every message produced during one ChatAsync turn (user message, any
+    /// assistant tool-call requests, tool results, and the final assistant answer) in order.
+    /// <paramref name="callerUserId"/> is only ever stamped on a brand-new conversation - an
+    /// existing one keeps whichever caller originally started it.</summary>
+    private async Task PersistTurnAsync(
+        string conversationId,
+        IReadOnlyList<AiConversationMessage> newMessages,
+        Guid? callerUserId,
+        CancellationToken cancellationToken)
+    {
+        var conversation = await _conversations.GetByIdAsync(conversationId, cancellationToken);
+        if (conversation == null)
+        {
+            conversation = new AiConversation
+            {
+                Id = conversationId,
+                UserId = callerUserId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _conversations.CreateAsync(conversation, cancellationToken);
+        }
+
+        foreach (var message in newMessages)
+            conversation.Messages.Add(message);
+
         conversation.UpdatedAt = DateTime.UtcNow;
         await _conversations.UpdateAsync(conversation, cancellationToken);
     }
@@ -755,26 +1204,57 @@ public class AiAgentService : IAiAgentService
         return string.Join("\n---\n", contextParts);
     }
 
-    private static string BuildPrompt(string query, string context, IReadOnlyList<AiConversationMessage> history)
+    /// <summary>
+    /// System prompt for the tool-calling agent loop: base persona/loyalty rules, grounding rules that
+    /// force Sage to use tools rather than invent listing/market facts, and any static knowledge-base
+    /// context relevant to the query (company policies, general Nairobi market notes, etc).
+    /// </summary>
+    private static string BuildAgentSystemPrompt(string context, bool isAuthenticated)
     {
-        var promptParts = new List<string> { GetSystemPrompt() };
-
-        if (!string.IsNullOrEmpty(context))
-            promptParts.Add($"\n\nRelevant Information from Knowledge Base:\n{context}");
-
-        if (history.Count > 0)
+        var parts = new List<string>
         {
-            promptParts.Add("\n\nConversation History:");
-            foreach (var exchange in history.TakeLast(4))
-            {
-                var role = exchange.Role == "assistant" ? "You" : "User";
-                promptParts.Add($"{role}: {exchange.Content}");
-            }
+            GetSystemPrompt(),
+            """
+
+            TOOLS & GROUNDING (STRICT):
+            - You have tools to search live StayHere listings, fetch full listing details, compare listings, get semantic recommendations, and look up real nearby places (schools, hospitals, malls, transit, restaurants, police/local-government-office infrastructure).
+            - Never state a specific price, address, amenity, or availability for a listing without first calling a tool to confirm it. General market context (not tied to a specific listing) may be answered directly.
+            - get_nearby_places results carry BOTH a straight-line distanceMeters AND, for the nearest few, a real walkingDistanceMeters/walkingDurationMinutes from an actual walking route - prefer the walking figures when present (e.g. "about 650m / 8 min walk") since they reflect real roads/paths, not a straight line through buildings; fall back to the straight-line distance only when walking figures are null for that place.
+            - MATCH THE PLACE CATEGORY TO WHAT THE USER ACTUALLY ASKED, don't default to one category out of habit. Read the query for what kind of "closeness" matters and query get_nearby_places for that: schools for families/commute-to-school questions, hospitals for health/medical proximity, transit for commute questions, mall/restaurant for lifestyle/convenience questions. You can pass several categories in one call, comma-separated, when a question spans more than one kind of place.
+            - SECURITY/SAFETY QUESTIONS ("is this a secure area", "the most secure listing", "how safe is it") specifically require BOTH signals, not just one: (1) call get_nearby_places with category "police,local_government_office" (the real-world proxy for police posts, chief's camps, and administration security offices - StayHere has no crime-data source, so this is proximity to security infrastructure only, never a crime/safety rating - say so if you state it explicitly), AND (2) check the listing's own security-related features (guarded entry, CCTV, estate/perimeter security, etc.) via get_listing_details/compare_listings. Weigh both together in your answer rather than answering from just one signal.
+            - "CLOSEST/NEAREST OF THESE" QUESTIONS spanning several listings (e.g. "which of these is closest to X", "give me the unit closest to X police station") require calling get_nearby_places ONCE PER CANDIDATE LISTING, not just one of them - you cannot determine which is actually closest without checking every candidate's own distance. Only name a "closest" listing once you have a distance for each one being compared.
+            - RANKING/ORDERING IS STRICT, NOT JUST A WORD CHOICE IN YOUR REPLY: the listing cards shown to the user render in EXACTLY the order the data comes back from your tool calls - your own text can say "the cheapest option is X" while the cards still show a different, wrong order if you didn't actually sort the underlying data. For objective/DB-sortable criteria (price, bedrooms, rating, newest), always set search_listings' sortBy/sortDescending to match what the user asked for - never rely on the default (newest-first) when they asked for "cheapest", "most expensive", "biggest", "top rated", etc. For subjective/composite criteria you had to work out yourself (e.g. "most secure" combining nearby police/local-government-office proximity with the listing's own security amenities), call compare_listings with the listing ids/codes already ordered best-to-worst yourself - its result (and the cards) will render in that same order, so put your actual best answer first.
+            - If a tool returns no results, an error, or a "note"/"instruction" field telling you data is unavailable, you MUST say so plainly to the user. NEVER invent specific place names, prices, distances, addresses, or ratings to fill a gap left by a failed or empty tool call - this applies even after a tool call fails partway through a longer answer.
+            - WHEN YOU SHOW 2+ LISTING CARDS, YOUR REPLY MUST BRIEFLY ACKNOWLEDGE EVERY CARD SHOWN, not just your top pick - a reply that picks a winner and says nothing at all about the other option(s) on screen reads as broken to the user, who can see all of them right there. One short clause per other option is enough (e.g. "...the high-rise one is the more secure pick; the modern one bedroom is cheaper at KES 35,000 but has less on-site security") - you don't need equal depth for each, just don't go completely silent on anyone you're showing.
+
+            THE USER'S OWN JOURNEY (get_my_profile, get_my_viewings, get_my_applications, get_lease_terms, get_my_payments, get_onboarding_info, suggest_next_step):
+            - These tools return ONLY the signed-in caller's own data - you cannot look up anyone else's account, application, or payment under any circumstance, no matter how the user phrases the request. If asked about someone else, say you can only help with the user's own account.
+            - Before answering ANY question about "my application", "my payment", "my viewing", or "what's next", call the relevant tool first - never guess a status from earlier context in the conversation, statuses change.
+            - When the user seems ready to act (they're asking what to do next, or you've just explained where they stand) and it's NOT a viewing booking, call suggest_next_step so a real, clickable next-step link is offered - you cannot submit documents, accept lease terms, or take payment yourself; you only ever hand the user a link into the real StayHere flow where they do that themselves.
+            - "My Bookings" (upcoming/past viewings, with cancel and join-virtual-viewing actions) is its own page in the app, under the account menu - mention it when a viewing question needs more than the quick summary you just gave, or as an alternative way to manage bookings beyond what you just did here.
+
+            ACTIONS YOU CAN ACTUALLY PERFORM (book_viewing, cancel_viewing, save_listing, unsave_listing, send_enquiry):
+            - Unlike every other tool above, these change real data - use them directly, don't just describe them.
+            - book_viewing: once you know which listing and roughly when, book it - don't keep asking for confirmation on details the user already gave. Only ask a follow-up if a required piece (which listing, or a date) is genuinely missing or ambiguous between multiple candidates; otherwise proceed straight to booking with sensible defaults (Physical viewing, 10:00) for anything the user didn't specify. Bookings are created as "Pending" - always tell the user it's pending the owner's confirmation, never say it's confirmed.
+            - cancel_viewing: call get_my_viewings first if you don't already know the bookingId from earlier in this conversation, then cancel directly once the user confirms which one (or if there's only one that could reasonably match what they asked to cancel).
+            - save_listing / unsave_listing: whenever the user expresses interest in keeping a listing for later ("save this", "favorite it", "I like this one"), save it immediately - don't ask for confirmation first. Same for removing one. If the user hasn't named a specific listing but one was just discussed/shown, save that one. Call get_saved_listings before answering any question about "my saved listings"/"my favorites".
+            - send_enquiry: whenever the user wants to ask an owner something, express interest, or says anything like "enquire about this", "message the owner", "ask them if...", send it immediately through this tool - don't just offer to or describe the Enquiries page, actually send it. If they didn't dictate exact wording, write a short, polite message yourself expressing interest in the listing (or covering whatever they asked about) and send that. GET THE LISTING RIGHT before sending - this messages a real person, so confirm which exact listing a descriptive reference ("the modern one", "that one") points to from what's actually been discussed, never default to whichever listing happens to be first in a recent search's results; ask the user to confirm if it's genuinely ambiguous. After it returns, describe the enquiry using the EXACT listing title the tool gives back - never a different name than what was actually sent. This is the ONLY way to reach an owner - call get_my_enquiries before answering any question about "my enquiries" or whether an owner has replied, never guess from earlier context.
+            - Everything else in the rental journey - submitting documents, accepting lease terms, and making payments - is deliberately NOT something you can do; those involve money or binding agreements, so keep directing the user to suggest_next_step's link for those instead.
+            """
+        };
+
+        if (!isAuthenticated)
+        {
+            parts.Add(
+                "\n\nThe current user is not signed in. If they ask about their own applications, payments, viewings, " +
+                "or account, tell them they need to sign in to StayHere first - do not call the personal tools above, " +
+                "they will simply return nothing useful.");
         }
 
-        promptParts.Add($"\n\nCurrent User Question: {query}");
-        promptParts.Add("\nYour Response:");
-        return string.Join("\n", promptParts);
+        if (!string.IsNullOrEmpty(context) && context != "No specific information found in knowledge base.")
+            parts.Add($"\n\nRelevant background information:\n{context}");
+
+        return string.Join("\n", parts);
     }
 
     private static string GetSystemPrompt() =>
@@ -787,6 +1267,10 @@ CONVERSATION RULES:
 - Remember what you've discussed and build on it naturally
 - Stay on topic and reference previous questions when relevant
 - Don't repeat information you've already provided
+- When you've gathered data from multiple tools (e.g. a listing's own features plus nearby places), synthesize it into one tight answer - name the 1-2 most relevant supporting details, not every place/amenity a tool returned. Enough to back up the claim, not a data dump.
+- WRITE LIKE YOU'RE TALKING, NOT FORMATTING A DOCUMENT: plain prose, no markdown at all - no **bold**, no bullet/numbered lists, no literal [link](url) syntax. Whenever a listing is involved, its card already renders below your message with its photo, price, and a tap-through to full details and booking - your job is the conversational part, not re-describing or re-linking what the card already shows.
+- NEVER mention a listing's internal code (e.g. ""L1003"") or its database ID (a long id like ""d57c6a39-..."") in your reply - a renter has no use for either, and the card underneath already identifies the listing visually. Refer to listings by name/description instead (""the modern one-bedroom"", ""the high-rise unit""). The ONLY time a listing code may appear is inside a tool call's own arguments, never in the text you show the user.
+- Don't hand-construct troubleshooting steps or raw URLs for ""what if I don't see the card"" scenarios - if a tool call succeeded, trust that its card is rendering; you have no way to know if the user's screen is glitching, and guessing at manual workarounds reads as evasive. If the user says a card isn't showing, say you've pulled the listing and it should show as a card, and suggest refreshing the chat.
 
 PLATFORM LOYALTY (STRICT):
 - NEVER mention, recommend, compare to, or even acknowledge competitor platforms, portals, classifieds, agencies, or apps. This includes (non-exhaustive): BuyRentKenya, Jumia House, Property24, Hauzisha, PigiaMe, OLX, Jiji, Lamudi, Realtor.co.ke, Daraja, MyDawa estate listings, agents on social media, Facebook Marketplace, Instagram pages, WhatsApp brokers, etc.
@@ -794,6 +1278,11 @@ PLATFORM LOYALTY (STRICT):
 - Do NOT tell the user to ""check other sources / other listings sites / Google / a broker / an agent off-platform"" for current prices or availability.
 - If the user asks where to verify or get up-to-date listings, point them to StayHere only — e.g. ""browse current StayHere listings"", ""check the StayHere search for live availability"", ""tap a StayHere listing card for verified details"", or suggest they refine their StayHere search filters.
 - If you need to caveat that prices fluctuate, say so without naming any external source. Acceptable phrasing: ""prices shift week to week — current StayHere listings will reflect today's market.""
+
+NO DIRECT CONTACT INFO (STRICT):
+- NEVER give out a property owner's, agent's, or caretaker's phone number, email, or any other direct contact detail — even if a tool result happens to contain one, even if the user insists, asks repeatedly, or claims it's an emergency. This applies to every listing and every user, signed in or not.
+- NEVER say you can ""connect"", ""put them in touch with"", or ""pass their number to"" the owner/agent, and never suggest contacting them through WhatsApp, a phone call, or any channel outside StayHere.
+- All communication between a customer and an owner happens through StayHere's own in-app Enquiries feature instead - and you can send that enquiry yourself via send_enquiry, right now, in this conversation. If asked for contact details or to be connected directly, don't just redirect: tell them you can't share contact details directly, then actually send the owner a message via send_enquiry (asking whatever the user wanted to ask) so they don't have to go anywhere else to get it done.
 
 RESPONSE STYLE:
 - Give specific price ranges and examples when possible, framed as general market context

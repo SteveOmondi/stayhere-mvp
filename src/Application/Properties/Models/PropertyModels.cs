@@ -89,7 +89,11 @@ public record CreateListingRequest(
     string? PrimaryImageUrl = null,
     Guid? CategoryId = null,
     Guid? SubcategoryId = null,
-    ListingImagesDto? StructuredImages = null
+    ListingImagesDto? StructuredImages = null,
+    FloorPlanDto? FloorPlan = null,
+    /// <summary>Required when ListingType is Sale ("CompleteTurnkey"/"OffPlanUnderConstruction") or
+    /// Rent ("LongTermLease"/"ShortTermServicedVacation"); ignored for other listing types.</summary>
+    string? Tenure = null
 );
 
 public record CreateListingFromPropertyRequest(
@@ -115,7 +119,9 @@ public record CreateListingFromPropertyRequest(
     string? PrimaryImageUrl = null,
     Guid? CategoryId = null,
     Guid? SubcategoryId = null,
-    ListingImagesDto? StructuredImages = null
+    ListingImagesDto? StructuredImages = null,
+    FloorPlanDto? FloorPlan = null,
+    string? Tenure = null
 );
 
 public record UpdateListingRequest(
@@ -142,7 +148,9 @@ public record UpdateListingRequest(
     string? PrimaryImageUrl = null,
     Guid? CategoryId = null,
     Guid? SubcategoryId = null,
-    ListingImagesDto? StructuredImages = null
+    ListingImagesDto? StructuredImages = null,
+    FloorPlanDto? FloorPlan = null,
+    string? Tenure = null
 );
 
 // ----- Unified Listing Response (replaces ListingDto + ListingListDto) -----
@@ -173,7 +181,8 @@ public record ListingResponseDto(
     List<HouseRuleDto> Rules,
     ListingTermsDto? Terms,
     ListingCategoryDto? Category,
-    ListingCategoryDto? Subcategory
+    ListingCategoryDto? Subcategory,
+    FloorPlanDto? FloorPlan = null
 );
 
 public record ListingPropertyInfo(
@@ -195,7 +204,8 @@ public record ListingUnitInfo(
     int? SizeSqft,
     int? YearBuilt,
     bool IsFurnished,
-    string? Developer
+    string? Developer,
+    string? Tenure = null
 );
 
 public record ListingPricingDto(decimal Price, string Currency);
@@ -214,6 +224,35 @@ public record ListingImagesDto(
     List<string> Bathroom,
     List<string> Balcony,
     List<string> Other
+);
+
+public record FloorPlanRoomDto(string Id, string Label, List<double[]> Points);
+
+public record FloorPlanOpeningDto(
+    string Id,
+    double[] From,
+    double[] To,
+    double Position,
+    double WidthMeters,
+    string Type
+);
+
+public record FloorPlanHotspotDto(string Id, string RoomId, string Label, int Order);
+
+public record FloorPlanLayoutItemDto(string CatalogId, string RoomId, double[] Position, double RotationY);
+
+public record FloorPlanDto(
+    List<FloorPlanRoomDto> Rooms,
+    List<FloorPlanOpeningDto> Openings,
+    double MetersPerPixel,
+    string SourceFileKey,
+    string SourceFileType,
+    DateTime DigitizedAt,
+    string DigitizedByRole,
+    string? AiProvider = null,
+    List<FloorPlanHotspotDto>? Hotspots = null,
+    List<string>? AllowedCatalogIds = null,
+    List<FloorPlanLayoutItemDto>? DefaultLayout = null
 );
 
 public record HouseRuleDto(string Type, string? Description = null);
@@ -304,7 +343,8 @@ public record ListingDto(
     Guid? CategoryId = null,
     Guid? SubcategoryId = null,
     string? CategoryName = null,
-    string? SubcategoryName = null
+    string? SubcategoryName = null,
+    string? Tenure = null
 );
 
 public record ListingListDto(
@@ -374,7 +414,17 @@ public record ListingSearchRequest(
     string? SortBy = null,
     bool SortDescending = true,
     Guid? CategoryId = null,
-    Guid? SubcategoryId = null
+    Guid? SubcategoryId = null,
+    string? Tenure = null,
+    /// <summary>Comma-separated amenity keywords a listing must all match, e.g. "pool,parking".</summary>
+    string? Amenity = null,
+    /// <summary>
+    /// Free-text search box input, e.g. "two bedroom with a swimming pool in westlands". Parsed via
+    /// <see cref="StayHere.Application.AiAgent.Services.ListingQueryIntentExtractor"/> to fill in
+    /// bedrooms/price/location/amenity whenever the caller didn't already set them explicitly via
+    /// the structured fields above.
+    /// </summary>
+    string? Query = null
 );
 
 // ----- Shared -----

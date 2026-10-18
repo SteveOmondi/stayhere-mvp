@@ -181,15 +181,27 @@ public class PropertyTermsFunctions
         terms.UpdatedAt = DateTime.UtcNow;
     }
 
+    // NOTE: must assign explicit camelCase names here, NOT the `new { t.Prop }` member-projection
+    // shorthand - that shorthand preserves the entity's own PascalCase property name verbatim, and
+    // this Functions host's WriteAsJsonAsync has no camelCase naming policy configured, so a
+    // shorthand-projected DTO serializes as PascalCase on the wire (e.g. "SecurityDeposit" instead
+    // of "securityDeposit"). The frontend's PropertyTerms type only reads camelCase fields, so
+    // every field here was silently arriving as undefined - confirmed live: GET
+    // listings/{id}/terms was returning real data (TermsContent, SecurityDeposit, etc. all
+    // populated), yet the Review & Accept Terms screen rendered nothing at all.
     private static object ToDto(PropertyTerms t) => new
     {
-        t.Id, t.ListingId, t.Title, t.TermsContent, t.HouseRules, t.PaymentTerms,
-        t.NoticePeriod, t.PetPolicy, t.MaintenancePolicy, t.SecurityDepositTerms,
-        t.SecurityDeposit, t.AdminFee, t.Currency,
-        t.MpesaPaybill, t.MpesaTill, t.MpesaAccountNumber,
-        t.BankName, t.BankAccountName, t.BankAccountNumber, t.BankBranch,
-        t.PaymentInstructions, t.OnboardingInstructions, t.AccessInstructions,
-        t.ItemsToCarry, t.IsActive, t.CreatedAt, t.UpdatedAt
+        id = t.Id, listingId = t.ListingId, title = t.Title, termsContent = t.TermsContent,
+        houseRules = t.HouseRules, paymentTerms = t.PaymentTerms, noticePeriod = t.NoticePeriod,
+        petPolicy = t.PetPolicy, maintenancePolicy = t.MaintenancePolicy,
+        securityDepositTerms = t.SecurityDepositTerms, securityDeposit = t.SecurityDeposit,
+        adminFee = t.AdminFee, currency = t.Currency,
+        mpesaPaybill = t.MpesaPaybill, mpesaTill = t.MpesaTill, mpesaAccountNumber = t.MpesaAccountNumber,
+        bankName = t.BankName, bankAccountName = t.BankAccountName, bankAccountNumber = t.BankAccountNumber,
+        bankBranch = t.BankBranch,
+        paymentInstructions = t.PaymentInstructions, onboardingInstructions = t.OnboardingInstructions,
+        accessInstructions = t.AccessInstructions, itemsToCarry = t.ItemsToCarry,
+        isActive = t.IsActive, createdAt = t.CreatedAt, updatedAt = t.UpdatedAt
     };
 
     private static async Task<HttpResponseData> Json(HttpRequestData req, HttpStatusCode code, object data)

@@ -53,7 +53,9 @@ public class OnboardingService : IOnboardingService
             var existingOwner = await _propertyOwnerRepository.GetByUserIdAsync(user.Id);
             if (existingOwner != null) return new OnboardUserResponse(existingOwner.Id, request.Role, "Profile already exists");
 
-            var ownerId = Guid.NewGuid();
+            // PropertyOwner.Id intentionally mirrors the auth User.Id (1:1 relationship, no user
+            // can hold more than one PropertyOwner profile) - see AuthService.cs for the same convention.
+            var ownerId = user.Id;
             var wallet = new Wallet
             {
                 Id = Guid.NewGuid(),

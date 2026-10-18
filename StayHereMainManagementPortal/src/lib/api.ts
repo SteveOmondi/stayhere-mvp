@@ -8,6 +8,22 @@ export class ApiError extends Error {
     this.status = status;
     this.body = body;
   }
+
+  /** A short, user-facing message safe to render directly — prefers a clear explanation for
+   * common statuses over the raw backend response, which can be empty, plain-text "Forbidden",
+   * or a stringified JSON blob never meant for display. */
+  get userMessage(): string {
+    if (this.status === 403) {
+      return "You don't have permission to access this functionality.";
+    }
+    if (this.status === 401) {
+      return "You need to sign in to do that.";
+    }
+    if (!this.body) {
+      return "Something went wrong. Please try again.";
+    }
+    return this.body;
+  }
 }
 
 /* ── Console logging ─────────────────────────────────────────────── */
@@ -93,7 +109,12 @@ async function request<T>(base: string, path: string, opts: FetchOpts = {}): Pro
 
   if (res.status === 204) return undefined as T;
   if (!res.ok) {
-    const bodyStr = typeof parsed === "string" ? parsed : JSON.stringify(parsed);
+    // Every backend error body is JSON `{ error: "..." }` (see AuthenticationMiddleware /
+    // CreateErrorResponse helpers) - surface that plain message instead of a raw JSON blob.
+    const errorField = parsed && typeof parsed === "object" && typeof (parsed as Record<string, unknown>).error === "string"
+      ? (parsed as Record<string, unknown>).error as string
+      : undefined;
+    const bodyStr = errorField ?? (typeof parsed === "string" ? parsed : JSON.stringify(parsed));
     throw new ApiError(res.status, bodyStr);
   }
   return parsed as T;

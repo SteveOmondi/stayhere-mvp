@@ -51,7 +51,7 @@ export function LoginPage() {
       toast(`OTP sent to ${identifier}. Enter the code below.`, "info");
       setStep("otp");
     } catch (err) {
-      setError(err instanceof ApiError ? `${err.status}: ${err.body}` : String(err));
+      setError(err instanceof ApiError ? err.userMessage : String(err));
     } finally { setLoading(false); }
   }
 
@@ -75,7 +75,7 @@ export function LoginPage() {
         setError(res.message ?? "OTP verification failed. Please try again.");
       }
     } catch (err) {
-      setError(err instanceof ApiError ? `${err.status}: ${err.body}` : String(err));
+      setError(err instanceof ApiError ? err.userMessage : String(err));
     } finally { setLoading(false); }
   }
 

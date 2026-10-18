@@ -9,6 +9,7 @@ type Subcategory = {
   categoryId?: string;
   name: string;
   description?: string;
+  iconUrl?: string;
   country: string;
   city: string;
   isActive: boolean;
@@ -34,6 +35,7 @@ function mapSub(x: unknown): Subcategory | null {
     categoryId: r.categoryId ? String(r.categoryId) : undefined,
     name: String(r.name ?? ""),
     description: r.description ? String(r.description) : undefined,
+    iconUrl: r.iconUrl ? String(r.iconUrl) : undefined,
     country: String(r.country ?? "Kenya"),
     city: String(r.city ?? "Nairobi"),
     isActive: typeof r.isActive === "boolean" ? r.isActive : true,
@@ -47,6 +49,7 @@ const EMPTY_FORM = {
   categoryId: "",
   name: "",
   description: "",
+  iconUrl: "",
   country: "Kenya",
   city: "Nairobi",
   slug: "",
@@ -110,6 +113,7 @@ export function SubcategoriesPage() {
       categoryId: s.categoryId ?? "",
       name: s.name,
       description: s.description ?? "",
+      iconUrl: s.iconUrl ?? "",
       country: s.country,
       city: s.city,
       slug: s.slug ?? "",
@@ -131,6 +135,7 @@ export function SubcategoriesPage() {
     };
     if (form.categoryId) body.categoryId = form.categoryId;
     if (form.description.trim()) body.description = form.description.trim();
+    if (form.iconUrl.trim()) body.iconUrl = form.iconUrl.trim();
     if (form.slug.trim()) body.slug = form.slug.trim();
     if (form.sortOrder.trim()) body.sortOrder = Number(form.sortOrder);
     try {
@@ -389,6 +394,17 @@ export function SubcategoriesPage() {
                   placeholder="Brief description of this subcategory"
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                />
+              </div>
+
+              {/* Icon URL */}
+              <div className="portal-field">
+                <label className="portal-label">Icon URL</label>
+                <input
+                  className="portal-input"
+                  placeholder="https://…/icon.svg"
+                  value={form.iconUrl}
+                  onChange={e => setForm(f => ({ ...f, iconUrl: e.target.value }))}
                 />
               </div>
 

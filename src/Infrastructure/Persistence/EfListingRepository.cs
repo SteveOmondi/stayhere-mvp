@@ -181,6 +181,8 @@ public class EfListingRepository : IListingRepository
             query = query.Where(l => l.PropertyType == criteria.PropertyType.Value);
         if (criteria.ListingType.HasValue)
             query = query.Where(l => l.ListingType == criteria.ListingType.Value);
+        if (criteria.Tenure.HasValue)
+            query = query.Where(l => l.Tenure == criteria.Tenure.Value);
         if (criteria.MinPrice.HasValue)
             query = query.Where(l => l.Price >= criteria.MinPrice.Value);
         if (criteria.MaxPrice.HasValue)
@@ -254,6 +256,8 @@ public class EfListingRepository : IListingRepository
             query = query.Where(l => l.PropertyType == criteria.PropertyType.Value);
         if (criteria.ListingType.HasValue)
             query = query.Where(l => l.ListingType == criteria.ListingType.Value);
+        if (criteria.Tenure.HasValue)
+            query = query.Where(l => l.Tenure == criteria.Tenure.Value);
         if (criteria.MinPrice.HasValue)
             query = query.Where(l => l.Price >= criteria.MinPrice.Value);
         if (criteria.MaxPrice.HasValue)
@@ -270,6 +274,12 @@ public class EfListingRepository : IListingRepository
             query = query.Where(l => l.AvailabilityStatus == criteria.AvailabilityStatus.Value);
         if (criteria.IsFeatured.HasValue)
             query = query.Where(l => l.IsFeatured == criteria.IsFeatured.Value);
+        // Pre-existing bug fix: these were applied in SearchAsync but never here, so paginated
+        // counts were wrong whenever a category/subcategory filter was in play.
+        if (criteria.CategoryId.HasValue)
+            query = query.Where(l => l.CategoryId == criteria.CategoryId.Value);
+        if (criteria.SubcategoryId.HasValue)
+            query = query.Where(l => l.SubcategoryId == criteria.SubcategoryId.Value);
 
         return await query.CountAsync();
     }

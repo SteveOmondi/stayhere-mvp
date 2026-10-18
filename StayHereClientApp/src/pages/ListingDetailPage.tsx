@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { listingsApi, asListingArray, type Listing, aiApi } from "../lib/api";
 import {
@@ -7,9 +7,11 @@ import {
   listingTitle, isRent, resolveLocation,
 } from "../lib/format";
 import { useApp } from "../context/AppContext";
+import { loginUrlWithRedirect } from "../lib/authRedirect";
 import { StarRating, InteractiveStars } from "../components/StarRating";
 import { ListingCard } from "../components/ListingCard";
 import { GrainLayer } from "../components/ui";
+import { FloorPlanSection } from "../components/floorplan/FloorPlanSection";
 import {
   IcoBath, IcoBed, IcoBuilding, IcoCar, IcoCalendar, IcoCheck,
   IcoEye, IcoGym, IcoHeartFilled, IcoHeart, IcoKey,
@@ -32,7 +34,15 @@ function getAmenityIcon(name: string) {
   return <IcoCheck size={15} />;
 }
 
-const TABS = ["Overview", "Details", "Amenities", "Location", "Reviews"] as const;
+/* ── Tenure labels (only present for Sale/Rent listings) ─────────── */
+const TENURE_LABELS: Record<string, string> = {
+  CompleteTurnkey: "Complete / Turnkey",
+  OffPlanUnderConstruction: "Off-Plan / Under Construction",
+  LongTermLease: "Long-Term Lease",
+  ShortTermServicedVacation: "Short-Term / Serviced / Vacation",
+};
+
+const TABS = ["Overview", "Details", "Floor Plan", "Amenities", "Location", "Reviews"] as const;
 type Tab = typeof TABS[number];
 
 /* ── Stagger reveal wrapper ──────────────────────────────────────── */
@@ -237,17 +247,43 @@ function HeroGallery({
 
 /* ── Sticky enquiry panel ────────────────────────────────────────── */
 function EnquiryPanel({ listing }: { listing: Listing }) {
-  const { addToCart, inCart, isFavorite, toggleFavorite, toast } = useApp();
+  const { isAuthenticated, hasEnquired, createEnquiry, isFavorite, toggleFavorite, toast } = useApp();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showModal, setShowModal] = useState(false);
+  const [enquiring, setEnquiring] = useState(false);
   const saved    = isFavorite(listing.id);
-  const enquired = inCart(listing.id);
+  const enquired = hasEnquired(listing.id);
 
-  function handleEnquire() {
-    addToCart(listing.id);
-    toast("Added to your enquiry list!", "success");
-    setShowModal(true);
+  async function handleEnquire() {
+    if (!isAuthenticated) {
+      toast("Sign in to enquire about this listing", "info");
+      // ?autoEnquire=1 on the way back lets the effect below finish this same enquiry
+      // automatically once signed in, instead of the user needing to click "Enquire" again.
+      navigate(loginUrlWithRedirect(`/listing/${listing.id}?autoEnquire=1`));
+      return;
+    }
+    if (enquired) { setShowModal(true); return; }
+
+    setEnquiring(true);
+    try {
+      await createEnquiry(listing.id);
+      toast("Enquiry sent!", "success");
+      setShowModal(true);
+    } catch {
+      toast("Couldn't send your enquiry - please try again.", "error");
+    } finally {
+      setEnquiring(false);
+    }
   }
+
+  // Resume an enquiry that was interrupted by the login gate above.
+  useEffect(() => {
+    if (isAuthenticated && searchParams.get("autoEnquire") === "1") {
+      setSearchParams((p) => { p.delete("autoEnquire"); return p; }, { replace: true });
+      handleEnquire();
+    }
+  }, [isAuthenticated]);
 
   return (
     <>
@@ -265,11 +301,12 @@ function EnquiryPanel({ listing }: { listing: Listing }) {
 
           <div className="relative z-10">
             <div className="text-[10px] uppercase tracking-[0.2em] text-brand-muted font-sans mb-1">
-              {isRent(listing) ? "Monthly Rent" : "Sale Price"}
+              {listing.listingType === "ShortStay" ? "Per Night" : isRent(listing) ? "Monthly Rent" : "Sale Price"}
             </div>
             <div className="text-gradient-gold font-display text-4xl font-bold leading-none">
               {formatKes(listingPrice(listing))}
-              {isRent(listing) && <span className="text-base text-brand-muted font-sans font-normal ml-1">/mo</span>}
+              {listing.listingType === "ShortStay" && <span className="text-base text-brand-muted font-sans font-normal ml-1">/night</span>}
+              {listing.listingType !== "ShortStay" && isRent(listing) && <span className="text-base text-brand-muted font-sans font-normal ml-1">/mo</span>}
             </div>
             <div className="mt-3 flex items-center gap-2">
               {listing.isAvailable !== false ? (
@@ -303,16 +340,34 @@ function EnquiryPanel({ listing }: { listing: Listing }) {
           ))}
         </div>
 
-        {/* CTAs */}
-        <button
-          onClick={() => navigate(`/rental-flow?listingId=${listing.id}`)}
-          className="btn-gold w-full justify-center text-[13px] font-sans font-semibold py-3.5"
-        >
-          <IcoCalendar size={16} /> Book a Viewing
-        </button>
+        {/* CTAs — ShortStay listings get a single lighter "pick dates & book" flow instead of the
+         * long-term viewing/application pair, which assumes a lease with no date-range concept. */}
+        {listing.listingType === "ShortStay" ? (
+          <button
+            onClick={() => navigate(`/book-stay?listingId=${listing.id}`)}
+            className="btn-gold w-full justify-center text-[13px] font-sans font-semibold py-3.5"
+          >
+            <IcoCalendar size={16} /> Check Availability & Book
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => navigate(`/rental-flow?listingId=${listing.id}`)}
+              className="btn-gold w-full justify-center text-[13px] font-sans font-semibold py-3.5"
+            >
+              <IcoCalendar size={16} /> Book a Viewing
+            </button>
+            <button
+              onClick={() => navigate(`/rental-flow?listingId=${listing.id}&path=apply`)}
+              className="btn-teal w-full justify-center text-[13px] font-sans font-semibold py-3.5"
+            >
+              <IcoKey size={16} /> Start Tenancy Application
+            </button>
+          </>
+        )}
         <button
           onClick={handleEnquire}
-          disabled={enquired}
+          disabled={enquiring}
           className="btn-ghost w-full justify-center text-[13px] font-sans disabled:opacity-50"
         >
           {enquired
@@ -389,14 +444,14 @@ function EnquiryPanel({ listing }: { listing: Listing }) {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/25 bg-emerald-500/10 text-emerald-400">
                   <IcoCheck size={28} />
                 </div>
-                <h3 className="font-display text-xl font-bold text-white">Enquiry Registered!</h3>
+                <h3 className="font-display text-xl font-bold text-white">Enquiry Sent!</h3>
                 <p className="mt-2 text-[13px] text-brand-muted font-sans leading-relaxed">
-                  This listing has been added to your enquiry list. An agent will reach out shortly.
+                  The owner has been notified. Start a chat about this listing any time from My Enquiries.
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button onClick={() => setShowModal(false)} className="btn-ghost flex-1 justify-center text-sm font-sans">Continue</button>
                   <button onClick={() => navigate("/cart")} className="btn-gold flex-1 justify-center text-sm font-sans">
-                    View Enquiries <IcoArrowRight size={13} />
+                    Start Chat <IcoArrowRight size={13} />
                   </button>
                 </div>
               </div>
@@ -446,6 +501,7 @@ export function ListingDetailPage() {
   const sectionRefs: Record<Tab, React.RefObject<HTMLDivElement>> = {
     Overview:  useRef<HTMLDivElement>(null),
     Details:   useRef<HTMLDivElement>(null),
+    "Floor Plan": useRef<HTMLDivElement>(null),
     Amenities: useRef<HTMLDivElement>(null),
     Location:  useRef<HTMLDivElement>(null),
     Reviews:   useRef<HTMLDivElement>(null),
@@ -599,7 +655,7 @@ export function ListingDetailPage() {
           >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
               <div className="flex items-center gap-1">
-                {TABS.map((tab) => (
+                {TABS.filter((tab) => tab !== "Floor Plan" || listing.floorPlan).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => scrollToTab(tab)}
@@ -616,7 +672,8 @@ export function ListingDetailPage() {
               <div className="hidden sm:flex items-center gap-2">
                 <span className="text-sm font-display font-bold text-brand-gold">
                   {formatKes(listingPrice(listing))}
-                  {isRent(listing) && <span className="text-xs text-brand-muted font-sans font-normal ml-1">/mo</span>}
+                  {listing.listingType === "ShortStay" && <span className="text-xs text-brand-muted font-sans font-normal ml-1">/night</span>}
+                  {listing.listingType !== "ShortStay" && isRent(listing) && <span className="text-xs text-brand-muted font-sans font-normal ml-1">/mo</span>}
                 </span>
                 <button
                   onClick={handleShare}
@@ -693,6 +750,7 @@ export function ListingDetailPage() {
                   listing.subcategoryName && { label: listing.subcategoryName, color: "gold" },
                   listing.propertyType   && { label: listing.propertyType,    color: "gold" },
                   listing.listingType    && { label: listing.listingType,     color: "teal" },
+                  listing.tenure && { label: TENURE_LABELS[listing.tenure] ?? listing.tenure, color: "gold" },
                   listing.isFeatured     && { label: "Featured",              color: "gold" },
                   listing.isAvailable !== false && { label: "Available",      color: "teal" },
                 ].filter(Boolean).map((c: any) => (
@@ -740,6 +798,21 @@ export function ListingDetailPage() {
                 ))}
               </div>
             </section>
+
+            {/* ── Floor Plan ── */}
+            {listing.floorPlan && (
+              <section ref={sectionRefs["Floor Plan"]}>
+                <FadeUp>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="h-5 w-0.5 rounded-full bg-brand-gold" />
+                    <h2 className="font-display text-2xl font-bold text-white">Floor Plan</h2>
+                  </div>
+                </FadeUp>
+                <FadeUp delay={0.06}>
+                  <FloorPlanSection listing={listing} />
+                </FadeUp>
+              </section>
+            )}
 
             {/* ── Amenities ── */}
             {listing.amenities && listing.amenities.length > 0 && (

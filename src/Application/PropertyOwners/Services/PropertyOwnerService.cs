@@ -33,7 +33,10 @@ public class PropertyOwnerService : IPropertyOwnerService
 
     public async Task<PropertyOwnerDto> CreatePropertyOwnerAsync(CreatePropertyOwnerRequest request)
     {
-        var ownerId = Guid.NewGuid();
+        // Mirror the linked User.Id when one is provided (1:1 relationship - see AuthService/OnboardingService),
+        // so property/listing APIs never need to distinguish "user id" from "owner id". Only fall back to a
+        // fresh GUID for the rare admin-created owner with no linked user account.
+        var ownerId = request.UserId ?? Guid.NewGuid();
         var wallet = new Wallet
         {
             Id = Guid.NewGuid(),

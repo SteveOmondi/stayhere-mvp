@@ -18,6 +18,8 @@ public class Listing
     public string PriceCurrency { get; set; } = "KES";
     public PropertyType PropertyType { get; set; }
     public ListingType ListingType { get; set; }
+    /// <summary>Only meaningful when ListingType is Sale or Rent; null for ShortStay/Lease.</summary>
+    public Tenure? Tenure { get; set; }
 
     public int Bedrooms { get; set; }
     public int Bathrooms { get; set; }
@@ -31,6 +33,8 @@ public class Listing
     public List<string> Images { get; set; } = new();
     /// <summary>Sectioned images: Exterior, LivingRoom, Kitchen, DiningArea, Bedroom, Bathroom, Balcony, Other.</summary>
     public ListingImages StructuredImages { get; set; } = ListingImages.Empty();
+    /// <summary>Optional digitized floor plan (rooms, doors/windows, scale). Null if none uploaded.</summary>
+    public ListingFloorPlan? FloorPlan { get; set; }
 
     public int? SizeSqft { get; set; }
     public int? YearBuilt { get; set; }

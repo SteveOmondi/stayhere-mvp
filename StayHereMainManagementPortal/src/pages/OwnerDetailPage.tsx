@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ApiError, listingsApi, ownersApi } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { usePortal } from "../context/PortalContext";
+import { PhoneInput } from "../components/PhoneInput";
 
 type Tab = "overview" | "properties" | "listings" | "agents" | "caretakers";
 
@@ -28,6 +29,7 @@ export function OwnerDetailPage() {
     price: "",
     propertyType: "Apartment",
     listingType: "Rent",
+    tenure: "",
     bedrooms: "2",
     bathrooms: "2",
   });
@@ -106,6 +108,11 @@ export function OwnerDetailPage() {
   async function addListing(e: React.FormEvent) {
     e.preventDefault();
     if (!ownerId || !listForm.propertyId) return;
+    // listingType is always "Rent" here (no selector below) - Rent now requires a Tenure.
+    if (!listForm.tenure) {
+      toast("Select a tenure for this listing.", "error");
+      return;
+    }
     try {
       await listingsApi.createFromProperty(
         listForm.propertyId,
@@ -118,6 +125,7 @@ export function OwnerDetailPage() {
           priceCurrency: "KES",
           propertyType: listForm.propertyType,
           listingType: listForm.listingType,
+          tenure: listForm.tenure,
           bedrooms: Number(listForm.bedrooms),
           bathrooms: Number(listForm.bathrooms),
           isFurnished: false,
@@ -311,6 +319,16 @@ export function OwnerDetailPage() {
               value={listForm.price}
               onChange={(e) => setListForm((f) => ({ ...f, price: e.target.value }))}
             />
+            <select
+              required
+              className="border rounded-lg px-3 py-2 text-sm"
+              value={listForm.tenure}
+              onChange={(e) => setListForm((f) => ({ ...f, tenure: e.target.value }))}
+            >
+              <option value="">Tenure (required - this form always creates a Rent listing)…</option>
+              <option value="LongTermLease">Long-Term Lease</option>
+              <option value="ShortTermServicedVacation">Short-Term / Serviced / Vacation</option>
+            </select>
             <button
               type="submit"
               className="md:col-span-2 py-2 rounded-xl bg-brand-950 text-brand-goldlight text-sm font-semibold"
@@ -347,13 +365,7 @@ export function OwnerDetailPage() {
               value={agentForm.fullName}
               onChange={(e) => setAgentForm((f) => ({ ...f, fullName: e.target.value }))}
             />
-            <input
-              required
-              placeholder="Phone"
-              className="w-full border rounded-lg px-3 py-2 text-sm"
-              value={agentForm.phone}
-              onChange={(e) => setAgentForm((f) => ({ ...f, phone: e.target.value }))}
-            />
+            <PhoneInput required value={agentForm.phone} onChange={(v) => setAgentForm((f) => ({ ...f, phone: v }))} />
             <input
               placeholder="Email"
               className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -393,13 +405,7 @@ export function OwnerDetailPage() {
               value={ctForm.fullName}
               onChange={(e) => setCtForm((f) => ({ ...f, fullName: e.target.value }))}
             />
-            <input
-              required
-              placeholder="Phone"
-              className="w-full border rounded-lg px-3 py-2 text-sm"
-              value={ctForm.phone}
-              onChange={(e) => setCtForm((f) => ({ ...f, phone: e.target.value }))}
-            />
+            <PhoneInput required value={ctForm.phone} onChange={(v) => setCtForm((f) => ({ ...f, phone: v }))} />
             <input
               placeholder="Email"
               className="w-full border rounded-lg px-3 py-2 text-sm"

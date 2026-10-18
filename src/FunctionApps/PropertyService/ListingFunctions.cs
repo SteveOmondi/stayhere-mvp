@@ -64,6 +64,10 @@ public class ListingFunctions
         {
             return await CreateErrorResponse(req, HttpStatusCode.Forbidden, ex.Message);
         }
+        catch (ArgumentException ex)
+        {
+            return await CreateErrorResponse(req, HttpStatusCode.BadRequest, ex.Message);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating listing");
@@ -491,6 +495,10 @@ public class ListingFunctions
         catch (UnauthorizedAccessException ex)
         {
             return await CreateErrorResponse(req, HttpStatusCode.Forbidden, ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return await CreateErrorResponse(req, HttpStatusCode.BadRequest, ex.Message);
         }
         catch (Exception ex)
         {

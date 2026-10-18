@@ -37,34 +37,39 @@ public class PaymentQueryFunctions
             Route = "payments/{paymentId:guid}")] HttpRequestData req,
         Guid paymentId)
     {
+        // NOTE: explicit camelCase names, not `new { p.Prop }` shorthand - that preserves the
+        // entity's PascalCase verbatim, and this Functions host has no camelCase naming policy
+        // configured, so a shorthand projection leaks PascalCase onto the wire. The frontend's
+        // RentalPayment type (and the STK-push status poll's `p.status === "Confirmed"` check in
+        // RentalFlowPage) only ever reads camelCase, so that check would silently never match.
         var payment = await _db.RentalPayments
             .Where(p => p.Id == paymentId)
             .Select(p => new
             {
-                p.Id,
-                p.ApplicationId,
-                p.PaymentType,
-                p.Amount,
-                p.Currency,
-                p.Method,
-                p.TransactionSource,
-                p.Status,
-                p.PhoneNumber,
-                p.MerchantRequestId,
-                p.MpesaCheckoutRequestId,
-                p.MpesaReceiptNumber,
-                p.MpesaTransactionId,
-                p.BusinessShortCode,
-                p.BillRefNumber,
-                p.OrgAccountBalance,
+                id = p.Id,
+                applicationId = p.ApplicationId,
+                paymentType = p.PaymentType,
+                amount = p.Amount,
+                currency = p.Currency,
+                method = p.Method,
+                transactionSource = p.TransactionSource,
+                status = p.Status,
+                phoneNumber = p.PhoneNumber,
+                merchantRequestId = p.MerchantRequestId,
+                mpesaCheckoutRequestId = p.MpesaCheckoutRequestId,
+                mpesaReceiptNumber = p.MpesaReceiptNumber,
+                mpesaTransactionId = p.MpesaTransactionId,
+                businessShortCode = p.BusinessShortCode,
+                billRefNumber = p.BillRefNumber,
+                orgAccountBalance = p.OrgAccountBalance,
                 payerName = string.IsNullOrWhiteSpace(p.PayerFirstName)
                     ? null
                     : $"{p.PayerFirstName} {p.PayerMiddleName} {p.PayerLastName}".Trim(),
-                p.MpesaTransactionDate,
-                p.Reference,
-                p.Notes,
-                p.InitiatedAt,
-                p.ConfirmedAt
+                mpesaTransactionDate = p.MpesaTransactionDate,
+                reference = p.Reference,
+                notes = p.Notes,
+                initiatedAt = p.InitiatedAt,
+                confirmedAt = p.ConfirmedAt
             })
             .FirstOrDefaultAsync();
 
@@ -88,18 +93,18 @@ public class PaymentQueryFunctions
             .OrderByDescending(p => p.InitiatedAt)
             .Select(p => new
             {
-                p.Id,
-                p.PaymentType,
-                p.Amount,
-                p.Currency,
-                p.Method,
-                p.TransactionSource,
-                p.Status,
-                p.MpesaReceiptNumber,
-                p.MpesaTransactionId,
-                p.Reference,
-                p.InitiatedAt,
-                p.ConfirmedAt
+                id = p.Id,
+                paymentType = p.PaymentType,
+                amount = p.Amount,
+                currency = p.Currency,
+                method = p.Method,
+                transactionSource = p.TransactionSource,
+                status = p.Status,
+                mpesaReceiptNumber = p.MpesaReceiptNumber,
+                mpesaTransactionId = p.MpesaTransactionId,
+                reference = p.Reference,
+                initiatedAt = p.InitiatedAt,
+                confirmedAt = p.ConfirmedAt
             })
             .ToListAsync();
 
@@ -123,19 +128,19 @@ public class PaymentQueryFunctions
             .OrderByDescending(p => p.ConfirmedAt ?? p.InitiatedAt)
             .Select(p => new
             {
-                p.Id,
-                p.Amount,
-                p.Currency,
-                p.TransactionSource,
-                p.MpesaTransactionId,
-                p.BillRefNumber,
-                p.BusinessShortCode,
+                id = p.Id,
+                amount = p.Amount,
+                currency = p.Currency,
+                transactionSource = p.TransactionSource,
+                mpesaTransactionId = p.MpesaTransactionId,
+                billRefNumber = p.BillRefNumber,
+                businessShortCode = p.BusinessShortCode,
                 payerName = string.IsNullOrWhiteSpace(p.PayerFirstName)
                     ? null
                     : $"{p.PayerFirstName} {p.PayerMiddleName} {p.PayerLastName}".Trim(),
-                p.PhoneNumber,
-                p.MpesaTransactionDate,
-                p.ConfirmedAt
+                phoneNumber = p.PhoneNumber,
+                mpesaTransactionDate = p.MpesaTransactionDate,
+                confirmedAt = p.ConfirmedAt
             })
             .ToListAsync();
 
@@ -161,6 +166,7 @@ public class PaymentQueryFunctions
     {
         var payment = await _db.RentalPayments
             .Include(p => p.Application)
+            .Include(p => p.ShortStayBooking)
             .FirstOrDefaultAsync(p => p.Id == paymentId);
 
         if (payment is null)
@@ -192,6 +198,15 @@ public class PaymentQueryFunctions
             payment.Application.Status = "Active";
             payment.Application.UpdatedAt = DateTime.UtcNow;
         }
+        else if (payment.ShortStayBooking is { Status: "PendingPayment" })
+        {
+            payment.ShortStayBooking.Status = "Confirmed";
+            payment.ShortStayBooking.ConfirmedAt = DateTime.UtcNow;
+            payment.ShortStayBooking.UpdatedAt = DateTime.UtcNow;
+        }
+
+        var listingId = payment.Application?.ListingId ?? payment.ShortStayBooking?.ListingId;
+        await WalletCreditHelper.CreditOwnerWalletAsync(_db, _log, payment, listingId);
 
         await _db.SaveChangesAsync();
 
@@ -242,10 +257,17 @@ public class PaymentQueryFunctions
 
         payment.ApplicationId = applicationId;
 
-        if (payment.Status == "Confirmed" && app.Status is "PaymentPending" or "TermsAccepted")
+        if (payment.Status == "Confirmed")
         {
-            app.Status = "Active";
-            app.UpdatedAt = DateTime.UtcNow;
+            if (app.Status is "PaymentPending" or "TermsAccepted")
+            {
+                app.Status = "Active";
+                app.UpdatedAt = DateTime.UtcNow;
+            }
+
+            // This payment was previously unmatched, so WalletCreditHelper could never resolve an
+            // owner for it at confirmation time - this is the first opportunity to credit it.
+            await WalletCreditHelper.CreditOwnerWalletAsync(_db, _log, payment, app.ListingId);
         }
 
         await _db.SaveChangesAsync();

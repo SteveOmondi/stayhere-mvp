@@ -3,6 +3,7 @@ import { useOwner } from "../context/OwnerContext";
 import { ownerApi, ApiError } from "../lib/api";
 import { loadConfig, saveConfig } from "../lib/config";
 import { IcoSettings, IcoCheck, IcoLoader, IcoUser, IcoShield } from "../components/icons";
+import { PhoneInput } from "../components/PhoneInput";
 
 export function SettingsPage() {
   const { owner, authUser, toast, bumpReload } = useOwner();
@@ -84,7 +85,7 @@ export function SettingsPage() {
             </div>
             <div className="field">
               <label className="field-label">Phone</label>
-              <input className="input" value={profileForm.phone} onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))} placeholder="+254 700 000000" />
+              <PhoneInput value={profileForm.phone} onChange={(v) => setProfileForm(f => ({ ...f, phone: v }))} />
             </div>
           </div>
           <div className="flex justify-end pt-1">

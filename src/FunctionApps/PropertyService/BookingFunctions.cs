@@ -94,11 +94,49 @@ public class BookingFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "bookings/customer/{customerId:guid}")] HttpRequestData req,
         Guid customerId)
     {
+        // The client app doesn't always have a cached Customer profile at hand - when it doesn't,
+        // it falls back to passing the caller's raw UserId here instead of their formal Customer.Id
+        // (the two differ once a Customer record exists). Bookings themselves are always stored
+        // under the formal Customer.Id (see CreateBooking/Sage's book_viewing tool), so a bare
+        // UserId match here found nothing even though the booking was really theirs - confirmed via
+        // a booking created by Sage that was visible on the owner portal but invisible in "My
+        // Bookings". Resolve the other direction too, same dual-match rationale as
+        // EfViewingBookingRepository.GetByCustomerAsync.
+        var formalCustomerId = await _db.Customers
+            .Where(c => c.UserId == customerId)
+            .Select(c => (Guid?)c.Id)
+            .FirstOrDefaultAsync();
+
         var bookings = await _db.ViewingBookings
-            .Where(b => b.CustomerId == customerId)
+            .Where(b => b.CustomerId == customerId || (formalCustomerId.HasValue && b.CustomerId == formalCustomerId.Value))
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
-        return await Json(req, HttpStatusCode.OK, bookings.Select(ToDto));
+
+        // Unlike GetBookingsByOwner below, this previously returned bare listingId GUIDs with no
+        // title/photo/price - fine for the owner side (which already has the listing in context),
+        // but useless for a customer-facing "My Bookings" card, which has nothing else to show.
+        var listingIds = bookings.Select(b => b.ListingId).Distinct().ToList();
+        var listingMap = await _db.Listings
+            .Where(l => listingIds.Contains(l.Id))
+            .Select(l => new { l.Id, l.Title, l.ListingCode, l.PrimaryImageUrl, l.Price, l.PriceCurrency, City = l.Location.City, Suburb = l.Location.Suburb })
+            .ToDictionaryAsync(l => l.Id);
+
+        var result = bookings.Select(b =>
+        {
+            var d = ToDto(b);
+            if (listingMap.TryGetValue(b.ListingId, out var l))
+            {
+                d["listingTitle"] = l.Title;
+                d["listingCode"] = l.ListingCode;
+                d["listingImageUrl"] = l.PrimaryImageUrl;
+                d["listingPrice"] = l.Price;
+                d["listingCurrency"] = l.PriceCurrency;
+                d["listingLocation"] = string.IsNullOrWhiteSpace(l.Suburb) ? l.City : $"{l.Suburb}, {l.City}";
+            }
+            return d;
+        });
+
+        return await Json(req, HttpStatusCode.OK, result);
     }
 
     // ── Get bookings by listing ────────────────────────────────────────────────

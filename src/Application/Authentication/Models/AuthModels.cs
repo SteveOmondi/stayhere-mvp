@@ -23,9 +23,20 @@ public class SignupAndOnboardResponse
 
 public record OtpRequest(string Target, OtpTypeDto Type);
 
+/// <summary>
+/// Accepts the identifier under either "Email" or "PhoneNumber" (whichever the client actually has),
+/// resolving to a single Target - previously this only ever bound "PhoneNumber", so any client that
+/// sent "Email" (the natural field for an email-based OTP) silently failed verification with
+/// "Target (Email/Phone) is required." even though the OTP itself was requested and delivered fine.
+/// </summary>
 public record OtpVerificationRequest(
-    [property: JsonPropertyName("PhoneNumber")] string Target, 
-    [property: JsonPropertyName("otp")] string Code);
+    string? Email,
+    string? PhoneNumber,
+    [property: JsonPropertyName("otp")] string Code)
+{
+    [JsonIgnore]
+    public string Target => !string.IsNullOrWhiteSpace(Email) ? Email! : (PhoneNumber ?? string.Empty);
+}
 
 public record UpdateProfileRequest(Guid UserId, string? PhoneNumber, string? FullName, string? Role);
 
@@ -61,4 +72,9 @@ public enum OtpTypeDto
     WhatsApp
 }
 
-public record UserProfileDto(Guid ProfileId, string Role, string DisplayName);
+/// <summary>Phone is nullable - falls back to the owning User.PhoneNumber when the role-specific
+/// profile (Customer/PropertyOwner) hasn't set its own, so callers always get the best number
+/// available rather than nothing. This is the one endpoint any signed-in user can call for their
+/// own profile (bare [Authorize], no role check) - the reliable place for the client apps to
+/// prefill a form with "my name and phone" rather than guessing from JWT claims.</summary>
+public record UserProfileDto(Guid ProfileId, string Role, string DisplayName, string? Phone = null);

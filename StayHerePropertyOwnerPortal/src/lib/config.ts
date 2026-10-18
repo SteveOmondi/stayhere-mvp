@@ -22,6 +22,24 @@ const PROD_DEFAULTS = {
   paymentsApiBase: import.meta.env.VITE_PAYMENTS_API      ?? `${APIM}/payments`,
 };
 
+// Ports match scripts/stayhere-function-ports.ps1 — keep in sync if that file changes.
+// Path suffixes ("/auth", "/customers") match each Function App's own [HttpTrigger(Route = "...")]
+// attributes — AuthService and CustomerService declare routes with that prefix baked in
+// (e.g. "auth/login", "customers/by-owner/{id}"), the others don't.
+const LOCAL_DEFAULTS = {
+  authApiBase:     "http://localhost:7100/api/auth",
+  ownerApiBase:    "http://localhost:7103/api",
+  propertyApiBase: "http://localhost:7101/api",
+  customerApiBase: "http://localhost:7102/api/customers",
+  staticApiBase:   "http://localhost:7104/api",
+  aiApiBase:       "http://localhost:7105/api",
+  paymentsApiBase: "http://localhost:7106/api",
+};
+
+// Flip to false (or set VITE_USE_LOCAL_API=false) to point the portal back at the deployed APIM gateway.
+const USE_LOCAL_API = (import.meta.env.VITE_USE_LOCAL_API ?? "true") !== "false";
+const DEFAULTS = USE_LOCAL_API ? LOCAL_DEFAULTS : PROD_DEFAULTS;
+
 export type OwnerPortalConfig = {
   authApiBase:     string;
   ownerApiBase:    string;
@@ -34,22 +52,18 @@ export type OwnerPortalConfig = {
 };
 
 export function loadConfig(): OwnerPortalConfig {
-  const resolve = (lsKey: string, devProxy: string, prodKey: keyof typeof PROD_DEFAULTS) => {
-    if (import.meta.env.DEV) {
-      const overridden = localStorage.getItem(lsKey)?.trim();
-      if (overridden) return overridden;
-      return devProxy;
-    }
-    return localStorage.getItem(lsKey)?.trim() || PROD_DEFAULTS[prodKey];
+  const resolve = (lsKey: string, prodKey: keyof typeof PROD_DEFAULTS) => {
+    const overridden = localStorage.getItem(lsKey)?.trim();
+    return overridden || DEFAULTS[prodKey];
   };
   return {
-    authApiBase:     resolve(LS.authApi,     "/api/auth",     "authApiBase"),
-    ownerApiBase:    resolve(LS.ownerApi,    "/api/owner",    "ownerApiBase"),
-    propertyApiBase: resolve(LS.propertyApi, "/api/property", "propertyApiBase"),
-    customerApiBase: resolve(LS.customerApi, "/api/customer", "customerApiBase"),
-    staticApiBase:   resolve(LS.staticApi,   "/api/static",   "staticApiBase"),
-    aiApiBase:       resolve(LS.aiApi,       "/api/ai",       "aiApiBase"),
-    paymentsApiBase: resolve(LS.paymentsApi, "/api/payments", "paymentsApiBase"),
+    authApiBase:     resolve(LS.authApi,     "authApiBase"),
+    ownerApiBase:    resolve(LS.ownerApi,    "ownerApiBase"),
+    propertyApiBase: resolve(LS.propertyApi, "propertyApiBase"),
+    customerApiBase: resolve(LS.customerApi, "customerApiBase"),
+    staticApiBase:   resolve(LS.staticApi,   "staticApiBase"),
+    aiApiBase:       resolve(LS.aiApi,       "aiApiBase"),
+    paymentsApiBase: resolve(LS.paymentsApi, "paymentsApiBase"),
     authToken:       localStorage.getItem(LS.authToken) ?? "",
   };
 }

@@ -41,10 +41,16 @@ public class StayHereDbContext : DbContext
     public DbSet<RoleDefinition> RoleDefinitions => Set<RoleDefinition>();
     public DbSet<UserTypeDefinition> UserTypeDefinitions => Set<UserTypeDefinition>();
     public DbSet<ViewingBooking> ViewingBookings => Set<ViewingBooking>();
+    public DbSet<SavedListing> SavedListings => Set<SavedListing>();
+    public DbSet<Enquiry> Enquiries => Set<Enquiry>();
+    public DbSet<EnquiryMessage> EnquiryMessages => Set<EnquiryMessage>();
     public DbSet<TenantApplication> TenantApplications => Set<TenantApplication>();
     public DbSet<ApplicationDocument> ApplicationDocuments => Set<ApplicationDocument>();
     public DbSet<PropertyTerms> PropertyTerms => Set<PropertyTerms>();
     public DbSet<RentalPayment> RentalPayments => Set<RentalPayment>();
+    public DbSet<ShortStayBooking> ShortStayBookings => Set<ShortStayBooking>();
+    public DbSet<AiConversation> AiConversations => Set<AiConversation>();
+    public DbSet<AiConversationMessage> AiConversationMessages => Set<AiConversationMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -69,10 +75,15 @@ public class StayHereDbContext : DbContext
         ConfigureRoleDefinition(modelBuilder);
         ConfigureUserTypeDefinition(modelBuilder);
         ConfigureViewingBooking(modelBuilder);
+        ConfigureSavedListing(modelBuilder);
+        ConfigureEnquiry(modelBuilder);
+        ConfigureEnquiryMessage(modelBuilder);
         ConfigureTenantApplication(modelBuilder);
         ConfigureApplicationDocument(modelBuilder);
         ConfigurePropertyTerms(modelBuilder);
         ConfigureRentalPayment(modelBuilder);
+        ConfigureShortStayBooking(modelBuilder);
+        ConfigureAiConversation(modelBuilder);
 
         SeedData(modelBuilder);
     }
@@ -81,7 +92,11 @@ public class StayHereDbContext : DbContext
     {
         var apartmentId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var houseId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var seedTimestamp = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+        // Original placeholder taxonomy - deactivated (not deleted, no FK constraint exists on
+        // Listing.CategoryId so any listing still pointing at these keeps resolving fine) in favor
+        // of the fixed classification below.
         modelBuilder.Entity<Category>().HasData(
             new Category
             {
@@ -89,10 +104,10 @@ public class StayHereDbContext : DbContext
                 Name = "Apartment",
                 Slug = "apartment",
                 Description = "Apartment units for rent or sale",
-                IsActive = true,
+                IsActive = false,
                 SortOrder = 1,
-                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                CreatedAt = seedTimestamp,
+                UpdatedAt = seedTimestamp
             },
             new Category
             {
@@ -100,11 +115,81 @@ public class StayHereDbContext : DbContext
                 Name = "House",
                 Slug = "house",
                 Description = "Stand-alone houses for rent or sale",
-                IsActive = true,
+                IsActive = false,
                 SortOrder = 2,
-                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                CreatedAt = seedTimestamp,
+                UpdatedAt = seedTimestamp
             }
+        );
+
+        // ── Fixed real-estate classification taxonomy ──────────────────────────
+        var catResidential = Guid.Parse("a1000000-0000-0000-0000-000000000001");
+        var catOffice = Guid.Parse("a1000000-0000-0000-0000-000000000002");
+        var catCommercialRetail = Guid.Parse("a1000000-0000-0000-0000-000000000003");
+        var catIndustrialStorage = Guid.Parse("a1000000-0000-0000-0000-000000000004");
+        var catFlexibleSpaces = Guid.Parse("a1000000-0000-0000-0000-000000000005");
+
+        modelBuilder.Entity<Category>().HasData(
+            new Category { Id = catResidential, Name = "Residential", Slug = "residential", Description = "Homes and living spaces", IsActive = true, SortOrder = 1, CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new Category { Id = catOffice, Name = "Office", Slug = "office", Description = "Spaces designed for administrative work, professional services, and desk operations", IsActive = true, SortOrder = 2, CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new Category { Id = catCommercialRetail, Name = "Commercial & Retail", Slug = "commercial-retail", Description = "Spaces optimized for customer foot traffic, trading, displays, and sales", IsActive = true, SortOrder = 3, CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new Category { Id = catIndustrialStorage, Name = "Industrial & Storage", Slug = "industrial-storage", Description = "Facilities dedicated to inventory storage, logistics, cold chains, and distribution", IsActive = true, SortOrder = 4, CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new Category { Id = catFlexibleSpaces, Name = "Flexible Spaces", Slug = "flexible-spaces", Description = "Versatile, specialized, or hourly-rented commercial assets", IsActive = true, SortOrder = 5, CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp }
+        );
+
+        // Subcategories are global (not geo-scoped) for this fixed taxonomy - Country/City left
+        // blank; GET /subcategories/category/{id} filters only by CategoryId, not country/city.
+        Subcategory Sub(string idSuffix, Guid categoryId, string name, string slug, string? description, int sortOrder) => new()
+        {
+            Id = Guid.Parse($"b1000000-0000-0000-0000-{idSuffix}"),
+            CategoryId = categoryId,
+            Name = name,
+            Slug = slug,
+            Description = description,
+            Country = string.Empty,
+            City = string.Empty,
+            IsActive = true,
+            SortOrder = sortOrder,
+            CreatedAt = seedTimestamp,
+            UpdatedAt = seedTimestamp
+        };
+
+        modelBuilder.Entity<Subcategory>().HasData(
+            // Residential
+            Sub("000000000101", catResidential, "Studio Apartment", "studio-apartment", "Open-plan unit combining living, sleeping, and kitchenette", 1),
+            Sub("000000000102", catResidential, "Bedsitter / Single Room", "bedsitter-single-room", "Compact unit with shared or integrated basic facilities", 2),
+            Sub("000000000103", catResidential, "1-Bedroom Apartment", "1-bedroom-apartment", "1 enclosed bedroom + living area", 3),
+            Sub("000000000104", catResidential, "2-Bedroom Apartment", "2-bedroom-apartment", "2 enclosed bedrooms + living area", 4),
+            Sub("000000000105", catResidential, "3+ Bedroom Apartment", "3-plus-bedroom-apartment", "3 or more enclosed bedrooms", 5),
+            Sub("000000000106", catResidential, "Penthouse", "penthouse", "Top-floor luxury unit with custom layout or terrace", 6),
+            Sub("000000000107", catResidential, "Bungalow", "bungalow", "Single-story standalone house", 7),
+            Sub("000000000108", catResidential, "Maisonette", "maisonette", "Two-story residential unit, often in a compound or town block", 8),
+            Sub("000000000109", catResidential, "Townhouse / Villa", "townhouse-villa", "Multi-story attached or detached family home", 9),
+
+            // Office
+            Sub("000000000201", catOffice, "Private Office Suite", "private-office-suite", "Enclosed, dedicated workspace for a team or business", 1),
+            Sub("000000000202", catOffice, "Open-Plan Office Floor", "open-plan-office-floor", "Full or partial open floor plate for custom fit-out", 2),
+            Sub("000000000203", catOffice, "Shared Workspace / Co-Working Desk", "shared-workspace-co-working-desk", "Dedicated desk or hot-desk space", 3),
+            Sub("000000000204", catOffice, "Meeting & Conference Room", "meeting-conference-room", "Bookable collaborative rooms or boardrooms", 4),
+
+            // Commercial & Retail
+            Sub("000000000301", catCommercialRetail, "Ground-Floor Shop", "ground-floor-shop", "Street-facing or prime lobby commercial store", 1),
+            Sub("000000000302", catCommercialRetail, "Stall / Kiosk", "stall-kiosk", "Small-footprint retail pod or market stall", 2),
+            Sub("000000000303", catCommercialRetail, "Showroom", "showroom", "Large open display space for vehicles, furniture, or heavy inventory", 3),
+            Sub("000000000304", catCommercialRetail, "Commercial Building / Arcade", "commercial-building-arcade", "Multi-tenant commercial complex or shopping arcade block", 4),
+
+            // Industrial & Storage
+            Sub("000000000401", catIndustrialStorage, "Go-Down / Warehouse", "go-down-warehouse", "Large industrial space for logistics, general storage, or light manufacturing", 1),
+            Sub("000000000402", catIndustrialStorage, "Store Room / Self-Storage", "store-room-self-storage", "Small-to-medium lock-up unit for general or personal inventory", 2),
+            Sub("000000000403", catIndustrialStorage, "Refrigerated Storage / Cold Room", "refrigerated-storage-cold-room", "Temperature-controlled facility for perishables and pharmaceuticals", 3),
+            Sub("000000000404", catIndustrialStorage, "Hazardous Materials (HazMat) Unit", "hazmat-unit", "Specialized storage compliant with dangerous goods handling", 4),
+            Sub("000000000405", catIndustrialStorage, "Bonded Warehouse", "bonded-warehouse", "Customs-controlled secure storage", 5),
+
+            // Flexible Spaces
+            Sub("000000000501", catFlexibleSpaces, "Event & Function Space", "event-function-space", "Banquet halls, event grounds, and pop-up venues", 1),
+            Sub("000000000502", catFlexibleSpaces, "Cloud Kitchen", "cloud-kitchen", "Delivery-only commercial cooking facility", 2),
+            Sub("000000000503", catFlexibleSpaces, "Dark Store", "dark-store", "Fulfillment-only mini-hub for rapid e-commerce/grocery delivery", 3),
+            Sub("000000000504", catFlexibleSpaces, "Parking Bay & Garage", "parking-bay-garage", "Rented vehicle parking slot or private lock-up garage", 4)
         );
 
         var ownerId = Guid.Parse("44444444-4444-4444-4444-444444444444");
@@ -344,6 +429,11 @@ public class StayHereDbContext : DbContext
             v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(),
             v => JsonSerializer.Deserialize<ListingImages>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
 
+        var floorPlanComparer = new ValueComparer<ListingFloorPlan?>(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => v == null ? 0 : JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(),
+            v => v == null ? null : JsonSerializer.Deserialize<ListingFloorPlan>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null));
+
         modelBuilder.Entity<Listing>(entity =>
         {
             entity.ToTable("listings");
@@ -359,6 +449,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.PriceCurrency).HasColumnName("price_currency").HasMaxLength(3).HasDefaultValue("KES");
             entity.Property(e => e.PropertyType).HasColumnName("property_type").HasConversion<string>();
             entity.Property(e => e.ListingType).HasColumnName("listing_type").HasConversion<string>();
+            entity.Property(e => e.Tenure).HasColumnName("tenure").HasConversion<string>();
             entity.Property(e => e.Bedrooms).HasColumnName("bedrooms");
             entity.Property(e => e.Bathrooms).HasColumnName("bathrooms");
             entity.Property(e => e.IsFurnished).HasColumnName("is_furnished");
@@ -377,6 +468,11 @@ public class StayHereDbContext : DbContext
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                     v => string.IsNullOrWhiteSpace(v) ? ListingImages.Empty() : JsonSerializer.Deserialize<ListingImages>(v, (JsonSerializerOptions?)null) ?? ListingImages.Empty())
                 .Metadata.SetValueComparer(listingImagesComparer);
+            entity.Property(e => e.FloorPlan).HasColumnName("floor_plan").HasColumnType("text")
+                .HasConversion(
+                    v => v == null ? null : JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrWhiteSpace(v) ? null : JsonSerializer.Deserialize<ListingFloorPlan>(v, (JsonSerializerOptions?)null))
+                .Metadata.SetValueComparer(floorPlanComparer);
             entity.Property(e => e.PrimaryImageUrl).HasColumnName("primary_image_url").HasMaxLength(500);
             entity.Property(e => e.SizeSqft).HasColumnName("size_sqft");
             entity.Property(e => e.YearBuilt).HasColumnName("year_built");
@@ -446,6 +542,7 @@ public class StayHereDbContext : DbContext
             entity.HasIndex(e => e.CaretakerId);
             entity.HasIndex(e => e.PropertyType);
             entity.HasIndex(e => e.ListingType);
+            entity.HasIndex(e => e.Tenure);
             entity.HasIndex(e => e.AvailabilityStatus);
             entity.HasIndex(e => e.IsFeatured);
             entity.HasIndex(e => e.DeletedAt);
@@ -672,6 +769,59 @@ public class StayHereDbContext : DbContext
         });
     }
 
+    private static void ConfigureSavedListing(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SavedListing>(entity =>
+        {
+            entity.ToTable("saved_listings");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ListingId).HasColumnName("listing_id");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.ListingId);
+            entity.HasIndex(e => new { e.CustomerId, e.ListingId }).IsUnique();
+        });
+    }
+
+    private static void ConfigureEnquiry(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Enquiry>(entity =>
+        {
+            entity.ToTable("enquiries");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ListingId).HasColumnName("listing_id");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.OwnerId).HasColumnName("owner_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).HasDefaultValue("Open");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.LastMessageAt).HasColumnName("last_message_at");
+            entity.Property(e => e.LastMessagePreview).HasColumnName("last_message_preview").HasMaxLength(160);
+            entity.Property(e => e.CustomerLastReadAt).HasColumnName("customer_last_read_at");
+            entity.Property(e => e.OwnerLastReadAt).HasColumnName("owner_last_read_at");
+            entity.HasIndex(e => e.CustomerId);
+            entity.HasIndex(e => e.OwnerId);
+            entity.HasIndex(e => new { e.ListingId, e.CustomerId }).IsUnique();
+        });
+    }
+
+    private static void ConfigureEnquiryMessage(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<EnquiryMessage>(entity =>
+        {
+            entity.ToTable("enquiry_messages");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.EnquiryId).HasColumnName("enquiry_id");
+            entity.Property(e => e.SenderRole).HasColumnName("sender_role").HasMaxLength(20);
+            entity.Property(e => e.SenderUserId).HasColumnName("sender_user_id");
+            entity.Property(e => e.Body).HasColumnName("body").HasMaxLength(2000);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.EnquiryId);
+        });
+    }
+
     private static void ConfigureTenantApplication(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TenantApplication>(entity =>
@@ -682,7 +832,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.ListingId).HasColumnName("listing_id");
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.ViewingBookingId).HasColumnName("viewing_booking_id");
-            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(40).HasDefaultValue("DocumentsPending");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(40).HasDefaultValue("PendingApproval");
             entity.Property(e => e.RejectionReason).HasColumnName("rejection_reason");
             entity.Property(e => e.ReviewedAt).HasColumnName("reviewed_at");
             entity.Property(e => e.ReviewedBy).HasColumnName("reviewed_by").HasMaxLength(255);
@@ -693,7 +843,14 @@ public class StayHereDbContext : DbContext
             entity.HasIndex(e => e.ListingId);
             entity.HasIndex(e => e.CustomerId);
             entity.HasIndex(e => e.Status);
-            entity.HasIndex(e => new { e.ListingId, e.CustomerId });
+            // Partial unique index instead of a plain composite one: at most one non-terminal
+            // (not Cancelled/Rejected) application per listing+customer, enforced by the database
+            // itself rather than only by the check-then-insert logic in ApplicationFunctions.Create,
+            // which had a race-condition window under concurrent requests.
+            entity.HasIndex(e => new { e.ListingId, e.CustomerId })
+                .IsUnique()
+                .HasFilter("status NOT IN ('Cancelled', 'Rejected')")
+                .HasDatabaseName("ix_tenant_applications_active_listing_customer");
         });
     }
 
@@ -704,17 +861,29 @@ public class StayHereDbContext : DbContext
             entity.ToTable("application_documents");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.ApplicationId).HasColumnName("application_id");
+            // Nullable: a row belongs to EITHER a TenantApplication OR a ShortStayBooking, never
+            // both - enforced in application code at the two POST .../documents endpoints, same
+            // as RentalPayment's ApplicationId/ShortStayBookingId pair below.
+            entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired(false);
+            entity.Property(e => e.ShortStayBookingId).HasColumnName("short_stay_booking_id").IsRequired(false);
             entity.Property(e => e.DocumentType).HasColumnName("document_type").HasMaxLength(50);
             entity.Property(e => e.FileUrl).HasColumnName("file_url").HasMaxLength(500);
             entity.Property(e => e.FileName).HasColumnName("file_name").HasMaxLength(255);
             entity.Property(e => e.UploadedAt).HasColumnName("uploaded_at");
             entity.HasIndex(e => e.ApplicationId);
+            entity.HasIndex(e => e.ShortStayBookingId);
             entity.HasIndex(e => e.DocumentType);
 
             entity.HasOne(e => e.Application)
                 .WithMany(a => a.Documents)
                 .HasForeignKey(e => e.ApplicationId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ShortStayBooking)
+                .WithMany(b => b.Documents)
+                .HasForeignKey(e => e.ShortStayBookingId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
@@ -770,8 +939,10 @@ public class StayHereDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
 
-            // ApplicationId is nullable: C2B payments may arrive before an application is matched
+            // ApplicationId/ShortStayBookingId are both nullable: C2B payments may arrive before
+            // either can be matched, and exactly one (or neither, until matched) is ever set.
             entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired(false);
+            entity.Property(e => e.ShortStayBookingId).HasColumnName("short_stay_booking_id").IsRequired(false);
 
             entity.Property(e => e.PaymentType).HasColumnName("payment_type").HasMaxLength(40);
             entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2);
@@ -809,6 +980,7 @@ public class StayHereDbContext : DbContext
             entity.Property(e => e.ConfirmedAt).HasColumnName("confirmed_at");
 
             entity.HasIndex(e => e.ApplicationId);
+            entity.HasIndex(e => e.ShortStayBookingId);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.TransactionSource);
             entity.HasIndex(e => e.MpesaCheckoutRequestId);
@@ -821,6 +993,87 @@ public class StayHereDbContext : DbContext
                 .HasForeignKey(e => e.ApplicationId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ShortStayBooking)
+                .WithMany(b => b.Payments)
+                .HasForeignKey(e => e.ShortStayBookingId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureShortStayBooking(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ShortStayBooking>(entity =>
+        {
+            entity.ToTable("short_stay_bookings");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ListingId).HasColumnName("listing_id");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.CheckInDate).HasColumnName("check_in_date");
+            entity.Property(e => e.CheckOutDate).HasColumnName("check_out_date");
+            entity.Property(e => e.GuestName).HasColumnName("guest_name").HasMaxLength(255);
+            entity.Property(e => e.GuestPhone).HasColumnName("guest_phone").HasMaxLength(20);
+            entity.Property(e => e.GuestEmail).HasColumnName("guest_email").HasMaxLength(255);
+            entity.Property(e => e.NumberOfGuests).HasColumnName("number_of_guests").HasDefaultValue(1);
+            entity.Property(e => e.SpecialRequests).HasColumnName("special_requests");
+            entity.Property(e => e.BookingFeeAmount).HasColumnName("booking_fee_amount").HasPrecision(18, 2);
+            entity.Property(e => e.Currency).HasColumnName("currency").HasMaxLength(3).HasDefaultValue("KES");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("PendingPayment");
+            entity.Property(e => e.CancellationReason).HasColumnName("cancellation_reason");
+            entity.Property(e => e.DocumentsSubmittedAt).HasColumnName("documents_submitted_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.ConfirmedAt).HasColumnName("confirmed_at");
+
+            entity.HasIndex(e => e.ListingId);
+            entity.HasIndex(e => e.CustomerId);
+            entity.HasIndex(e => e.Status);
+            // Drives the availability query: "which bookings for this listing currently block
+            // dates" filters on (ListingId, Status) then scans the date columns.
+            entity.HasIndex(e => new { e.ListingId, e.Status });
+
+            entity.HasOne(e => e.Listing)
+                .WithMany()
+                .HasForeignKey(e => e.ListingId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureAiConversation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AiConversation>(entity =>
+        {
+            entity.ToTable("ai_conversations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasMaxLength(64);
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.HasIndex(e => e.UpdatedAt);
+            entity.HasIndex(e => new { e.UserId, e.UpdatedAt });
+        });
+
+        modelBuilder.Entity<AiConversationMessage>(entity =>
+        {
+            entity.ToTable("ai_conversation_messages");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasMaxLength(64);
+            entity.Property(e => e.ConversationId).HasColumnName("conversation_id").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Content).HasColumnName("content");
+            entity.Property(e => e.ToolCallsJson).HasColumnName("tool_calls_json");
+            entity.Property(e => e.ToolCallId).HasColumnName("tool_call_id").HasMaxLength(64);
+            entity.Property(e => e.ToolName).HasColumnName("tool_name").HasMaxLength(100);
+            entity.Property(e => e.Timestamp).HasColumnName("timestamp");
+
+            entity.HasIndex(e => new { e.ConversationId, e.Timestamp });
+
+            entity.HasOne<AiConversation>()
+                .WithMany(c => c.Messages)
+                .HasForeignKey(e => e.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

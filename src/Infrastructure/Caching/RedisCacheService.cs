@@ -110,6 +110,25 @@ public sealed class RedisCacheService : ICacheService
         }
     }
 
+    public async Task<bool> TryConsumeRateLimitAsync(string key, int maxCount, TimeSpan window)
+    {
+        try
+        {
+            var db = _multiplexer.GetDatabase();
+            var count = await db.StringIncrementAsync(key).ConfigureAwait(false);
+            // Only the increment that CREATES the key sets its expiry - re-arming it on every
+            // call would let a steady trickle of requests keep the window open forever.
+            if (count == 1)
+                await db.KeyExpireAsync(key, window).ConfigureAwait(false);
+            return count <= maxCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis TryConsumeRateLimitAsync failed for key {CacheKey} - failing open", key);
+            return true;
+        }
+    }
+
     public async Task<IReadOnlyDictionary<string, long>> GetAndClearCountersAsync(string keyPrefix)
     {
         var result = new Dictionary<string, long>();

@@ -40,11 +40,9 @@ public class AuthFunctions
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             var registerRequest = JsonSerializer.Deserialize<RegisterRequest>(body, JsonOptions);
 
-            if (registerRequest == null) 
+            if (registerRequest == null)
             {
-                var badRes = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Invalid request body." });
-                return badRes;
+                return await CreateJsonResponse(req, new { Succeeded = false, Message = "Invalid request body." }, HttpStatusCode.BadRequest);
             }
 
             var user = await _authService.RegisterAsync(registerRequest);
@@ -53,9 +51,7 @@ public class AuthFunctions
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during Signup");
-            var res = req.CreateResponse(HttpStatusCode.BadRequest);
-            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
-            return res;
+            return await CreateJsonResponse(req, new { Succeeded = false, Message = ex.Message }, HttpStatusCode.BadRequest);
         }
     }
 
@@ -77,9 +73,7 @@ public class AuthFunctions
 
             if (loginRequest == null)
             {
-                var badRes = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Invalid request body." });
-                return badRes;
+                return await CreateJsonResponse(req, new { Succeeded = false, Message = "Invalid request body." }, HttpStatusCode.BadRequest);
             }
 
             if (!string.IsNullOrEmpty(loginRequest.EntraToken))
@@ -87,33 +81,25 @@ public class AuthFunctions
                 var response = await _authService.LoginWithEntraAsync(loginRequest.EntraToken);
                 return await CreateJsonResponse(req, response);
             }
-            
+
             if (!string.IsNullOrEmpty(loginRequest.Email))
             {
                 var otpRes = await _authService.RequestOtpAsync(new OtpRequest(loginRequest.Email, OtpTypeDto.Email));
-                var res = req.CreateResponse(otpRes.Succeeded ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
-                await res.WriteAsJsonAsync(otpRes);
-                return res;
+                return await CreateJsonResponse(req, otpRes, otpRes.Succeeded ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
             }
 
             if (!string.IsNullOrEmpty(loginRequest.PhoneNumber))
             {
                 var otpRes = await _authService.RequestOtpAsync(new OtpRequest(loginRequest.PhoneNumber, OtpTypeDto.Sms));
-                var res = req.CreateResponse(otpRes.Succeeded ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
-                await res.WriteAsJsonAsync(otpRes);
-                return res;
+                return await CreateJsonResponse(req, otpRes, otpRes.Succeeded ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
             }
 
-            var errorRes = req.CreateResponse(HttpStatusCode.BadRequest);
-            await errorRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Please provide Email, Phone Number, or Entra Token." });
-            return errorRes;
+            return await CreateJsonResponse(req, new { Succeeded = false, Message = "Please provide Email, Phone Number, or Entra Token." }, HttpStatusCode.BadRequest);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during Login");
-            var res = req.CreateResponse(HttpStatusCode.Unauthorized);
-            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
-            return res;
+            return await CreateJsonResponse(req, new { Succeeded = false, Message = ex.Message }, HttpStatusCode.Unauthorized);
         }
     }
 
@@ -135,9 +121,7 @@ public class AuthFunctions
 
             if (verificationRequest == null)
             {
-                var badRes = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Invalid request body." });
-                return badRes;
+                return await CreateJsonResponse(req, new { Succeeded = false, Message = "Invalid request body." }, HttpStatusCode.BadRequest);
             }
 
             var response = await _authService.VerifyOtpAndLoginAsync(verificationRequest);
@@ -146,9 +130,7 @@ public class AuthFunctions
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during VerifyOtp code");
-            var res = req.CreateResponse(HttpStatusCode.Unauthorized);
-            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
-            return res;
+            return await CreateJsonResponse(req, new { Succeeded = false, Message = ex.Message }, HttpStatusCode.Unauthorized);
         }
     }
 
@@ -176,9 +158,7 @@ public class AuthFunctions
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during GetProfiles");
-            var res = req.CreateResponse(HttpStatusCode.BadRequest);
-            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
-            return res;
+            return await CreateJsonResponse(req, new { Succeeded = false, Message = ex.Message }, HttpStatusCode.BadRequest);
         }
     }
 
@@ -199,23 +179,20 @@ public class AuthFunctions
 
             if (updateRequest == null)
             {
-                var badRes = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badRes.WriteAsJsonAsync(new { Succeeded = false, Message = "Invalid request body." });
-                return badRes;
+                return await CreateJsonResponse(req, new { Succeeded = false, Message = "Invalid request body." }, HttpStatusCode.BadRequest);
             }
 
             var success = await _authService.UpdateProfileAsync(updateRequest);
-            
-            var res = req.CreateResponse(success ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
-            await res.WriteAsJsonAsync(new { Succeeded = success, Message = success ? "Profile updated successfully." : "Failed to update profile." });
-            return res;
+
+            return await CreateJsonResponse(
+                req,
+                new { Succeeded = success, Message = success ? "Profile updated successfully." : "Failed to update profile." },
+                success ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during UpdateProfile");
-            var res = req.CreateResponse(HttpStatusCode.BadRequest);
-            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
-            return res;
+            return await CreateJsonResponse(req, new { Succeeded = false, Message = ex.Message }, HttpStatusCode.BadRequest);
         }
     }
 
@@ -251,9 +228,7 @@ public class AuthFunctions
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during GetAllUsers");
-            var res = req.CreateResponse(HttpStatusCode.BadRequest);
-            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
-            return res;
+            return await CreateJsonResponse(req, new { Succeeded = false, Message = ex.Message }, HttpStatusCode.BadRequest);
         }
     }
 
@@ -272,24 +247,20 @@ public class AuthFunctions
             var user = await _authService.GetUserByIdAsync(id);
             if (user == null)
             {
-                var notFound = req.CreateResponse(HttpStatusCode.NotFound);
-                await notFound.WriteAsJsonAsync(new { Succeeded = false, Message = "User not found." });
-                return notFound;
+                return await CreateJsonResponse(req, new { Succeeded = false, Message = "User not found." }, HttpStatusCode.NotFound);
             }
             return await CreateJsonResponse(req, user);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during GetUserById");
-            var res = req.CreateResponse(HttpStatusCode.BadRequest);
-            await res.WriteAsJsonAsync(new { Succeeded = false, Message = ex.Message });
-            return res;
+            return await CreateJsonResponse(req, new { Succeeded = false, Message = ex.Message }, HttpStatusCode.BadRequest);
         }
     }
 
-    private async Task<HttpResponseData> CreateJsonResponse<T>(HttpRequestData req, T content)
+    private async Task<HttpResponseData> CreateJsonResponse<T>(HttpRequestData req, T content, HttpStatusCode statusCode = HttpStatusCode.OK)
     {
-        var response = req.CreateResponse(HttpStatusCode.OK);
+        var response = req.CreateResponse(statusCode);
         response.Headers.Add("Content-Type", "application/json; charset=utf-8");
         await response.WriteStringAsync(JsonSerializer.Serialize(content, JsonOptions));
         return response;

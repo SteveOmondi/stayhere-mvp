@@ -9,15 +9,20 @@ import { useApp } from "./context/AppContext";
 import { AboutPage } from "./pages/AboutPage";
 import { CartPage } from "./pages/CartPage";
 import { ContactPage } from "./pages/ContactPage";
+import { EnquiryChatPage } from "./pages/EnquiryChatPage";
 import { ExplorePage } from "./pages/ExplorePage";
 import { FavoritesPage } from "./pages/FavoritesPage";
 import { HomePage } from "./pages/HomePage";
 import { ListingDetailPage } from "./pages/ListingDetailPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyApplicationsPage } from "./pages/MyApplicationsPage";
+import { MyBookingsPage } from "./pages/MyBookingsPage";
 import { MyPropertiesPage } from "./pages/MyPropertiesPage";
 import { RentalFlowPage } from "./pages/RentalFlowPage";
+import { ShortStayBookingPage } from "./pages/ShortStayBookingPage";
+import { SagePage } from "./pages/SagePage";
 import { SignUpPage } from "./pages/SignUpPage";
+import { loginUrlWithRedirect } from "./lib/authRedirect";
 
 const pageVariants = {
   initial: { opacity: 0, y: 16 },
@@ -35,7 +40,10 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useApp();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  const location = useLocation();
+  return isAuthenticated
+    ? <>{children}</>
+    : <Navigate to={loginUrlWithRedirect(location.pathname + location.search)} replace />;
 }
 
 export default function App() {
@@ -47,7 +55,15 @@ export default function App() {
     <div className="flex min-h-screen flex-col bg-brand-dark">
       <Navbar />
       <main className="flex-1">
-        <AnimatePresence mode="wait" initial={false}>
+        {/* mode="wait" previously held the NEXT page's mount hostage until the PREVIOUS page's
+         * exit tween reported complete. React 18 StrictMode double-invokes effects in dev, which
+         * can desync AnimatePresence's internal exit bookkeeping for exactly this key-remount
+         * pattern (a fresh `key` on every route change) - when that happens the exit never
+         * resolves, so the new route silently never mounts: the URL changes but the old page
+         * stays on screen until a hard refresh. Dropping "wait" removes the dependency entirely -
+         * the new page always mounts immediately on navigation, with the old one fading out
+         * behind it rather than gating it. */}
+        <AnimatePresence initial={false}>
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<PageWrapper><HomePage /></PageWrapper>} />
             <Route path="/explore" element={<PageWrapper><ExplorePage /></PageWrapper>} />
@@ -55,17 +71,31 @@ export default function App() {
             <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>} />
             <Route path="/signup" element={<PageWrapper><SignUpPage /></PageWrapper>} />
             <Route path="/favorites" element={<PageWrapper><FavoritesPage /></PageWrapper>} />
-            <Route path="/cart" element={<PageWrapper><CartPage /></PageWrapper>} />
+            <Route path="/cart" element={
+              <RequireAuth><PageWrapper><CartPage /></PageWrapper></RequireAuth>
+            } />
+            <Route path="/enquiries/:id" element={
+              <RequireAuth><PageWrapper><EnquiryChatPage /></PageWrapper></RequireAuth>
+            } />
             <Route path="/about" element={<PageWrapper><AboutPage /></PageWrapper>} />
             <Route path="/contact" element={<PageWrapper><ContactPage /></PageWrapper>} />
             <Route path="/dashboard" element={
               <RequireAuth><PageWrapper><MyPropertiesPage /></PageWrapper></RequireAuth>
             } />
+            <Route path="/bookings" element={
+              <RequireAuth><PageWrapper><MyBookingsPage /></PageWrapper></RequireAuth>
+            } />
             <Route path="/rental-flow" element={
               <RequireAuth><PageWrapper><RentalFlowPage /></PageWrapper></RequireAuth>
             } />
+            <Route path="/book-stay" element={
+              <RequireAuth><PageWrapper><ShortStayBookingPage /></PageWrapper></RequireAuth>
+            } />
             <Route path="/my-applications" element={
               <RequireAuth><PageWrapper><MyApplicationsPage /></PageWrapper></RequireAuth>
+            } />
+            <Route path="/sage" element={
+              <RequireAuth><SagePage /></RequireAuth>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

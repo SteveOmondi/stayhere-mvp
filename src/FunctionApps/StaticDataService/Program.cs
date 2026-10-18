@@ -37,6 +37,7 @@ var host = new HostBuilder()
         services.AddScoped<ISubcategoryService, SubcategoryService>();
         services.AddScoped<IRoleDefinitionService, RoleDefinitionService>();
         services.AddScoped<IUserTypeDefinitionService, UserTypeDefinitionService>();
+        services.AddSingleton<IFurnitureCatalogService, FurnitureCatalogService>();
 
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();

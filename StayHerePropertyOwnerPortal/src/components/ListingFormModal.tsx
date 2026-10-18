@@ -6,9 +6,12 @@ import {
 import type { UpsertTermsBody } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
-import { IcoX, IcoPlus, IcoLoader, IcoCheck } from "./icons";
+import { IcoX, IcoPlus, IcoLoader, IcoCheck, IcoVacant, IcoTrash } from "./icons";
 import { StructuredImageUploader } from "./StructuredImageUploader";
 import type { ImageSection } from "./StructuredImageUploader";
+import { FloorPlanEditorModal, type FloorPlanPayload } from "./FloorPlanEditorModal";
+import { sqftToSqm } from "../lib/floorPlanGeometry";
+import { compressImageFile } from "../lib/imageCompression";
 
 /* ─── types ─── */
 type PropertyOption = { id: string; buildingName: string; sharedAmenities?: string[] };
@@ -41,11 +44,23 @@ const LISTING_IMAGE_SECTIONS: ImageSection[] = [
 const PROPERTY_TYPES = ["Apartment", "House", "Studio", "Bedsitter", "Commercial"];
 const LISTING_TYPES  = ["Rent", "Sale", "ShortStay", "Lease"];
 
+/** Tenure only applies to Sale/Rent listings - ShortStay/Lease have no Tenure field at all. */
+const TENURE_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  Sale: [
+    { value: "CompleteTurnkey", label: "Complete / Turnkey" },
+    { value: "OffPlanUnderConstruction", label: "Off-Plan / Under Construction" },
+  ],
+  Rent: [
+    { value: "LongTermLease", label: "Long-Term Lease" },
+    { value: "ShortTermServicedVacation", label: "Short-Term / Serviced / Vacation" },
+  ],
+};
+
 const EMPTY_FORM = {
   propertyId: "", title: "", price: "", bedrooms: "1", bathrooms: "1",
   propertyType: "Apartment", listingType: "Rent", description: "",
   unitNumber: "", floorNumber: "0", sizeSqft: "",
-  categoryId: "", subcategoryId: "",
+  categoryId: "", subcategoryId: "", tenure: "",
 };
 
 const EMPTY_TERMS = {
@@ -89,7 +104,7 @@ function buildTermsBody(t: typeof EMPTY_TERMS): UpsertTermsBody | null {
 export function ListingFormModal({
   open, onClose, onSaved, editListing, lockedProperty,
 }: ListingFormModalProps) {
-  const { owner, toast } = useOwner();
+  const { owner, userId, toast } = useOwner();
   const isEdit = !!editListing;
 
   /* ── form state ── */
@@ -98,6 +113,8 @@ export function ListingFormModal({
   const [terms, setTerms] = useState(EMPTY_TERMS);
   const [termsOpen, setTermsOpen] = useState(false);
   const [primaryImg, setPrimaryImg] = useState<ImgSlot>(EMPTY_IMG());
+  const [floorPlan, setFloorPlan] = useState<FloorPlanPayload | null>(null);
+  const [floorPlanEditorOpen, setFloorPlanEditorOpen] = useState(false);
   const [inheritedAmenities, setInheritedAmenities] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -117,6 +134,7 @@ export function ListingFormModal({
     setTerms(EMPTY_TERMS);
     setTermsOpen(false);
     setPrimaryImg(EMPTY_IMG());
+    setFloorPlan(null);
     setInheritedAmenities([]);
     setEditTermsId(null);
     setSubcategories([]);
@@ -124,12 +142,12 @@ export function ListingFormModal({
 
   /* ── load reference data + (if edit) full listing details ── */
   useEffect(() => {
-    if (!open || !owner?.id) return;
+    if (!open || !userId) return;
     reset();
 
     // Load properties + categories in parallel
     Promise.allSettled([
-      propertiesApi.byOwner(owner.id, 1, 50),
+      propertiesApi.byOwner(userId, 1, 50),
       staticApi.categories(),
     ]).then(([pd, cats]) => {
       if (pd.status === "fulfilled") {
@@ -184,6 +202,7 @@ export function ListingFormModal({
           sizeSqft:      unit?.sizeSqft != null ? String(unit.sizeSqft) : "",
           categoryId:    cat?.id ? String(cat.id) : "",
           subcategoryId: sub?.id ? String(sub.id) : "",
+          tenure:        unit?.tenure ? String(unit.tenure) : "",
         });
 
         setPrimaryImg(imgs?.primary ? { url: String(imgs.primary), uploading: false } : EMPTY_IMG());
@@ -196,6 +215,9 @@ export function ListingFormModal({
           }
         }
         setStructuredImages(structured);
+
+        const rawFloorPlan = r.floorPlan as Record<string, unknown> | null | undefined;
+        setFloorPlan(rawFloorPlan ? (rawFloorPlan as unknown as FloorPlanPayload) : null);
 
         // Load existing terms (may 404 if none yet)
         return termsApi.getByListing(editListing.id)
@@ -255,10 +277,11 @@ export function ListingFormModal({
 
   /* ── image upload helper ── */
   async function uploadImage(file: File): Promise<string> {
-    const ct = file.type || "image/jpeg";
+    const compressed = await compressImageFile(file);
+    const ct = compressed.type || "image/jpeg";
     const { uploadUrl, publicUrl, contentType: sCt } =
-      await uploadApi.getPresignedUrl("properties/images", file.name, ct);
-    await uploadToR2(uploadUrl, file, sCt);
+      await uploadApi.getPresignedUrl("properties/images", compressed.name, ct);
+    await uploadToR2(uploadUrl, compressed, sCt);
     return publicUrl;
   }
 
@@ -297,8 +320,10 @@ export function ListingFormModal({
         primaryImageUrl: primaryImg.url || undefined,
         images: [],
         structuredImages,
+        floorPlan: floorPlan ?? undefined,
         categoryId:    form.categoryId    || undefined,
         subcategoryId: form.subcategoryId || undefined,
+        tenure: TENURE_OPTIONS[form.listingType] ? (form.tenure || undefined) : undefined,
       };
 
       let listingId: string;
@@ -336,6 +361,7 @@ export function ListingFormModal({
   const title = isEdit ? "Edit Listing" : lockedProperty ? `New Listing · ${lockedProperty.buildingName}` : "New Listing";
 
   return (
+    <>
     <div className="modal-bg" style={{ zIndex: 60 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-box max-w-lg w-full">
         <div className="flex items-center justify-between p-6 border-b border-black/[0.07]">
@@ -406,11 +432,23 @@ export function ListingFormModal({
               <div className="field">
                 <label className="field-label">Listing Type</label>
                 <select className="select" value={form.listingType}
-                  onChange={e => setForm(f => ({ ...f, listingType: e.target.value }))}>
+                  onChange={e => setForm(f => ({ ...f, listingType: e.target.value, tenure: "" }))}>
                   {LISTING_TYPES.map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>
             </div>
+
+            {/* Tenure - only applies to Sale/Rent listings */}
+            {TENURE_OPTIONS[form.listingType] && (
+              <div className="field">
+                <label className="field-label">Tenure *</label>
+                <select required className="select" value={form.tenure}
+                  onChange={e => setForm(f => ({ ...f, tenure: e.target.value }))}>
+                  <option value="">Select tenure…</option>
+                  {TENURE_OPTIONS[form.listingType].map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+            )}
 
             {/* Property Type / Size */}
             <div className="grid grid-cols-2 gap-3">
@@ -505,6 +543,30 @@ export function ListingFormModal({
               />
             </div>
 
+            {/* Floor plan — optional on both create and edit. The uploaded image and AI-traced
+                geometry are held in local state (floorPlan) and only sent as part of the
+                create/update payload below, so no persisted listing id is required up front. */}
+            <div className="field">
+              <label className="field-label">Floor Plan <span className="text-brand-400 font-normal">(optional)</span></label>
+              {floorPlan ? (
+                <div className="flex items-center justify-between p-3 rounded-xl border border-black/[0.07] bg-brand-50/40">
+                  <div className="flex items-center gap-2 text-xs text-brand-700">
+                    <IcoVacant size={18} className="text-brand-teal" />
+                    <span>{floorPlan.rooms.length} room{floorPlan.rooms.length === 1 ? "" : "s"}, {floorPlan.openings.length} door/window{floorPlan.openings.length === 1 ? "" : "s"} detected</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button type="button" className="btn-secondary text-xs" onClick={() => setFloorPlanEditorOpen(true)}>Replace</button>
+                    <button type="button" className="btn-icon" onClick={() => setFloorPlan(null)}><IcoTrash size={14} /></button>
+                  </div>
+                </div>
+              ) : (
+                <button type="button" className="btn-secondary text-xs" onClick={() => setFloorPlanEditorOpen(true)}>
+                  + Add floor plan
+                </button>
+              )}
+              <p className="text-xs text-brand-400 mt-1">AI traces rooms, doors &amp; windows from an uploaded image so the listing gets 2D/3D floor plan views. You can skip this and add it later by editing the listing.</p>
+            </div>
+
             {/* Lease Terms & Deposits collapsible */}
             <div className="field">
               <button type="button"
@@ -597,5 +659,13 @@ export function ListingFormModal({
         )}
       </div>
     </div>
+    <FloorPlanEditorModal
+      open={floorPlanEditorOpen}
+      onClose={() => setFloorPlanEditorOpen(false)}
+      onSaved={fp => { setFloorPlan(fp); setFloorPlanEditorOpen(false); }}
+      statedSizeSqm={form.sizeSqft ? sqftToSqm(Number(form.sizeSqft)) : undefined}
+      listingTitle={form.title || undefined}
+    />
+    </>
   );
 }

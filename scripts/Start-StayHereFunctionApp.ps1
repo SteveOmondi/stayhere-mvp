@@ -14,7 +14,12 @@ param(
     [ValidateSet("AuthService", "PropertyService", "CustomerService", "PropertyOwnerService", "StaticDataService", "AiAgentService", "PaymentsService", "LoggingService")]
     [string] $Name,
 
-    [switch] $NoNewWindow
+    [switch] $NoNewWindow,
+
+    # func's own build step races other function apps over shared project obj/ output when several
+    # are launched at once (CS2012 file-lock errors). Build the solution once beforehand and pass
+    # this switch so `func start` just runs the already-built output.
+    [switch] $NoBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,12 +34,15 @@ $repo = Get-StayHereRepoRoot
 $appDir = Join-Path $repo $def.RelativePath
 if (-not (Test-Path $appDir)) { throw "Directory not found: $appDir" }
 
-$cmd = "Set-Location '$appDir'; func start --port $($def.Port)"
+$funcArgs = "func start --port $($def.Port)"
+if ($NoBuild) { $funcArgs += " --no-build" }
+$cmd = "Set-Location '$appDir'; $funcArgs"
 
 if ($NoNewWindow) {
     Push-Location $appDir
     try {
-        func start --port $def.Port
+        if ($NoBuild) { func start --port $def.Port --no-build }
+        else { func start --port $def.Port }
     }
     finally {
         Pop-Location

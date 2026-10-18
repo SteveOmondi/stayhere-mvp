@@ -6,14 +6,14 @@ import { IcoCheck, IcoEdit, IcoLoader, IcoPlus, IcoTerms, IcoTrash, IcoX } from 
 type Listing = Record<string, unknown>;
 
 export function PropertyTermsPage() {
-  const { owner, toast } = useOwner();
+  const { userId, toast } = useOwner();
   const [listings, setListings] = useState<Listing[]>([]);
   const [selectedListing, setSelectedListing] = useState<string>("");
   const [terms, setTerms] = useState<PropertyTerms | null>(null);
   const [loadingListings, setLoadingListings] = useState(true);
   const [loadingTerms, setLoadingTerms] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
-  const ownerId = owner?.id ?? "";
+  const ownerId = userId;
 
   useEffect(() => {
     if (!ownerId) return;

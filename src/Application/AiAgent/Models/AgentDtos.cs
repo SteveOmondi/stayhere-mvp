@@ -11,7 +11,17 @@ public record AgentChatResponse(
     string ConversationId,
     IReadOnlyList<string> Sources,
     double Confidence,
-    DateTime Timestamp);
+    DateTime Timestamp,
+    IReadOnlyList<AgentAttachment>? Attachments = null);
+
+/// <summary>
+/// Structured content the frontend can render richly alongside the plain-text reply - a listing
+/// carousel, nearby-places list, or a next-step CTA button - built server-side from whichever
+/// tools actually ran this turn. <see cref="Data"/> is the tool's own JSON result (already grounded,
+/// already shaped for display), passed through as-is rather than re-modeled into a second DTO.
+/// Type is one of: "listings" | "nearbyPlaces" | "nextStep".
+/// </summary>
+public record AgentAttachment(string Type, System.Text.Json.JsonElement Data);
 
 /// <summary>Heuristic factors extracted from the user query (no client-supplied filters).</summary>
 public record AgentExtractedIntent(
@@ -77,3 +87,16 @@ public record AgentListingSearchItemDto(
     IReadOnlyList<string> Amenities);
 
 public record AgentListingSearchResponse(IReadOnlyList<AgentListingSearchItemDto> Listings);
+
+/// <summary>One entry in a user's chat history list - a lightweight preview, not the full thread.</summary>
+public record AgentConversationSummaryDto(string Id, string? Preview, DateTime CreatedAt, DateTime UpdatedAt);
+
+public record AgentConversationMessageDto(string Role, string Content, DateTime Timestamp);
+
+/// <summary>Full replayable thread for one conversation - tool-call plumbing messages are filtered
+/// out, only the user/assistant text exchange a person actually typed or read is included.</summary>
+public record AgentConversationDetailDto(
+    string Id,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    IReadOnlyList<AgentConversationMessageDto> Messages);

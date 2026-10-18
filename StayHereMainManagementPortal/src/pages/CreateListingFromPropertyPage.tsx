@@ -9,8 +9,22 @@ import {
 } from "../lib/listingImages";
 import { asPaginated } from "../lib/paginated";
 import { usePortal } from "../context/PortalContext";
+import { PhoneInput } from "../components/PhoneInput";
 
 type PropRow = Record<string, unknown>;
+
+/** Tenure only applies to Sale/Rent listings - the backend now requires it (400 otherwise)
+ * and ignores it for ShortStay/Lease. */
+const TENURE_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  Sale: [
+    { value: "CompleteTurnkey", label: "Complete / Turnkey" },
+    { value: "OffPlanUnderConstruction", label: "Off-Plan / Under Construction" },
+  ],
+  Rent: [
+    { value: "LongTermLease", label: "Long-Term Lease" },
+    { value: "ShortTermServicedVacation", label: "Short-Term / Serviced / Vacation" },
+  ],
+};
 
 export function CreateListingFromPropertyPage() {
   const nav = useNavigate();
@@ -46,6 +60,7 @@ export function CreateListingFromPropertyPage() {
     priceCurrency: "KES",
     propertyType: "Apartment",
     listingType: "Rent",
+    tenure: "",
     bedrooms: "2",
     bathrooms: "2",
     isFurnished: false,
@@ -125,6 +140,10 @@ export function CreateListingFromPropertyPage() {
       toast("Select a property.", "error");
       return;
     }
+    if (TENURE_OPTIONS[form.listingType] && !form.tenure) {
+      toast("Select a tenure for this listing type.", "error");
+      return;
+    }
     const urlImages = parseImageUrlLines(imageUrlsText);
     const combined = [...previewUrls, ...urlImages].slice(0, MAX_LISTING_IMAGES);
     let ownerName = ownerEntry?.fullName ?? "";
@@ -154,6 +173,7 @@ export function CreateListingFromPropertyPage() {
           priceCurrency: form.priceCurrency.trim() || "KES",
           propertyType: form.propertyType,
           listingType: form.listingType,
+          tenure: TENURE_OPTIONS[form.listingType] ? form.tenure : undefined,
           bedrooms: Number(form.bedrooms) || 0,
           bathrooms: Number(form.bathrooms) || 0,
           isFurnished: form.isFurnished,
@@ -360,7 +380,7 @@ export function CreateListingFromPropertyPage() {
               <select
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={form.listingType}
-                onChange={(e) => setForm((f) => ({ ...f, listingType: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, listingType: e.target.value, tenure: "" }))}
               >
                 {["Rent", "Sale", "ShortStay"].map((t) => (
                   <option key={t} value={t}>
@@ -370,6 +390,25 @@ export function CreateListingFromPropertyPage() {
               </select>
             </label>
           </div>
+
+          {TENURE_OPTIONS[form.listingType] && (
+            <label className="block text-xs font-bold text-brand-800 uppercase">
+              Tenure
+              <select
+                required
+                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+                value={form.tenure}
+                onChange={(e) => setForm((f) => ({ ...f, tenure: e.target.value }))}
+              >
+                <option value="">Select tenure…</option>
+                {TENURE_OPTIONS[form.listingType].map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <div className="grid sm:grid-cols-2 gap-3">
             <label className="block text-xs font-bold text-brand-800 uppercase">
@@ -449,12 +488,7 @@ export function CreateListingFromPropertyPage() {
               value={form.agentName}
               onChange={(e) => setForm((f) => ({ ...f, agentName: e.target.value }))}
             />
-            <input
-              className="w-full border rounded-lg px-3 py-2 text-sm"
-              placeholder="Agent phone"
-              value={form.agentPhone}
-              onChange={(e) => setForm((f) => ({ ...f, agentPhone: e.target.value }))}
-            />
+            <PhoneInput value={form.agentPhone} onChange={(v) => setForm((f) => ({ ...f, agentPhone: v }))} />
             <input
               className="w-full border rounded-lg px-3 py-2 text-sm"
               placeholder="Agent email"

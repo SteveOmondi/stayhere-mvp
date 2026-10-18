@@ -12,6 +12,7 @@ import { OnboardingPage } from "./pages/OnboardingPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { BookingsPage } from "./pages/BookingsPage";
+import { EnquiriesPage } from "./pages/EnquiriesPage";
 import { ApplicationsPage } from "./pages/ApplicationsPage";
 import { PropertyTermsPage } from "./pages/PropertyTermsPage";
 
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="/analytics"   element={<AnalyticsPage />} />
         <Route path="/settings"      element={<SettingsPage />} />
         <Route path="/bookings"     element={<BookingsPage />} />
+        <Route path="/enquiries"    element={<EnquiriesPage />} />
         <Route path="/applications" element={<ApplicationsPage />} />
         <Route path="/terms"        element={<PropertyTermsPage />} />
         <Route path="*"             element={<Navigate to="/dashboard" replace />} />

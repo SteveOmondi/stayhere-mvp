@@ -4,6 +4,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using StayHere.Domain.Entities;
 using StayHere.Infrastructure.Persistence;
 using StayHere.Shared.Attributes;
@@ -15,12 +16,14 @@ namespace StayHere.PropertyService.Functions;
 ///
 /// POST   /applications                                 Start application                [Tenant, Admin]
 /// GET    /applications/{id}                            Get application + docs + payments [Tenant, PropertyOwner, PropertyManager, Admin]
-/// GET    /applications/customer/{customerId}           Customer's applications           [Tenant, Admin]
+/// GET    /applications/customer/{customerId}           Customer's applications, paginated[Tenant, Admin]
 /// GET    /applications/listing/{listingId}             Applications for a listing        [PropertyOwner, PropertyManager, Admin]
 /// GET    /applications/owner/{ownerId}                 All apps across owner's listings  [PropertyOwner, PropertyManager, Admin]
 /// POST   /applications/{id}/documents                  Upload a document URL             [Tenant, Admin]
+/// PATCH  /applications/{id}/prescreen                  Pre-screen: approve or reject      [PropertyOwner, PropertyManager, Admin]
+///                                                       the applicant before documents are requested
 /// PATCH  /applications/{id}/submit                     Submit docs for review            [Tenant, Admin]
-/// PATCH  /applications/{id}/review                     Approve or reject                 [PropertyOwner, PropertyManager, Admin]
+/// PATCH  /applications/{id}/review                     Approve or reject the documents   [PropertyOwner, PropertyManager, Admin]
 /// PATCH  /applications/{id}/accept-terms               Customer accepts terms            [Tenant, Admin]
 /// </summary>
 public class ApplicationFunctions
@@ -28,6 +31,25 @@ public class ApplicationFunctions
     private readonly StayHereDbContext _db;
     private readonly ILogger<ApplicationFunctions> _log;
     private static readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web);
+
+    /// <summary>
+    /// Single source of truth for the customer-facing status label - mirrored by Sage's own
+    /// status copy (AgentToolExecutor.cs) and surfaced to clients via ToDetailDto's statusLabel
+    /// field, so new statuses only need to be added here instead of in three separate places.
+    /// </summary>
+    internal static string StatusLabel(string status) => status switch
+    {
+        "PendingApproval" => "Pending owner approval",
+        "DocumentsPending" => "Documents needed",
+        "UnderReview" => "Documents under review",
+        "Approved" => "Approved - accept lease terms",
+        "Rejected" => "Not approved",
+        "TermsAccepted" => "Lease terms accepted",
+        "PaymentPending" => "Payment pending",
+        "Active" => "Active tenancy",
+        "Cancelled" => "Cancelled",
+        _ => status,
+    };
 
     public ApplicationFunctions(StayHereDbContext db, ILogger<ApplicationFunctions> log)
     {
@@ -40,14 +62,16 @@ public class ApplicationFunctions
     public async Task<HttpResponseData> Create(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "applications")] HttpRequestData req)
     {
+        CreateApplicationRequest? dto = null;
         try
         {
             var body = await new StreamReader(req.Body).ReadToEndAsync();
-            var dto = JsonSerializer.Deserialize<CreateApplicationRequest>(body, _json);
+            dto = JsonSerializer.Deserialize<CreateApplicationRequest>(body, _json);
             if (dto == null || dto.ListingId == Guid.Empty || dto.CustomerId == Guid.Empty)
                 return await Error(req, HttpStatusCode.BadRequest, "ListingId and CustomerId are required.");
 
-            // Prevent duplicate active applications
+            // Prevent duplicate active applications. Booking a viewing first is no longer required -
+            // ViewingBookingId is optional and can be attached later if the customer books one.
             var existing = await _db.TenantApplications
                 .Where(a => a.ListingId == dto.ListingId && a.CustomerId == dto.CustomerId
                          && a.Status != "Cancelled" && a.Status != "Rejected")
@@ -61,7 +85,7 @@ public class ApplicationFunctions
                 ListingId = dto.ListingId,
                 CustomerId = dto.CustomerId,
                 ViewingBookingId = dto.ViewingBookingId,
-                Status = "DocumentsPending",
+                Status = "PendingApproval",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -70,11 +94,55 @@ public class ApplicationFunctions
             await _db.SaveChangesAsync();
             return await Json(req, HttpStatusCode.Created, await ToDetailDto(app));
         }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex) && dto != null)
+        {
+            // Lost a race against a concurrent create for the same listing+customer - the other
+            // request's row now exists (enforced by the partial unique index - see the
+            // AddActiveApplicationUniqueIndex migration), so fetch and return it instead of erroring.
+            var existing = await _db.TenantApplications
+                .Where(a => a.ListingId == dto!.ListingId && a.CustomerId == dto.CustomerId
+                         && a.Status != "Cancelled" && a.Status != "Rejected")
+                .FirstOrDefaultAsync();
+            if (existing != null) return await Json(req, HttpStatusCode.OK, await ToDetailDto(existing));
+            _log.LogError(ex, "Unique violation creating application with no recoverable existing row");
+            return await Error(req, HttpStatusCode.Conflict, "An application for this listing already exists.");
+        }
         catch (Exception ex)
         {
             _log.LogError(ex, "Error creating application");
             return await Error(req, HttpStatusCode.InternalServerError, ex.Message);
         }
+    }
+
+    // ── Pre-screen (approve or reject the applicant before documents are requested) ───────────
+    [Function("PrescreenApplication")]
+    [Authorize("PropertyOwner", "PropertyManager", "Admin")]
+    public async Task<HttpResponseData> Prescreen(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "patch", Route = "applications/{id:guid}/prescreen")] HttpRequestData req,
+        Guid id)
+    {
+        var app = await _db.TenantApplications.FindAsync(id);
+        if (app == null) return await Error(req, HttpStatusCode.NotFound, "Application not found.");
+        if (app.Status != "PendingApproval")
+            return await Error(req, HttpStatusCode.Conflict, $"Cannot pre-screen from status '{app.Status}'.");
+
+        var body = await new StreamReader(req.Body).ReadToEndAsync();
+        var dto = JsonSerializer.Deserialize<ReviewApplicationRequest>(body, _json);
+        if (dto == null) return await Error(req, HttpStatusCode.BadRequest, "Request body required.");
+
+        var allowed = new[] { "Approved", "Rejected" };
+        if (!allowed.Contains(dto.Decision))
+            return await Error(req, HttpStatusCode.BadRequest, "Decision must be 'Approved' or 'Rejected'.");
+
+        // Pre-screen approval moves the applicant on to documents, not to the final "Approved"
+        // status - that still only happens after the owner reviews the actual documents.
+        app.Status = dto.Decision == "Approved" ? "DocumentsPending" : "Rejected";
+        app.RejectionReason = dto.Decision == "Rejected" ? dto.Reason : null;
+        app.ReviewedAt = DateTime.UtcNow;
+        app.ReviewedBy = dto.ReviewerEmail;
+        app.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return await Json(req, HttpStatusCode.OK, await ToDetailDto(app));
     }
 
     // ── Get application ────────────────────────────────────────────────────────
@@ -92,23 +160,39 @@ public class ApplicationFunctions
         return await Json(req, HttpStatusCode.OK, await ToDetailDto(app));
     }
 
-    // ── Get by customer ────────────────────────────────────────────────────────
+    // ── Get by customer (paginated) ────────────────────────────────────────────
     [Function("GetApplicationsByCustomer")]
     [Authorize("Tenant", "Admin")]
     public async Task<HttpResponseData> GetByCustomer(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "applications/customer/{customerId:guid}")] HttpRequestData req,
         Guid customerId)
     {
-        var apps = await _db.TenantApplications
+        var page = Math.Max(1, GetQueryInt(req, "page", 1));
+        var pageSize = Math.Clamp(GetQueryInt(req, "pageSize", 20), 1, 100);
+
+        var query = _db.TenantApplications
+            .Where(a => a.CustomerId == customerId)
+            .OrderByDescending(a => a.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+        var apps = await query
             .Include(a => a.Documents)
             .Include(a => a.Payments)
-            .Where(a => a.CustomerId == customerId)
-            .OrderByDescending(a => a.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        var result = new List<object>();
-        foreach (var app in apps) result.Add(await ToDetailDto(app));
-        return await Json(req, HttpStatusCode.OK, result);
+        var items = new List<object>();
+        foreach (var app in apps) items.Add(await ToDetailDto(app));
+
+        return await Json(req, HttpStatusCode.OK, new
+        {
+            items,
+            totalCount,
+            page,
+            pageSize,
+            totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+        });
     }
 
     // ── Get by listing ─────────────────────────────────────────────────────────
@@ -212,7 +296,7 @@ public class ApplicationFunctions
         return await Json(req, HttpStatusCode.OK, await ToDetailDto(app));
     }
 
-    // ── Review (approve / reject) ──────────────────────────────────────────────
+    // ── Review the submitted documents (approve / reject) ──────────────────────
     [Function("ReviewApplication")]
     [Authorize("PropertyOwner", "PropertyManager", "Admin")]
     public async Task<HttpResponseData> Review(
@@ -221,6 +305,8 @@ public class ApplicationFunctions
     {
         var app = await _db.TenantApplications.FindAsync(id);
         if (app == null) return await Error(req, HttpStatusCode.NotFound, "Application not found.");
+        if (app.Status != "UnderReview")
+            return await Error(req, HttpStatusCode.Conflict, $"Cannot review documents from status '{app.Status}'.");
 
         var body = await new StreamReader(req.Body).ReadToEndAsync();
         var dto = JsonSerializer.Deserialize<ReviewApplicationRequest>(body, _json);
@@ -297,6 +383,7 @@ public class ApplicationFunctions
             customerId         = app.CustomerId,
             viewingBookingId   = app.ViewingBookingId,
             status             = app.Status,
+            statusLabel        = StatusLabel(app.Status),
             rejectionReason    = app.RejectionReason,
             reviewedAt         = app.ReviewedAt,
             reviewedBy         = app.ReviewedBy,
@@ -346,6 +433,18 @@ public class ApplicationFunctions
         var res = req.CreateResponse(code);
         await res.WriteAsJsonAsync(new { error = msg });
         return res;
+    }
+
+    /// <summary>Postgres SQLSTATE 23505 = unique_violation - matches the partial unique index added
+    /// by the AddActiveApplicationUniqueIndex migration.</summary>
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is PostgresException { SqlState: "23505" };
+
+    private static int GetQueryInt(HttpRequestData req, string name, int defaultValue)
+    {
+        var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
+        var value = query[name];
+        return int.TryParse(value, out var result) ? result : defaultValue;
     }
 }
 

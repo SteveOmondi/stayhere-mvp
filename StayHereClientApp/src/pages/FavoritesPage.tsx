@@ -8,9 +8,16 @@ import { SkeletonGrid, SectionHeading } from "../components/ui";
 import { IcoArrowRight, IcoHeartFilled } from "../components/icons";
 
 export function FavoritesPage() {
-  const { favorites, toast } = useApp();
+  const { favorites, toast, refreshFavorites } = useApp();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Pulls the latest saved list the moment this page opens - Sage may have saved/unsaved
+  // something in a chat since this context last refreshed, and this page should never show stale
+  // state just because the user didn't reload the whole app.
+  useEffect(() => {
+    void refreshFavorites();
+  }, [refreshFavorites]);
 
   useEffect(() => {
     if (!favorites.length) { setListings([]); return; }

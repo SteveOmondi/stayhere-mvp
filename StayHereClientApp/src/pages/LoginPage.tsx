@@ -1,35 +1,71 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { authApi, ApiError } from "../lib/api";
 import { useApp } from "../context/AppContext";
-import { IcoArrowRight, IcoCheck, IcoKey, IcoLoader, IcoX } from "../components/icons";
+import { readLoginRedirect } from "../lib/authRedirect";
+import { PhoneInput, isPhoneComplete } from "../components/PhoneInput";
+import { IcoArrowRight, IcoCheck, IcoKey, IcoLoader, IcoX, IcoEmail, IcoPhone } from "../components/icons";
 import { GradientBlobs, Logo } from "../components/ui";
 
 type Step = "identify" | "otp" | "done";
+type Method = "email" | "phone";
+
+/** ApiError.userMessage already covers 403/401/empty-body cases with clear text - this just adds
+ * a sign-in-flow-specific wording for the "can't reach the service at all" case. */
+function describeError(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (!err.body || err.body === "(no response body)") {
+      return "Can't reach the sign-in service right now. Please check your connection and try again.";
+    }
+    return err.userMessage;
+  }
+  return String(err);
+}
 
 export function LoginPage() {
   const { isAuthenticated, loginComplete, toast } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Whatever page redirected here (a route guard, or an in-page "please sign in" gate) - go back
+  // there after a successful login instead of always landing on /dashboard.
+  const returnTo = readLoginRedirect(location.search);
   const [step, setStep] = useState<Step>("identify");
-  const [identifier, setIdentifier] = useState("");
+  const [method, setMethod] = useState<Method>("email");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [devOtp, setDevOtp] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) navigate("/dashboard", { replace: true });
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated) navigate(returnTo, { replace: true });
+  }, [isAuthenticated, navigate, returnTo]);
+
+  const identifier = method === "email" ? email.trim() : phone;
 
   async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault();
-    setError(""); setLoading(true);
+    setError("");
+    setDevOtp(null);
+
+    if (method === "phone" && !isPhoneComplete(phone)) {
+      setError("Enter a valid phone number.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const isEmail = identifier.includes("@");
-      await authApi.login(isEmail ? { email: identifier } : { phoneNumber: identifier });
+      const res = await authApi.login(method === "email" ? { email: identifier } : { phoneNumber: identifier });
+      if (!res || res.succeeded === false) {
+        setError(res?.message ?? "Couldn't send a verification code right now. Please try again.");
+        return;
+      }
+      if (res.otp) setDevOtp(res.otp); // only ever populated in local/test mode
       setStep("otp");
     } catch (err) {
-      setError(err instanceof ApiError ? err.body : String(err));
+      setError(describeError(err));
     } finally { setLoading(false); }
   }
 
@@ -37,9 +73,8 @@ export function LoginPage() {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      const isEmail = identifier.includes("@");
       const res = await authApi.verifyOtp(
-        isEmail ? { otp, Email: identifier } : { otp, PhoneNumber: identifier }
+        method === "email" ? { otp, Email: identifier } : { otp, PhoneNumber: identifier }
       );
       if (!res.succeeded || !res.token) {
         setError(res.message ?? "OTP verification failed. Please try again.");
@@ -53,9 +88,9 @@ export function LoginPage() {
       }
       setStep("done");
       toast("Welcome back!", "success");
-      setTimeout(() => navigate("/dashboard", { replace: true }), 800);
+      setTimeout(() => navigate(returnTo, { replace: true }), 800);
     } catch (err) {
-      setError(err instanceof ApiError ? err.body : String(err));
+      setError(describeError(err));
     } finally { setLoading(false); }
   }
 
@@ -85,8 +120,8 @@ export function LoginPage() {
               {step === "otp"
                 ? <>Code sent to <span className="text-white font-medium">{identifier}</span>. Enter it below to continue.</>
                 : step === "done"
-                ? "Redirecting to your dashboard…"
-                : "Enter your email or phone number to receive a one-time code."}
+                ? "Taking you back to where you left off…"
+                : "Choose how you'd like to receive your one-time code."}
             </p>
           </div>
 
@@ -101,21 +136,69 @@ export function LoginPage() {
             </motion.div>
           )}
 
+          {devOtp && step === "otp" && (
+            <div className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-300">
+              Dev mode — verification code: <span className="font-mono font-semibold tracking-widest">{devOtp}</span>
+            </div>
+          )}
+
           {step === "identify" && (
             <form onSubmit={handleRequestOtp} className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-brand-muted uppercase tracking-wider">
-                  Email or Phone
-                </label>
-                <input
-                  autoFocus
-                  required
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="you@email.com or +254…"
-                  className="input-dark"
-                />
+              {/* Email / Phone method toggle */}
+              <div className="flex gap-1 rounded-2xl border border-white/10 bg-white/5 p-1">
+                {(["email", "phone"] as Method[]).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => { setMethod(m); setError(""); }}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-medium transition ${
+                      method === m ? "bg-brand-gold/20 text-brand-gold ring-1 ring-inset ring-brand-gold/40" : "text-brand-muted hover:text-white"
+                    }`}
+                  >
+                    {m === "email" ? <IcoEmail size={15} /> : <IcoPhone size={15} />}
+                    {m === "email" ? "Email" : "Mobile"}
+                  </button>
+                ))}
               </div>
+
+              <AnimatePresence mode="wait">
+                {method === "email" ? (
+                  <motion.div
+                    key="email"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <label className="mb-1.5 block text-xs font-medium text-brand-muted uppercase tracking-wider">
+                      Email address
+                    </label>
+                    <input
+                      autoFocus
+                      required
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      className="input-dark"
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="phone"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <label className="mb-1.5 block text-xs font-medium text-brand-muted uppercase tracking-wider">
+                      Mobile number
+                    </label>
+                    <PhoneInput value={phone} onChange={setPhone} autoFocus />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <button type="submit" disabled={loading} className="btn-gold w-full justify-center disabled:opacity-50">
                 {loading ? <IcoLoader size={18} /> : <><span>Send OTP</span><IcoArrowRight size={17} /></>}
               </button>
@@ -147,7 +230,7 @@ export function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setStep("identify"); setOtp(""); setError(""); }}
+                onClick={() => { setStep("identify"); setOtp(""); setError(""); setDevOtp(null); }}
                 className="w-full text-center text-sm text-brand-muted hover:text-white transition"
               >
                 ← Use different identifier

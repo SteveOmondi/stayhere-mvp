@@ -179,7 +179,8 @@ public class AuthService : IAuthService
             var owner = await _propertyOwnerRepository.GetByUserIdAsync(userId);
             if (owner != null)
             {
-                profiles.Add(new UserProfileDto(owner.Id, UserRole.PropertyOwner.ToString(), owner.FullName ?? user.Email));
+                profiles.Add(new UserProfileDto(owner.Id, UserRole.PropertyOwner.ToString(), owner.FullName ?? user.Email,
+                    string.IsNullOrWhiteSpace(owner.Phone) ? user.PhoneNumber : owner.Phone));
             }
         }
 
@@ -188,7 +189,8 @@ public class AuthService : IAuthService
             var tenant = await _customerRepository.GetByUserIdAsync(userId);
             if (tenant != null)
             {
-                profiles.Add(new UserProfileDto(tenant.Id, UserRole.Tenant.ToString(), tenant.DisplayName ?? user.Email));
+                profiles.Add(new UserProfileDto(tenant.Id, UserRole.Tenant.ToString(), tenant.DisplayName ?? user.Email,
+                    string.IsNullOrWhiteSpace(tenant.Phone) ? user.PhoneNumber : tenant.Phone));
             }
         }
         return profiles;
@@ -267,7 +269,10 @@ public class AuthService : IAuthService
                             var owner = await _propertyOwnerRepository.GetByUserIdAsync(user.Id);
                             if (owner == null)
                             {
-                                var ownerId = Guid.NewGuid();
+                                // PropertyOwner.Id intentionally mirrors the auth User.Id (1:1 relationship,
+                                // no user can hold more than one PropertyOwner profile) so callers never need
+                                // to distinguish "user id" from "owner id" when hitting property/listing APIs.
+                                var ownerId = user.Id;
                                 var walletId = Guid.NewGuid();
                                 
                                 // Create Wallet First
