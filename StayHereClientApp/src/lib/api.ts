@@ -351,6 +351,10 @@ export const listingsApi = {
     req<unknown>(loadConfig().propertyApiBase, `listings?page=${page}&pageSize=${pageSize}`),
   getById: (id: string) =>
     req<Listing>(loadConfig().propertyApiBase, `listings/${id}`).then(normalizeListing),
+  /** listingCode doubles as a short, unique, human-shareable slug for /l/:code share links -
+   * already unique per listing and far shorter than the full listing GUID. */
+  getByCode: (code: string) =>
+    req<Listing>(loadConfig().propertyApiBase, `listings/code/${encodeURIComponent(code)}`).then(normalizeListing),
   getAvailable: (page = 1, pageSize = 20) =>
     req<unknown>(loadConfig().propertyApiBase, `listings/available?page=${page}&pageSize=${pageSize}`),
   getFeatured: (limit = 10) =>

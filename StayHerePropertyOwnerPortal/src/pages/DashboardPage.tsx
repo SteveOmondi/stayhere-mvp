@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { propertiesApi, listingsApi, customersApi, shortStayApi, ApiError, type ShortStayBooking } from "../lib/api";
+import { propertiesApi, listingsApi, applicationApi, shortStayApi, ApiError, type ShortStayBooking } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
 import {
@@ -110,20 +110,24 @@ export function DashboardPage() {
     if (!userId) return;
     setRefreshing(true);
     try {
-      const [propsData, listData, custData, stayData] = await Promise.allSettled([
+      const [propsData, listData, appsData, stayData] = await Promise.allSettled([
         propertiesApi.byOwner(userId, 1, 1),
         listingsApi.byOwner(userId, 1, 50),
-        customersApi.byOwner(userId),
+        applicationApi.byOwner(userId),
         shortStayApi.byOwner(userId),
       ]);
       if (signal?.aborted) return;
       const propPg  = propsData.status === "fulfilled" ? asPaginated<unknown>(propsData.value) : null;
       const listPg  = listData.status  === "fulfilled" ? asPaginated<unknown>(listData.value)  : null;
-      const custArr = custData.status  === "fulfilled" && Array.isArray(custData.value) ? custData.value : [];
+      // "Tenants" = distinct customers with an Active lease - there's no separate CustomerProperty
+      // record created anywhere in the rental flow, so customers/by-owner (which joins through that
+      // unused table) always returns empty; Active TenantApplications are the real source of truth.
+      const activeApps = appsData.status === "fulfilled" ? appsData.value.filter(a => a.status === "Active") : [];
+      const tenantCustomerCount = new Set(activeApps.map(a => a.customerId)).size;
       const listItems = listPg?.items ?? [];
       const occupied = listItems.filter(l => { const r = l as Record<string,unknown>; return r.isAvailable === false || r.isOccupied === true; }).length;
       const vacant   = listItems.length - occupied;
-      setStats({ properties: propPg?.totalCount ?? 0, listings: listPg?.totalCount ?? 0, occupied, vacant, customers: custArr.length, loading: false });
+      setStats({ properties: propPg?.totalCount ?? 0, listings: listPg?.totalCount ?? 0, occupied, vacant, customers: tenantCustomerCount, loading: false });
       setRecentListings(listItems.slice(0, 4) as Record<string, unknown>[]);
       setShortStayListingCount(listItems.filter(l => (l as Record<string, unknown>).listingType === "ShortStay").length);
       setStayBookings(stayData.status === "fulfilled" ? stayData.value : []);

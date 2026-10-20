@@ -19,6 +19,7 @@ import { MyApplicationsPage } from "./pages/MyApplicationsPage";
 import { MyBookingsPage } from "./pages/MyBookingsPage";
 import { MyPropertiesPage } from "./pages/MyPropertiesPage";
 import { RentalFlowPage } from "./pages/RentalFlowPage";
+import { ShortLinkRedirectPage } from "./pages/ShortLinkRedirectPage";
 import { ShortStayBookingPage } from "./pages/ShortStayBookingPage";
 import { SagePage } from "./pages/SagePage";
 import { SignUpPage } from "./pages/SignUpPage";
@@ -68,6 +69,7 @@ export default function App() {
             <Route path="/" element={<PageWrapper><HomePage /></PageWrapper>} />
             <Route path="/explore" element={<PageWrapper><ExplorePage /></PageWrapper>} />
             <Route path="/listing/:id" element={<PageWrapper><ListingDetailPage /></PageWrapper>} />
+            <Route path="/l/:code" element={<ShortLinkRedirectPage />} />
             <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>} />
             <Route path="/signup" element={<PageWrapper><SignUpPage /></PageWrapper>} />
             <Route path="/favorites" element={<PageWrapper><FavoritesPage /></PageWrapper>} />

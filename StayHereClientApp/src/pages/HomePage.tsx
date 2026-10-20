@@ -242,7 +242,7 @@ function CinematicHero() {
               transition={{ delay: 0.72, duration: 0.6 }}
               className="mt-5 text-[13px] text-white/45 max-w-xs leading-relaxed font-sans"
             >
-              Thousands of verified rentals, sales, and short-stay listings — powered by AI.
+              Thousands of verified rentals, sales, and short-stay listings — matched by Sage, your AI home-hunting partner.
             </motion.p>
           </div>
 

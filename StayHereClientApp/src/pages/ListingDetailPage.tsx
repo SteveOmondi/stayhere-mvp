@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
-import { listingsApi, asListingArray, type Listing, aiApi } from "../lib/api";
+import { listingsApi, asListingArray, applicationApi, type Listing, aiApi } from "../lib/api";
 import {
   formatKes, fallbackImage, listingImages, listingLocation, listingPrice,
   listingTitle, isRent, resolveLocation,
@@ -246,7 +246,7 @@ function HeroGallery({
 }
 
 /* ── Sticky enquiry panel ────────────────────────────────────────── */
-function EnquiryPanel({ listing }: { listing: Listing }) {
+function EnquiryPanel({ listing, isActiveTenant }: { listing: Listing; isActiveTenant: boolean }) {
   const { isAuthenticated, hasEnquired, createEnquiry, isFavorite, toggleFavorite, toast } = useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -341,8 +341,20 @@ function EnquiryPanel({ listing }: { listing: Listing }) {
         </div>
 
         {/* CTAs — ShortStay listings get a single lighter "pick dates & book" flow instead of the
-         * long-term viewing/application pair, which assumes a lease with no date-range concept. */}
-        {listing.listingType === "ShortStay" ? (
+         * long-term viewing/application pair, which assumes a lease with no date-range concept.
+         * Once the customer already has an Active tenancy here, booking a viewing or starting a
+         * new application makes no sense (and the backend already enforces one active application
+         * per listing+customer), so show a "you live here" state instead. */}
+        {isActiveTenant ? (
+          <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-[13px] font-sans font-semibold text-emerald-400">
+              <IcoKey size={15} /> You're Renting This Property
+            </div>
+            <Link to="/dashboard" className="btn-ghost w-full justify-center text-[12px] font-sans mt-3">
+              Manage Tenancy <IcoArrowRight size={13} />
+            </Link>
+          </div>
+        ) : listing.listingType === "ShortStay" ? (
           <button
             onClick={() => navigate(`/book-stay?listingId=${listing.id}`)}
             className="btn-gold w-full justify-center text-[13px] font-sans font-semibold py-3.5"
@@ -486,7 +498,7 @@ function DetailSkeleton() {
 export function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useApp();
+  const { toast, isAuthenticated, authUser, customerProfile } = useApp();
 
   const [listing,    setListing]    = useState<Listing | null>(null);
   const [similar,    setSimilar]    = useState<Listing[]>([]);
@@ -496,6 +508,9 @@ export function ListingDetailPage() {
   const [activeTab,  setActiveTab]  = useState<Tab>("Overview");
   const [stickyBar,  setStickyBar]  = useState(false);
   const [photoCount, setPhotoCount] = useState(0);
+  const [isActiveTenant, setIsActiveTenant] = useState(false);
+
+  const customerId = customerProfile?.id ?? customerProfile?.customerId ?? authUser?.id;
 
   const heroRef    = useRef<HTMLDivElement>(null);
   const sectionRefs: Record<Tab, React.RefObject<HTMLDivElement>> = {
@@ -539,6 +554,15 @@ export function ListingDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  /* Does the signed-in customer already have an Active tenancy on this exact listing? If so, the
+   * viewing/application CTAs below no longer make sense. */
+  useEffect(() => {
+    if (!id || !isAuthenticated || !customerId) { setIsActiveTenant(false); return; }
+    applicationApi.getByCustomer(customerId, 1, 100)
+      .then((res) => setIsActiveTenant(res.items.some((a) => a.listingId === id && a.status === "Active")))
+      .catch(() => setIsActiveTenant(false));
+  }, [id, isAuthenticated, customerId]);
+
   function handleRate(rating: number) {
     if (!id || rated) return;
     listingsApi.rate(id, rating)
@@ -553,7 +577,13 @@ export function ListingDetailPage() {
   }
 
   function handleShare() {
-    navigator.clipboard.writeText(window.location.href)
+    // listingCode is already unique per listing, so /l/:code works as a short, shareable alias
+    // without needing a separate short-link table/backend - falls back to the full URL if a
+    // listing somehow has no code.
+    const shareUrl = listing?.listingCode
+      ? `${window.location.origin}/l/${listing.listingCode}`
+      : window.location.href;
+    navigator.clipboard.writeText(shareUrl)
       .then(() => toast("Link copied!", "success"))
       .catch(() => {});
   }
@@ -953,7 +983,7 @@ export function ListingDetailPage() {
 
           {/* ─── RIGHT: sticky panel ─── */}
           <div>
-            <EnquiryPanel listing={listing} />
+            <EnquiryPanel listing={listing} isActiveTenant={isActiveTenant} />
           </div>
         </div>
 

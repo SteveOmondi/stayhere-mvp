@@ -1,22 +1,28 @@
 import { useEffect, useState } from "react";
-import { customersApi, ApiError } from "../lib/api";
+import { applicationApi, type ApplicationDocument, ApiError } from "../lib/api";
 import { useOwner } from "../context/OwnerContext";
 import { IcoUser, IcoMail, IcoPhone, IcoShield, IcoDocument, IcoSearch, IcoEye, IcoX, IcoRefresh } from "../components/icons";
 import { DocumentPreviewModal } from "../components/DocumentPreviewModal";
 
-type Tenant = { id: string; email: string; firstName: string; lastName: string; phone?: string; accountStatus?: string; kycStatus?: string };
+/** A "tenant" here is an Active TenantApplication - there is no separate CustomerProperty record
+ * created anywhere in the rental flow, so customers/by-owner (which joins through that unused
+ * table) always returns empty. One row per active tenancy, not per customer, since the same
+ * person could rent more than one unit from this owner. */
+type Tenant = {
+  id: string; customerId: string; listingTitle?: string;
+  email: string; firstName: string; lastName: string; phone?: string;
+  accountStatus: string; documents: ApplicationDocument[];
+};
 
-function mapTenant(x: unknown): Tenant | null {
-  if (!x || typeof x !== "object") return null;
-  const r = x as Record<string, unknown>;
-  if (!r.id) return null;
-  return { id: String(r.id), email: String(r.email ?? ""), firstName: String(r.firstName ?? ""), lastName: String(r.lastName ?? ""), phone: r.phone ? String(r.phone) : undefined, accountStatus: r.accountStatus ? String(r.accountStatus) : undefined, kycStatus: r.kycStatus ? String(r.kycStatus) : undefined };
+function splitName(name?: string): [string, string] {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return ["", ""];
+  return [parts[0], parts.slice(1).join(" ")];
 }
 
-type DocRow = { id: string; name: string; url?: string; type?: string; status?: string };
-function mapDoc(x: unknown): DocRow {
-  const r = (x ?? {}) as Record<string, unknown>;
-  return { id: String(r.id ?? Math.random()), name: String(r.fileName ?? r.documentName ?? r.name ?? "Document"), url: r.url ? String(r.url) : undefined, type: r.documentType ? String(r.documentType) : undefined, status: r.status ? String(r.status) : undefined };
+type DocRow = { id: string; name: string; url?: string; type?: string };
+function mapDoc(d: ApplicationDocument): DocRow {
+  return { id: d.id, name: d.fileName ?? d.documentType, url: d.fileUrl, type: d.documentType };
 }
 
 export function TenantsPage() {
@@ -25,38 +31,30 @@ export function TenantsPage() {
   const [loading, setLoading]  = useState(true);
   const [search, setSearch]    = useState("");
   const [selected, setSelected] = useState<Tenant | null>(null);
-  const [docs, setDocs]        = useState<DocRow[]>([]);
-  const [docsLoading, setDocsLoading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
 
   const load = async () => {
     if (!userId) return;
     setLoading(true);
     try {
-      const data = await customersApi.byOwner(userId);
-      setTenants(Array.isArray(data) ? (data as unknown[]).map(mapTenant).filter(Boolean) as Tenant[] : []);
+      const apps = await applicationApi.byOwner(userId);
+      const active = apps.filter((a) => a.status === "Active");
+      setTenants(active.map((a) => {
+        const [firstName, lastName] = splitName(a.customerName);
+        return {
+          id: a.id, customerId: a.customerId, listingTitle: a.listingTitle,
+          email: a.customerEmail ?? "", firstName, lastName, phone: a.customerPhone,
+          accountStatus: "Active", documents: a.documents ?? [],
+        };
+      }));
     } catch (e) { toast(e instanceof ApiError ? e.message : "Failed to load tenants", "error"); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { void load(); }, [reloadKey, userId]);
 
-  async function viewTenant(t: Tenant) {
-    setSelected(t); setDocs([]); setDocsLoading(true);
-    try {
-      const data = await customersApi.documents(t.id);
-      setDocs(Array.isArray(data) ? data.map(mapDoc) : []);
-    } catch { setDocs([]); }
-    finally { setDocsLoading(false); }
-  }
-
-  function kycBadge(status?: string) {
-    if (!status) return <span className="badge badge-neutral">Unknown</span>;
-    const s = status.toLowerCase();
-    if (s.includes("verif")) return <span className="badge badge-success"><IcoShield size={9}/>Verified</span>;
-    if (s.includes("pend"))  return <span className="badge badge-warning"><IcoShield size={9}/>Pending</span>;
-    if (s.includes("reject")) return <span className="badge badge-error"><IcoShield size={9}/>Rejected</span>;
-    return <span className="badge badge-neutral">{status}</span>;
+  function viewTenant(t: Tenant) {
+    setSelected(t);
   }
 
   function statusBadge(status?: string) {
@@ -85,8 +83,8 @@ export function TenantsPage() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Total Tenants", val: tenants.length, color: "#8b5cf6" },
-          { label: "KYC Verified",  val: tenants.filter(t => t.kycStatus?.toLowerCase().includes("verif")).length, color: "#10b981" },
-          { label: "KYC Pending",   val: tenants.filter(t => t.kycStatus?.toLowerCase().includes("pend")).length, color: "#f59e0b" },
+          { label: "With ID Documents", val: tenants.filter(t => t.documents.length > 0).length, color: "#10b981" },
+          { label: "Properties Rented", val: new Set(tenants.map(t => t.listingTitle).filter(Boolean)).size, color: "#f59e0b" },
         ].map(s => (
           <div key={s.label} className="card p-4 flex items-center gap-3 animate-slide-up">
             <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${s.color}15` }}>
@@ -114,11 +112,11 @@ export function TenantsPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="tbl">
-            <thead><tr><th>Tenant</th><th>Email</th><th>Phone</th><th>Account</th><th>KYC</th><th></th></tr></thead>
+            <thead><tr><th>Tenant</th><th>Property</th><th>Email</th><th>Phone</th><th>Account</th><th>Documents</th><th></th></tr></thead>
             <tbody>
-              {loading ? Array.from({length:5}).map((_,i)=><tr key={i}>{Array.from({length:6}).map((_,j)=><td key={j}><div className="skeleton h-4 w-full"/></td>)}</tr>)
+              {loading ? Array.from({length:5}).map((_,i)=><tr key={i}>{Array.from({length:7}).map((_,j)=><td key={j}><div className="skeleton h-4 w-full"/></td>)}</tr>)
               : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-16">
+                <tr><td colSpan={7} className="text-center py-16">
                   <IcoUser size={32} className="mx-auto mb-2 text-brand-200"/>
                   <div className="text-brand-400">{search ? "No matching tenants" : "No tenants yet"}</div>
                 </td></tr>
@@ -131,16 +129,17 @@ export function TenantsPage() {
                       </div>
                       <div>
                         <div className="font-semibold text-brand-900 text-sm">{[t.firstName, t.lastName].filter(Boolean).join(" ") || "—"}</div>
-                        <div className="text-[10px] text-brand-400 font-mono">{t.id.slice(0,12)}…</div>
+                        <div className="text-[10px] text-brand-400 font-mono">{t.customerId.slice(0,12)}…</div>
                       </div>
                     </div>
                   </td>
+                  <td className="text-xs text-brand-700">{t.listingTitle ?? "—"}</td>
                   <td><div className="flex items-center gap-1.5 text-brand-700 text-xs"><IcoMail size={11} className="text-brand-400"/>{t.email || "—"}</div></td>
                   <td>{t.phone ? <div className="flex items-center gap-1.5 text-brand-700 text-xs"><IcoPhone size={11} className="text-brand-400"/>{t.phone}</div> : <span className="text-brand-300">—</span>}</td>
                   <td>{statusBadge(t.accountStatus)}</td>
-                  <td>{kycBadge(t.kycStatus)}</td>
+                  <td>{t.documents.length > 0 ? <span className="badge badge-success"><IcoShield size={9}/>{t.documents.length} on file</span> : <span className="badge badge-neutral">None</span>}</td>
                   <td>
-                    <button onClick={() => void viewTenant(t)} className="btn-ghost text-xs text-brand-teal gap-1">
+                    <button onClick={() => viewTenant(t)} className="btn-ghost text-xs text-brand-teal gap-1">
                       <IcoEye size={12}/>View
                     </button>
                   </td>
@@ -172,8 +171,8 @@ export function TenantsPage() {
                 {[
                   { label: "Email",    val: selected.email, icon: <IcoMail size={13}/> },
                   { label: "Phone",    val: selected.phone ?? "—", icon: <IcoPhone size={13}/> },
-                  { label: "Account",  val: selected.accountStatus ?? "—", icon: <IcoUser size={13}/> },
-                  { label: "KYC",      val: selected.kycStatus ?? "—", icon: <IcoShield size={13}/> },
+                  { label: "Property", val: selected.listingTitle ?? "—", icon: <IcoUser size={13}/> },
+                  { label: "Account",  val: selected.accountStatus, icon: <IcoShield size={13}/> },
                 ].map(row => (
                   <div key={row.label} className="card p-3">
                     <div className="flex items-center gap-1.5 text-[10px] text-brand-400 uppercase tracking-wide mb-1">{row.icon}{row.label}</div>
@@ -182,31 +181,26 @@ export function TenantsPage() {
                 ))}
               </div>
               <div>
-                <h4 className="font-semibold text-brand-900 mb-3 flex items-center gap-2"><IcoDocument size={15}/>KYC Documents</h4>
-                {docsLoading ? (
-                  <div className="space-y-2">{Array.from({length:2}).map((_,i)=><div key={i} className="skeleton h-12 rounded-xl"/>)}</div>
-                ) : docs.length === 0 ? (
+                <h4 className="font-semibold text-brand-900 mb-3 flex items-center gap-2"><IcoDocument size={15}/>ID Verification Documents</h4>
+                {selected.documents.length === 0 ? (
                   <div className="text-center py-6 text-sm text-brand-400 border border-dashed border-brand-200 rounded-xl">No documents uploaded yet</div>
                 ) : (
                   <div className="space-y-2">
-                    {docs.map(d => (
+                    {selected.documents.map(mapDoc).map(d => (
                       <div key={d.id} className="flex items-center gap-3 p-3 card">
                         <IcoDocument size={15} className="text-brand-teal shrink-0"/>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-brand-900 truncate">{d.name}</div>
                           {d.type && <div className="text-[10px] text-brand-400">{d.type}</div>}
                         </div>
-                        <div className="flex items-center gap-2">
-                          {d.status && <span className={`badge text-[10px] ${d.status.toLowerCase().includes("approv") ? "badge-success" : d.status.toLowerCase().includes("pend") ? "badge-warning" : "badge-neutral"}`}>{d.status}</span>}
-                          {d.url && (
-                            <button
-                              onClick={() => setPreviewDoc({ url: d.url!, title: d.type ?? d.name })}
-                              className="btn-ghost text-xs text-brand-teal py-1"
-                            >
-                              View
-                            </button>
-                          )}
-                        </div>
+                        {d.url && (
+                          <button
+                            onClick={() => setPreviewDoc({ url: d.url!, title: d.type ?? d.name })}
+                            className="btn-ghost text-xs text-brand-teal py-1"
+                          >
+                            View
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>

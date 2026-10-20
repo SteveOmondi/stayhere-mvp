@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { customerApi } from "../lib/api";
+import { customerApi, applicationApi, listingsApi, type TenantApplication, type Listing } from "../lib/api";
 import { formatKes, primaryImage, resolveLocation } from "../lib/format";
 import { useApp } from "../context/AppContext";
 import { GradientBlobs, CardSkeleton } from "../components/ui";
@@ -33,6 +33,29 @@ type TenantProperty = {
 };
 
 type PayModal = { open: boolean; property?: TenantProperty; amount: string; paying: boolean };
+
+/** Tenancies are driven by TenantApplication.status reaching "Active" (confirmed lease + payment) -
+ * there is no separate CustomerProperty record created anywhere in the rental flow, so that's the
+ * one source of truth for "what am I renting right now" rather than customers/{id}/properties
+ * (a distinct, manually-attached relationship nothing in this flow ever populates). */
+function toTenantProperty(app: TenantApplication, listing?: Listing): TenantProperty {
+  const confirmedPayment = app.payments?.find((p) => p.status === "Confirmed");
+  return {
+    id: app.id,
+    listingId: app.listingId,
+    title: listing?.title ?? app.listingTitle,
+    city: listing?.city,
+    suburb: listing?.suburb,
+    primaryImageUrl: listing?.primaryImageUrl ?? undefined,
+    images: listing?.images,
+    bedrooms: listing?.bedrooms,
+    bathrooms: listing?.bathrooms,
+    rentAmount: listing?.price,
+    leaseStartDate: confirmedPayment?.confirmedAt ?? app.termsAcceptedAt ?? app.createdAt,
+    status: app.status.toLowerCase(),
+    documents: app.documents?.map((d) => ({ name: d.fileName ?? d.documentType, url: d.fileUrl })),
+  };
+}
 
 function RentStepsBanner() {
   const steps = [
@@ -125,10 +148,16 @@ export function MyPropertiesPage() {
     if (!customerId) { setLoading(false); return; }
     setLoading(true);
     Promise.all([
-      customerApi.getProperties(customerId).catch(() => []),
+      applicationApi.getByCustomer(customerId, 1, 100).catch(() => ({ items: [] as TenantApplication[] })),
       customerApi.getDocuments(customerId).catch(() => []),
-    ]).then(([props, docList]) => {
-      setProperties((props as TenantProperty[]) ?? []);
+    ]).then(async ([appsRes, docList]) => {
+      const apps = appsRes.items.filter((a) => !["Cancelled", "Rejected"].includes(a.status));
+      const listingIds = [...new Set(apps.map((a) => a.listingId).filter(Boolean))];
+      const listingsById: Record<string, Listing> = {};
+      await Promise.all(listingIds.map((id) =>
+        listingsApi.getById(id).then((l) => { listingsById[id] = l; }).catch(() => {})
+      ));
+      setProperties(apps.map((a) => toTenantProperty(a, listingsById[a.listingId])));
       setDocs((docList as { name: string; url: string }[]) ?? []);
     }).catch(() => toast("Failed to load property data", "error")).finally(() => setLoading(false));
   }, [customerId]);
