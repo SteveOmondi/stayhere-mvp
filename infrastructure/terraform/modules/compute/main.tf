@@ -317,6 +317,11 @@ resource "azurerm_linux_function_app" "aiagent" {
     "ListingPortalBaseUrl"                     = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
     "AzureWebJobs.Http.RoutePrefix"            = ""
     "WEBSITE_RUN_FROM_PACKAGE"                 = "1"
+    # Opt Sage into its own MCP server as an external tool source - empty/absent by default
+    # (Mcp:ExternalServers), so this is what actually turns the McpServer deployment into something
+    # Sage uses rather than a resource sitting idle.
+    "Mcp__ExternalServers__0__Name"            = "stayhere"
+    "Mcp__ExternalServers__0__Url"             = "https://${azurerm_function_app_flex_consumption.mcp.default_hostname}/mcp"
   }
 
   identity {
@@ -384,6 +389,67 @@ resource "azurerm_storage_account" "main" {
   location                 = var.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
+}
+
+# --- McpServer: hosted as a self-hosted MCP server (public preview) on Flex Consumption, NOT the
+# shared Y1 Consumption plan the other 8 Function Apps use - Y1 can't run a long-lived ASP.NET Core
+# process (McpServer's actual code: Microsoft.NET.Sdk.Web, ModelContextProtocol.AspNetCore, no
+# Functions worker SDK at all). Flex Consumption still scales to zero / bills per-execution like Y1,
+# it's just the plan tier this preview feature requires. See src/McpServer/host.json -
+# "configurationProfile": "mcp-custom-handler" is what actually makes this work, not the runtime_name
+# below (which only has to match a real Functions language worker for extension-bundle resolution -
+# the custom handler profile is what overrides all request routing to proxy into the app itself).
+resource "azurerm_service_plan" "mcp_flex" {
+  name                = "asp-${var.environment}-mcp-${var.suffix}"
+  resource_group_name = var.rg_name
+  location            = var.location
+  os_type             = "Linux"
+  sku_name            = "FC1"
+}
+
+resource "azurerm_storage_container" "mcp_deploy" {
+  name                  = "mcp-deploy"
+  storage_account_id    = azurerm_storage_account.main.id
+  container_access_type = "private"
+}
+
+resource "azurerm_function_app_flex_consumption" "mcp" {
+  name                = "func-${var.environment}-mcp-${var.suffix}"
+  resource_group_name = var.rg_name
+  location            = var.location
+  service_plan_id     = azurerm_service_plan.mcp_flex.id
+
+  storage_container_type      = "blobContainer"
+  storage_container_endpoint  = "${azurerm_storage_account.main.primary_blob_endpoint}${azurerm_storage_container.mcp_deploy.name}"
+  storage_authentication_type = "StorageAccountConnectionString"
+  storage_access_key          = azurerm_storage_account.main.primary_access_key
+
+  runtime_name           = "dotnet-isolated"
+  runtime_version        = "9.0"
+  maximum_instance_count = 40
+  instance_memory_in_mb  = 2048
+
+  site_config {}
+
+  app_settings = {
+    "DB_HOST"                       = var.psql_host
+    "DB_PORT"                       = "5432"
+    "DB_NAME"                       = var.psql_database_name
+    "DB_USER"                       = var.psql_admin_login
+    "DB_PASSWORD"                   = var.psql_admin_password
+    "REDIS_CONNECTION_STRING"       = var.redis_connection_string
+    "Google__ApiKey"                = var.google_api_key
+    "Google__EmbeddingModel"        = var.google_embedding_model
+    "Google__EmbeddingCacheMinutes" = "60"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    Service = "McpServer"
+  }
 }
 
 variable "rg_name" {
@@ -589,4 +655,16 @@ output "logging_function_name" {
 
 output "logging_function_host" {
   value = azurerm_linux_function_app.logging.default_hostname
+}
+
+output "mcp_function_name" {
+  value = azurerm_function_app_flex_consumption.mcp.name
+}
+
+output "mcp_function_host" {
+  value = azurerm_function_app_flex_consumption.mcp.default_hostname
+}
+
+output "mcp_principal_id" {
+  value = azurerm_function_app_flex_consumption.mcp.identity[0].principal_id
 }

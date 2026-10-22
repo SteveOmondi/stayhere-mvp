@@ -16,4 +16,14 @@
     <ProjectReference Include="..\Domain\StayHere.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Deployed to Azure Functions as a self-hosted MCP custom handler - the deploy payload IS the
+         publish output directory, so host.json must land there (not auto-copied like it would be
+         for a real Functions SDK project, since this is plain Microsoft.NET.Sdk.Web). -->
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

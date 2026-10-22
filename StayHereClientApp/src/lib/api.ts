@@ -20,6 +20,12 @@ export class ApiError extends Error {
     if (this.status === 401) {
       return "You need to sign in to do that.";
     }
+    if (this.status === 429) {
+      return "This is getting a lot of requests right now - please try again in a few seconds.";
+    }
+    if (this.status >= 500) {
+      return "Something went wrong on our end. Please try again in a moment.";
+    }
     if (!this.body || this.body === "(no response body)") {
       return "Something went wrong. Please try again.";
     }

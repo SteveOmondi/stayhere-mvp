@@ -1,0 +1,19 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "custom",
+    "DB_HOST": "localhost",
+    "DB_PORT": "5432",
+    "DB_NAME": "stayhere",
+    "DB_USER": "postgres",
+    "DB_PASSWORD": "your-postgres-password",
+    "REDIS_CONNECTION": "localhost:6379",
+    "Google__ApiKey": "YOUR_GEMINI_API_KEY_HERE",
+    "Google__EmbeddingModel": "text-embedding-004",
+    "Google__EmbeddingCacheMinutes": "60",
+    "Google__MapsApiKey": "YOUR_GOOGLE_MAPS_PLATFORM_API_KEY_HERE",
+    "Google__PlacesSearchRadiusMeters": "3000",
+    "Google__PlacesMaxResults": "8"
+  }
+}

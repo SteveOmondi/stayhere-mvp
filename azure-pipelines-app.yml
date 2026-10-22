@@ -114,6 +114,15 @@ stages:
           echo "##vso[task.setvariable variable=change_$SERVICE;isOutput=true]$HAS_CHANGE"
         done
 
+        # McpServer lives at src/McpServer/ (not src/FunctionApps/) - it's a plain ASP.NET Core app,
+        # not a Functions worker project - so it needs its own path check outside the SERVICES loop.
+        HAS_CHANGE=false
+        if [ "$GLOBAL_CHANGE" = true ] || echo "$CHANGED_FILES" | grep -E "^src/McpServer/"; then
+          HAS_CHANGE=true
+          echo "Changes detected for McpServer."
+        fi
+        echo "##vso[task.setvariable variable=change_McpServer;isOutput=true]$HAS_CHANGE"
+
         # Frontend portal checks
         PORTALS=("StayHereMainManagementPortal" "StayHerePropertyOwnerPortal")
         for PORTAL in "${PORTALS[@]}"; do
@@ -143,6 +152,7 @@ stages:
       isAi: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'] ]
       isPayments: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PaymentsService'] ]
       isLogging: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_LoggingService'] ]
+      isMcp: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_McpServer'] ]
       isAdminPortal: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHereMainManagementPortal'] ]
       isOwnerPortal: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHerePropertyOwnerPortal'] ]
       globalChange: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'] ]
@@ -240,6 +250,16 @@ stages:
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/LoggingService'
         zipAfterPublish: false
 
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish McpServer'
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isMcp'], 'true'), eq(variables['globalChange'], 'true')))
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'src/McpServer/StayHere.McpServer.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/McpServer'
+        zipAfterPublish: false
+
     - publish: $(Build.ArtifactStagingDirectory)/AuthService
       artifact: AuthService_Pkg
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAuth'], 'true'), eq(variables['globalChange'], 'true')))
@@ -264,6 +284,9 @@ stages:
     - publish: $(Build.ArtifactStagingDirectory)/LoggingService
       artifact: LoggingService_Pkg
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isLogging'], 'true'), eq(variables['globalChange'], 'true')))
+    - publish: $(Build.ArtifactStagingDirectory)/McpServer
+      artifact: McpServer_Pkg
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isMcp'], 'true'), eq(variables['globalChange'], 'true')))
 
 
     - task: NodeTool@0
@@ -663,6 +686,39 @@ stages:
         appType: 'functionAppLinux'
         appName: $(DynamicAppName)
         package: '$(Pipeline.Workspace)/LoggingService_Pkg/LoggingService'
+
+- stage: Deploy_McpServer
+  displayName: 'Deploy McpServer'
+  dependsOn: Migrate_Database
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_McpServer'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - download: current
+      artifact: McpServer_Pkg
+    - task: AzureCLI@2
+      displayName: 'Discover Function App Name'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          APP_NAME=$(az functionapp list --query "[?tags.Service=='McpServer'].name" -o tsv | head -n 1)
+          if [ -z "$APP_NAME" ]; then
+            APP_NAME=$(az functionapp list --query "[?contains(name, 'func-dev-mcp')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$APP_NAME" ]; then echo "McpServer not found"; exit 1; fi
+          echo "Found: $APP_NAME"
+          echo "##vso[task.setvariable variable=DynamicAppName]$APP_NAME"
+    - task: AzureFunctionApp@2
+      displayName: 'Deploy to Azure'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        appType: 'functionAppLinux'
+        appName: $(DynamicAppName)
+        package: '$(Pipeline.Workspace)/McpServer_Pkg/McpServer'
 
 - stage: Deploy_AdminPortal
   displayName: 'Deploy Admin Portal'

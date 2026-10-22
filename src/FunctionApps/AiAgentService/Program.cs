@@ -59,10 +59,19 @@ var host = new HostBuilder()
         {
             client.Timeout = TimeSpan.FromSeconds(25);
         });
-        services.AddHttpClient<IChatService, GroqChatService>(client =>
+        // ChatServiceFallbackService is the actual IChatService - it tries Groq first (typed
+        // HttpClient below, paced by GroqRateLimiter) and only falls through to Claude if Groq fails
+        // outright (confirmed live: Groq's free-tier rate limit exhausted mid-chat-turn, used to
+        // surface as a raw 500 - see GroqChatService/ChatServiceFallbackService doc comments).
+        services.AddHttpClient<GroqChatService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(120);
         });
+        services.AddHttpClient<ClaudeChatService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(120);
+        });
+        services.AddScoped<IChatService, ChatServiceFallbackService>();
         // All three concrete providers are registered as typed HttpClients (not directly bound to
         // IFloorPlanAnalysisService) - FloorPlanAnalysisFallbackService is the actual
         // IFloorPlanAnalysisService and composes them in config-driven order (Claude primary by
