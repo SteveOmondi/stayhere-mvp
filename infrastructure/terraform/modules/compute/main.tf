@@ -44,7 +44,13 @@ resource "azurerm_linux_function_app" "auth" {
     "OnFonSms__SenderId"             = var.onfon_sender_id
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
-    "APP_MODE"                       = "test" # Set to 'live' for production to hide OTPs
+    "APP_MODE"                       = var.app_mode # 'live' in production to hide OTPs
+    "JWT_SECRET"                     = var.jwt_secret
+    "SEED_ADMIN_ENABLED"             = tostring(var.seed_admin_enabled)
+    "SEED_ADMIN_EMAIL"               = var.seed_admin_email
+    "SEED_ADMIN_PHONE"               = var.seed_admin_phone
+    "SEED_ADMIN_FULL_NAME"           = var.seed_admin_full_name
+    "SEED_ADMIN_USER_ID"             = var.seed_admin_user_id
   }
 
   identity {
@@ -104,6 +110,7 @@ resource "azurerm_linux_function_app" "property" {
     "R2__SecretAccessKey"            = var.r2_secret_access_key
     "R2__BucketName"                 = var.r2_bucket_name
     "R2__PublicBaseUrl"              = var.r2_public_base_url
+    "JWT_SECRET"                     = var.jwt_secret
   }
 
   identity {
@@ -140,6 +147,7 @@ resource "azurerm_linux_function_app" "customer" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "JWT_SECRET"                     = var.jwt_secret
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
@@ -179,6 +187,7 @@ resource "azurerm_linux_function_app" "logging" {
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
     "LogStorageConnectionString"     = azurerm_storage_account.main.primary_connection_string
     "LogContainerName"               = "logs"
+    "JWT_SECRET"                     = var.jwt_secret
   }
 
   identity {
@@ -219,6 +228,7 @@ resource "azurerm_linux_function_app" "propertyowner" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "JWT_SECRET"                     = var.jwt_secret
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
@@ -263,6 +273,7 @@ resource "azurerm_linux_function_app" "staticdata" {
     "SKIP_AUTH"                      = var.skip_auth
     "ENTRA_CLIENT_ID"                = var.entra_client_id != "" ? var.entra_client_id : "REPLACE_ME"
     "ENTRA_TENANT_ID"                = var.entra_tenant_id != "" ? var.entra_tenant_id : "REPLACE_ME"
+    "JWT_SECRET"                     = var.jwt_secret
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
@@ -315,6 +326,15 @@ resource "azurerm_linux_function_app" "aiagent" {
     "Google__EmbeddingModel"                   = var.google_embedding_model
     "Google__EmbeddingCacheMinutes"            = "60"
     "ListingPortalBaseUrl"                     = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
+    "JWT_SECRET"                               = var.jwt_secret
+    # Floor plan analysis (Claude -> Gemini -> Qwen fallback chain)
+    "FloorPlan__ProviderOrder"                 = var.floor_plan_provider_order
+    "Anthropic__ApiKey"                        = var.anthropic_api_key
+    "Anthropic__FloorPlanModel"                = var.anthropic_floor_plan_model
+    "Google__FloorPlanModel"                   = var.google_floor_plan_model
+    "Groq__FloorPlanModel"                     = var.groq_floor_plan_model
+    # Google Places (nearby amenities) - falls back to Google__ApiKey when empty
+    "Google__MapsApiKey"                       = var.google_maps_api_key != "" ? var.google_maps_api_key : var.google_api_key
     "AzureWebJobs.Http.RoutePrefix"            = ""
     "WEBSITE_RUN_FROM_PACKAGE"                 = "1"
   }
@@ -357,6 +377,7 @@ resource "azurerm_linux_function_app" "payments" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "JWT_SECRET"                     = var.jwt_secret
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
     "Mpesa__ConsumerKey"             = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/mpesa-consumer-key)"
@@ -516,6 +537,73 @@ variable "r2_bucket_name" {
 variable "r2_public_base_url" {
   type    = string
   default = ""
+}
+
+variable "jwt_secret" {
+  type      = string
+  sensitive = true
+}
+
+variable "app_mode" {
+  type    = string
+  default = "test"
+}
+
+variable "seed_admin_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "seed_admin_email" {
+  type    = string
+  default = ""
+}
+
+variable "seed_admin_phone" {
+  type    = string
+  default = ""
+}
+
+variable "seed_admin_full_name" {
+  type    = string
+  default = "Admin"
+}
+
+variable "seed_admin_user_id" {
+  type    = string
+  default = ""
+}
+
+variable "anthropic_api_key" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "anthropic_floor_plan_model" {
+  type    = string
+  default = "claude-sonnet-5-5"
+}
+
+variable "google_floor_plan_model" {
+  type    = string
+  default = "gemini-flash-latest"
+}
+
+variable "groq_floor_plan_model" {
+  type    = string
+  default = "qwen/qwen3.8-27b"
+}
+
+variable "floor_plan_provider_order" {
+  type    = string
+  default = "Claude,Gemini,Qwen"
+}
+
+variable "google_maps_api_key" {
+  type      = string
+  sensitive = true
+  default   = ""
 }
 
 

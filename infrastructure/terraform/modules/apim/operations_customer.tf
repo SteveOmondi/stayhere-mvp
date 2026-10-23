@@ -675,3 +675,101 @@ resource "azurerm_api_management_api_operation_policy" "pol_customer_getcustomer
 XML
 }
 
+
+# --- Operations added for new functions (pipeline sync) ---
+
+resource "azurerm_api_management_api_operation" "op_customer_getsavedlistings" {
+  operation_id        = "GetSavedListings"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetSavedListings"
+  method              = "GET"
+  url_template        = "/saved-listings"
+  depends_on          = [azurerm_api_management_api_policy.customer]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_customer_getsavedlistings" {
+  api_name            = azurerm_api_management_api_operation.op_customer_getsavedlistings.api_name
+  api_management_name = azurerm_api_management_api_operation.op_customer_getsavedlistings.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_customer_getsavedlistings.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_customer_getsavedlistings.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_customer_unsavelisting" {
+  operation_id        = "UnsaveListing"
+  api_name            = azurerm_api_management_api.customer.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "UnsaveListing"
+  method              = "DELETE"
+  url_template        = "/saved-listings/{listingId}"
+  depends_on          = [azurerm_api_management_api_policy.customer]
+
+  template_parameter {
+    name     = "listingId"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_customer_unsavelisting" {
+  api_name            = azurerm_api_management_api_operation.op_customer_unsavelisting.api_name
+  api_management_name = azurerm_api_management_api_operation.op_customer_unsavelisting.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_customer_unsavelisting.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_customer_unsavelisting.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}

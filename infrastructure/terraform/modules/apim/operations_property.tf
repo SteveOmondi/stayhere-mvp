@@ -2375,3 +2375,661 @@ resource "azurerm_api_management_api_operation_policy" "pol_property_getpublicur
 XML
 }
 
+
+# --- Operations added for new functions (pipeline sync) ---
+
+resource "azurerm_api_management_api_operation" "op_property_prescreenapplication" {
+  operation_id        = "PrescreenApplication"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "PrescreenApplication"
+  method              = "PATCH"
+  url_template        = "/applications/{id}/prescreen"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_prescreenapplication" {
+  api_name            = azurerm_api_management_api_operation.op_property_prescreenapplication.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_prescreenapplication.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_prescreenapplication.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_prescreenapplication.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_createenquiry" {
+  operation_id        = "CreateEnquiry"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "CreateEnquiry"
+  method              = "POST"
+  url_template        = "/enquiries"
+  depends_on          = [azurerm_api_management_api_policy.property]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_createenquiry" {
+  api_name            = azurerm_api_management_api_operation.op_property_createenquiry.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_createenquiry.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_createenquiry.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_createenquiry.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_getmyenquiries" {
+  operation_id        = "GetMyEnquiries"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetMyEnquiries"
+  method              = "GET"
+  url_template        = "/enquiries/mine"
+  depends_on          = [azurerm_api_management_api_policy.property]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_getmyenquiries" {
+  api_name            = azurerm_api_management_api_operation.op_property_getmyenquiries.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_getmyenquiries.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_getmyenquiries.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_getmyenquiries.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_getownerenquiries" {
+  operation_id        = "GetOwnerEnquiries"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetOwnerEnquiries"
+  method              = "GET"
+  url_template        = "/enquiries/owner/mine"
+  depends_on          = [azurerm_api_management_api_policy.property]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_getownerenquiries" {
+  api_name            = azurerm_api_management_api_operation.op_property_getownerenquiries.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_getownerenquiries.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_getownerenquiries.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_getownerenquiries.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_getenquirymessages" {
+  operation_id        = "GetEnquiryMessages"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetEnquiryMessages"
+  method              = "GET"
+  url_template        = "/enquiries/{id}/messages"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_getenquirymessages" {
+  api_name            = azurerm_api_management_api_operation.op_property_getenquirymessages.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_getenquirymessages.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_getenquirymessages.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_getenquirymessages.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_sendenquirymessage" {
+  operation_id        = "SendEnquiryMessage"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "SendEnquiryMessage"
+  method              = "POST"
+  url_template        = "/enquiries/{id}/messages"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_sendenquirymessage" {
+  api_name            = azurerm_api_management_api_operation.op_property_sendenquirymessage.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_sendenquirymessage.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_sendenquirymessage.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_sendenquirymessage.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_markenquiryread" {
+  operation_id        = "MarkEnquiryRead"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "MarkEnquiryRead"
+  method              = "PATCH"
+  url_template        = "/enquiries/{id}/read"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_markenquiryread" {
+  api_name            = azurerm_api_management_api_operation.op_property_markenquiryread.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_markenquiryread.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_markenquiryread.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_markenquiryread.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_getlistingavailability" {
+  operation_id        = "GetListingAvailability"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetListingAvailability"
+  method              = "GET"
+  url_template        = "/listings/{id}/availability"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation" "op_property_createshortstaybooking" {
+  operation_id        = "CreateShortStayBooking"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "CreateShortStayBooking"
+  method              = "POST"
+  url_template        = "/short-stay-bookings"
+  depends_on          = [azurerm_api_management_api_policy.property]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_createshortstaybooking" {
+  api_name            = azurerm_api_management_api_operation.op_property_createshortstaybooking.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_createshortstaybooking.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_createshortstaybooking.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_createshortstaybooking.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_getshortstaybooking" {
+  operation_id        = "GetShortStayBooking"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetShortStayBooking"
+  method              = "GET"
+  url_template        = "/short-stay-bookings/{id}"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_getshortstaybooking" {
+  api_name            = azurerm_api_management_api_operation.op_property_getshortstaybooking.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_getshortstaybooking.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_getshortstaybooking.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_getshortstaybooking.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_getshortstaybookingsbycustomer" {
+  operation_id        = "GetShortStayBookingsByCustomer"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetShortStayBookingsByCustomer"
+  method              = "GET"
+  url_template        = "/short-stay-bookings/customer/{customerId}"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "customerId"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_getshortstaybookingsbycustomer" {
+  api_name            = azurerm_api_management_api_operation.op_property_getshortstaybookingsbycustomer.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_getshortstaybookingsbycustomer.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_getshortstaybookingsbycustomer.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_getshortstaybookingsbycustomer.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_getshortstaybookingsbyowner" {
+  operation_id        = "GetShortStayBookingsByOwner"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetShortStayBookingsByOwner"
+  method              = "GET"
+  url_template        = "/short-stay-bookings/owner/{ownerId}"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "ownerId"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_getshortstaybookingsbyowner" {
+  api_name            = azurerm_api_management_api_operation.op_property_getshortstaybookingsbyowner.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_getshortstaybookingsbyowner.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_getshortstaybookingsbyowner.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_getshortstaybookingsbyowner.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_cancelshortstaybooking" {
+  operation_id        = "CancelShortStayBooking"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "CancelShortStayBooking"
+  method              = "PATCH"
+  url_template        = "/short-stay-bookings/{id}/cancel"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_cancelshortstaybooking" {
+  api_name            = azurerm_api_management_api_operation.op_property_cancelshortstaybooking.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_cancelshortstaybooking.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_cancelshortstaybooking.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_cancelshortstaybooking.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_property_addshortstaybookingdocument" {
+  operation_id        = "AddShortStayBookingDocument"
+  api_name            = azurerm_api_management_api.property.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "AddShortStayBookingDocument"
+  method              = "POST"
+  url_template        = "/short-stay-bookings/{id}/documents"
+  depends_on          = [azurerm_api_management_api_policy.property]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_property_addshortstaybookingdocument" {
+  api_name            = azurerm_api_management_api_operation.op_property_addshortstaybookingdocument.api_name
+  api_management_name = azurerm_api_management_api_operation.op_property_addshortstaybookingdocument.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_property_addshortstaybookingdocument.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_property_addshortstaybookingdocument.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}

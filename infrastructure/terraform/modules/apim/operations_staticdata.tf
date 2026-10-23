@@ -603,3 +603,16 @@ resource "azurerm_api_management_api_operation_policy" "pol_staticdata_createuse
 XML
 }
 
+
+# --- Operations added for new functions (pipeline sync) ---
+
+resource "azurerm_api_management_api_operation" "op_staticdata_getfurniturecatalog" {
+  operation_id        = "GetFurnitureCatalog"
+  api_name            = azurerm_api_management_api.staticdata.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "GetFurnitureCatalog"
+  method              = "GET"
+  url_template        = "/furniture-catalog"
+  depends_on          = [azurerm_api_management_api_policy.staticdata]
+}

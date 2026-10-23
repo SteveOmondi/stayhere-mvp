@@ -160,3 +160,79 @@ variable "r2_public_base_url" {
   default     = ""
 }
 
+# --- AUTH / PLATFORM ---
+variable "jwt_secret" {
+  type        = string
+  description = "Base64 HMAC key used to sign/validate JWTs (Function Apps + APIM named value). Empty = legacy default."
+  sensitive   = true
+  default     = ""
+}
+
+variable "app_mode" {
+  type        = string
+  description = "AuthService mode: 'test' returns OTPs in responses, 'live' hides them"
+  default     = "test"
+}
+
+variable "seed_admin_enabled" {
+  type        = bool
+  description = "Seed a platform admin user on AuthService startup"
+  default     = false
+}
+
+variable "seed_admin_email" {
+  type    = string
+  default = ""
+}
+
+variable "seed_admin_phone" {
+  type    = string
+  default = ""
+}
+
+variable "seed_admin_full_name" {
+  type    = string
+  default = "Admin"
+}
+
+variable "seed_admin_user_id" {
+  type    = string
+  default = ""
+}
+
+# --- AI AGENT: FLOOR PLAN ANALYSIS & PLACES ---
+variable "anthropic_api_key" {
+  type        = string
+  description = "Anthropic API key (Claude floor plan analysis - primary provider)"
+  sensitive   = true
+  default     = ""
+}
+
+variable "anthropic_floor_plan_model" {
+  type    = string
+  default = "claude-sonnet-5-5"
+}
+
+variable "google_floor_plan_model" {
+  type    = string
+  default = "gemini-flash-latest"
+}
+
+variable "groq_floor_plan_model" {
+  type    = string
+  default = "qwen/qwen3.8-27b"
+}
+
+variable "floor_plan_provider_order" {
+  type        = string
+  description = "Comma-separated fallback order of floor plan providers"
+  default     = "Claude,Gemini,Qwen"
+}
+
+variable "google_maps_api_key" {
+  type        = string
+  description = "Google Maps/Places API key used by AiAgentService (falls back to google_api_key if empty)"
+  sensitive   = true
+  default     = ""
+}
+

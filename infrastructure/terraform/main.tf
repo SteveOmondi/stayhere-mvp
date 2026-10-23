@@ -9,6 +9,13 @@ resource "random_id" "suffix" {
   }
 }
 
+locals {
+  # Single source of truth for the JWT signing key - consumed by every Function App
+  # (JWT_SECRET) and the APIM 'jwt-secret' named value so they can never drift.
+  # Falls back to the legacy key until JWT_SECRET is set in the variable group.
+  jwt_secret = var.jwt_secret != "" ? var.jwt_secret : "U3RheUhlcmVNdHBTZWN1cmVKV1RLZXkyMDI2IVNlY3JldA=="
+}
+
 # --- RESOURCE GROUP ---
 resource "azurerm_resource_group" "main" {
   name     = "rg-${var.project_name}-${var.environment}-${random_id.suffix.hex}"
@@ -104,6 +111,21 @@ module "compute" {
   r2_secret_access_key = var.r2_secret_access_key
   r2_bucket_name       = var.r2_bucket_name
   r2_public_base_url   = var.r2_public_base_url
+
+  jwt_secret           = local.jwt_secret
+  app_mode             = var.app_mode
+  seed_admin_enabled   = var.seed_admin_enabled
+  seed_admin_email     = var.seed_admin_email
+  seed_admin_phone     = var.seed_admin_phone
+  seed_admin_full_name = var.seed_admin_full_name
+  seed_admin_user_id   = var.seed_admin_user_id
+
+  anthropic_api_key          = var.anthropic_api_key
+  anthropic_floor_plan_model = var.anthropic_floor_plan_model
+  google_floor_plan_model    = var.google_floor_plan_model
+  groq_floor_plan_model      = var.groq_floor_plan_model
+  floor_plan_provider_order  = var.floor_plan_provider_order
+  google_maps_api_key        = var.google_maps_api_key
 }
 
 # --- SECURITY MODULE ---
@@ -154,6 +176,7 @@ module "apim" {
 
   entra_client_id             = azuread_application.main.client_id
   entra_tenant_id             = data.azurerm_client_config.current.tenant_id
+  jwt_secret                  = local.jwt_secret
 
   onfon_client_id             = var.onfon_client_id
   onfon_sender_id             = var.onfon_sender_id

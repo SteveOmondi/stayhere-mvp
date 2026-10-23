@@ -27,7 +27,9 @@ public class IdentityService : IIdentityService
         _entraTenantId = configuration["ENTRA_TENANT_ID"] ?? "REPLACE_ME";
         
         // In production, this should come from KeyVault.
-        _jwtSecret = configuration["JWT_SECRET"] ?? "U3RheUhlcmVNdHBTZWN1cmVKV1RLZXkyMDI2IVNlY3JldA==";
+        // IsNullOrEmpty (not ??) to match AuthenticationMiddleware: an App Setting present but "" must still fall back.
+        var configuredSecret = configuration["JWT_SECRET"];
+        _jwtSecret = string.IsNullOrEmpty(configuredSecret) ? "U3RheUhlcmVNdHBTZWN1cmVKV1RLZXkyMDI2IVNlY3JldA==" : configuredSecret;
 
         var authority = $"https://login.microsoftonline.com/{_entraTenantId}/v2.0";
         var wellKnownEndpoint = $"{authority}/.well-known/openid-configuration";
