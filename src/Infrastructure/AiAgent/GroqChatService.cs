@@ -43,7 +43,7 @@ public class GroqChatService : IChatService
         }
 
         const string url = "https://api.groq.com/openai/v1/chat/completions";
-        var systemContent = string.IsNullOrWhiteSpace(systemPrompt) ? GetSystemPrompt() : systemPrompt.Trim();
+        var systemContent = string.IsNullOrWhiteSpace(systemPrompt) ? GetSharedSystemPrompt() : systemPrompt.Trim();
         var request = new
         {
             model,
@@ -59,11 +59,18 @@ public class GroqChatService : IChatService
         };
 
         var maxAttempts = int.TryParse(_configuration["Groq:MaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 4;
+        var minInterval = TimeSpan.FromMilliseconds(
+            int.TryParse(_configuration["Groq:MinRequestIntervalMs"], out var mi) ? mi : 1500);
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
             try
             {
+                // Proactive pacing, not just reactive retry-after-429 - see GroqRateLimiter's doc
+                // comment. A single chat turn makes 2-3 sequential Groq calls of its own, so without
+                // this every turn alone could burn through a low free-tier RPM limit.
+                await GroqRateLimiter.WaitForSlotAsync(minInterval, cancellationToken);
+
                 using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
                 {
                     Content = JsonContent.Create(request)
@@ -75,15 +82,28 @@ public class GroqChatService : IChatService
 
                 if (response.StatusCode == HttpStatusCode.TooManyRequests)
                 {
-                    var delay = ParseRetryAfter(response) ?? TimeSpan.FromSeconds(Math.Pow(2, attempt));
-                    _logger.LogWarning("Groq chat rate limited (429). Attempt {Attempt}/{Max}. Waiting {Delay}s", attempt, maxAttempts, delay.TotalSeconds);
-                    if (attempt == maxAttempts)
-                        response.EnsureSuccessStatusCode();
-                    await Task.Delay(delay, cancellationToken);
-                    continue;
+                    // Confirmed live: this account's Retry-After for 429 can be 20-50+ SECONDS, not
+                    // the few seconds originally assumed. A tool-calling turn makes several
+                    // sequential calls (one per iteration), so waiting that out on EVERY iteration
+                    // compounded to 250+ seconds total and blew straight through the Azure Functions
+                    // host's own forwarder timeout, killing the whole request before this method (or
+                    // its caller, ChatServiceFallbackService) ever got a chance to hand off to Claude.
+                    // A 429 means "don't call me right now" - the right response is an immediate
+                    // failover to the other provider, never a wait-it-out retry - so this throws a
+                    // type the catch below deliberately does NOT retry, regardless of attempt count.
+                    var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogWarning(
+                        "Groq chat rate limited (429) - failing over immediately instead of waiting out Retry-After. Response: {Body}",
+                        errorBody);
+                    throw new GroqRateLimitedException($"Groq chat rate limited (429): {errorBody}");
                 }
 
-                response.EnsureSuccessStatusCode();
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("Groq returned {Status} for chat. Response: {Body}", (int)response.StatusCode, errorBody);
+                    response.EnsureSuccessStatusCode();
+                }
 
                 var responseContent = await response.Content.ReadFromJsonAsync<GroqChatResponse>(cancellationToken: cancellationToken);
 
@@ -97,7 +117,7 @@ public class GroqChatService : IChatService
                 _logger.LogWarning("Groq returned empty choices");
                 return "I apologize, but I couldn't generate a response at this time.";
             }
-            catch (HttpRequestException ex) when (attempt < maxAttempts)
+            catch (HttpRequestException ex) when (attempt < maxAttempts && ex is not GroqRateLimitedException)
             {
                 _logger.LogWarning(ex, "Groq chat attempt {Attempt} failed; retrying", attempt);
                 await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), cancellationToken);
@@ -156,11 +176,15 @@ public class GroqChatService : IChatService
         }
 
         var maxAttempts = int.TryParse(_configuration["Groq:MaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 4;
+        var minInterval = TimeSpan.FromMilliseconds(
+            int.TryParse(_configuration["Groq:MinRequestIntervalMs"], out var mi) ? mi : 1500);
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
             try
             {
+                await GroqRateLimiter.WaitForSlotAsync(minInterval, cancellationToken);
+
                 using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
                 {
                     Content = JsonContent.Create(body)
@@ -171,12 +195,15 @@ public class GroqChatService : IChatService
 
                 if (response.StatusCode == HttpStatusCode.TooManyRequests)
                 {
-                    var delay = ParseRetryAfter(response) ?? TimeSpan.FromSeconds(Math.Pow(2, attempt));
-                    _logger.LogWarning("Groq tool-call chat rate limited (429). Attempt {Attempt}/{Max}. Waiting {Delay}s", attempt, maxAttempts, delay.TotalSeconds);
-                    if (attempt == maxAttempts)
-                        response.EnsureSuccessStatusCode();
-                    await Task.Delay(delay, cancellationToken);
-                    continue;
+                    // See GenerateResponseAsync's identical comment - fail over to Claude
+                    // immediately rather than waiting out a Retry-After that's been observed to be
+                    // 20-50+ seconds, which compounds across this loop's several sequential calls
+                    // into a total that exceeds the Functions host's own request timeout.
+                    var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogWarning(
+                        "Groq tool-call chat rate limited (429) - failing over immediately instead of waiting out Retry-After. Response: {Body}",
+                        errorBody);
+                    throw new GroqRateLimitedException($"Groq tool-call chat rate limited (429): {errorBody}");
                 }
 
                 if (!response.IsSuccessStatusCode)
@@ -216,7 +243,7 @@ public class GroqChatService : IChatService
                 var content = message["content"]?.GetValue<string>()?.Trim() ?? string.Empty;
                 return new ChatCompletionResult(content, null);
             }
-            catch (HttpRequestException ex) when (attempt < maxAttempts)
+            catch (HttpRequestException ex) when (attempt < maxAttempts && ex is not GroqRateLimitedException)
             {
                 _logger.LogWarning(ex, "Groq tool-call chat attempt {Attempt} failed; retrying", attempt);
                 await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), cancellationToken);
@@ -257,7 +284,7 @@ public class GroqChatService : IChatService
         return array;
     }
 
-    private static string GetSystemPrompt() =>
+    internal static string GetSharedSystemPrompt() =>
         @"You are StayHere's in-app real estate assistant for the Kenyan market. You only operate inside the StayHere platform and only ever refer users back to StayHere — never to any other site, app, brand, broker, or service.
 
 CONVERSATION RULES:
@@ -300,16 +327,17 @@ Be helpful, context-aware, conversational — and always StayHere-first.";
         public string? Content { get; set; }
     }
 
-    private static TimeSpan? ParseRetryAfter(HttpResponseMessage response)
-    {
-        if (response.Headers.RetryAfter?.Delta is { } d)
-            return d;
-        if (response.Headers.TryGetValues("Retry-After", out var values))
-        {
-            var first = values.FirstOrDefault();
-            if (int.TryParse(first, out var seconds))
-                return TimeSpan.FromSeconds(seconds);
-        }
-        return null;
-    }
+}
+
+/// <summary>
+/// Thrown immediately on a Groq 429, deliberately bypassing this class's own HttpRequestException
+/// retry-and-backoff path (see both call sites) - Retry-After on this account has been observed at
+/// 20-50+ seconds, and a tool-calling turn's several sequential Groq calls would otherwise compound
+/// that into a total that exceeds the Functions host's own request timeout before ever getting a
+/// chance to fail over. ChatServiceFallbackService catches this (like any Exception) and switches to
+/// Claude right away.
+/// </summary>
+internal sealed class GroqRateLimitedException : HttpRequestException
+{
+    public GroqRateLimitedException(string message) : base(message) { }
 }

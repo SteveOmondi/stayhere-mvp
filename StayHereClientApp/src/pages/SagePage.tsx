@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { APIProvider, Map, AdvancedMarker, Pin } from "@vis.gl/react-google-maps";
 import {
-  aiApi, extractAiReply,
+  aiApi, extractAiReply, ApiError,
   type AiAttachment, type AiChatResponse, type AiConversationSummary,
 } from "../lib/api";
 import { formatKes } from "../lib/format";
@@ -353,11 +353,19 @@ export function SagePage() {
       // rest of the app only finds out by asking again, so resync after every turn instead of
       // leaving the Saved page/heart icons stale until the user happens to reload.
       void refreshFavorites();
-    } catch {
+    } catch (err) {
+      // A thrown ApiError means the request reached the server and got a real HTTP error back
+      // (rate-limited, auth, a genuine 500) - show what actually happened instead of a one-size-
+      // fits-all message that makes a transient "Sage is busy" indistinguishable from the server
+      // being unreachable at all. Anything else (TypeError from fetch itself, no response) really
+      // is a connection failure, so that generic message is still accurate there.
+      const text = err instanceof ApiError
+        ? err.userMessage
+        : "Sorry, I'm having trouble connecting right now. Please try again in a moment.";
       setMessages((m) =>
         m.map((msg) =>
           msg.id === loadingId
-            ? { ...msg, text: "Sorry, I'm having trouble connecting right now. Please try again in a moment.", loading: false }
+            ? { ...msg, text, loading: false }
             : msg
         )
       );
