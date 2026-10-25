@@ -229,6 +229,33 @@
     color: #2dd4bf;
   }
 
+  /* ── Map price-pin markers (ListingsMap) ────────────────────────── */
+  .map-price-pin-wrapper {
+    background: transparent;
+    border: none;
+  }
+  .map-price-pin {
+    transform: translate(-50%, -100%) scale(1);
+    transition: transform 0.15s ease-out, filter 0.15s ease-out;
+    cursor: pointer;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.45));
+  }
+  .map-price-pin .badge-gold {
+    white-space: nowrap;
+    background: linear-gradient(135deg, rgba(232,212,139,0.95) 0%, rgba(201,162,39,0.95) 100%);
+    color: #0a0f1e;
+    border: 1px solid rgba(201,162,39,0.6);
+    font-weight: 700;
+  }
+  .map-price-pin-active {
+    transform: translate(-50%, -100%) scale(1.18);
+    z-index: 1000 !important;
+  }
+  .map-price-pin-active .badge-gold {
+    background: linear-gradient(135deg, #e8d48b 0%, #c9a227 100%);
+    box-shadow: 0 0 0 3px rgba(201,162,39,0.35);
+  }
+
   /* ── Skeleton loading ────────────────────────────────────────── */
   .skeleton {
     @apply rounded-xl bg-white/5;

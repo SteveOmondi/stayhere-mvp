@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { propertiesApi, listingsApi, applicationApi, shortStayApi, ApiError, type ShortStayBooking } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
@@ -234,37 +235,51 @@ export function DashboardPage() {
       </div>
 
       {/* ── Stat cards ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
-        {STAT_CARDS.map(c => {
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {STAT_CARDS.map((c, index) => {
           const Icon = c.Icon;
           return (
-            <Link key={c.label} to={c.to} className="card-hover p-5 block group animate-slide-up">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: `${c.color}18` }}>
-                  <Icon size={18} style={{ color: c.color }} />
-                </div>
-                {!stats.loading && <IcoTrendUp size={13} className="text-emerald-500 mt-1" />}
-              </div>
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-2xl font-display font-bold text-brand-900">
-                    {stats.loading ? <span className="skeleton inline-block h-7 w-10" /> : c.val}
+            <motion.div
+              key={c.label}
+              initial={{ opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 0.55, delay: Math.min(index * 0.07, 0.5), ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Link to={c.to} className="card-hover p-5 block group">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: `${c.color}18` }}>
+                    <Icon size={18} style={{ color: c.color }} />
                   </div>
-                  <div className="text-xs text-brand-500 mt-0.5">{c.label}</div>
+                  {!stats.loading && <IcoTrendUp size={13} className="text-emerald-500 mt-1" />}
                 </div>
-                <Spark data={c.spark} color={c.color} />
-              </div>
-              <div className="mt-3 flex items-center gap-1 text-xs text-brand-500 group-hover:text-brand-teal transition-colors">
-                View all <IcoChevRight size={11} />
-              </div>
-            </Link>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <div className="text-2xl font-display font-bold text-brand-900">
+                      {stats.loading ? <span className="skeleton inline-block h-7 w-10" /> : c.val}
+                    </div>
+                    <div className="text-xs text-brand-500 mt-0.5">{c.label}</div>
+                  </div>
+                  <Spark data={c.spark} color={c.color} />
+                </div>
+                <div className="mt-3 flex items-center gap-1 text-xs text-brand-500 group-hover:text-brand-teal transition-colors">
+                  View all <IcoChevRight size={11} />
+                </div>
+              </Link>
+            </motion.div>
           );
         })}
       </div>
 
       {/* ── Revenue chart + Occupancy ───────────────────────── */}
       <div className="grid lg:grid-cols-3 gap-5">
-        <div className="card p-6 lg:col-span-2 animate-slide-up-2">
+        <motion.div
+          className="card p-6 lg:col-span-2"
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.55, delay: Math.min(STAT_CARDS.length * 0.07, 0.5), ease: [0.16, 1, 0.3, 1] }}
+        >
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-brand-900">Revenue Trend</h3>
@@ -287,7 +302,7 @@ export function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Occupancy donut */}
         <div className="card p-6 flex flex-col animate-slide-up-3">

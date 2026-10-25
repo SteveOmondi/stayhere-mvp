@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { listingsApi, ownerApi, ApiError } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { useOwner } from "../context/OwnerContext";
@@ -184,8 +185,15 @@ export function ListingsPage() {
               <tr><th>Unit / Title</th><th>Location</th><th>Price/mo</th><th>Status</th><th>Agent</th><th>Caretaker</th><th></th></tr>
             </thead>
             <tbody>
-              {filtered.map(l => (
-                <tr key={l.id}>
+              {filtered.map((l, index) => (
+                <motion.tr
+                  key={l.id}
+                  initial={{ opacity: 0, y: 28 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{ duration: 0.55, delay: Math.min(index, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                  className="hover:-translate-y-0.5 hover:shadow-card-hover transition"
+                >
                   <td>
                     <div className="flex items-center gap-2">
                       {l.primaryImageUrl && (
@@ -232,7 +240,7 @@ export function ListingsPage() {
                       <IcoEdit size={13}/>
                     </button>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>

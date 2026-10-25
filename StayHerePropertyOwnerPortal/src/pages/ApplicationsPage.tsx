@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { applicationApi, paymentApi, shortStayApi, type TenantApplication, type RentalPayment, type ShortStayBooking } from "../lib/api";
 // paymentApi.confirm is used for manual payment confirmation
 import { useOwner } from "../context/OwnerContext";
@@ -218,9 +219,9 @@ export function ApplicationsPage() {
               <p className="text-sm text-brand-400 mt-1">Applications from prospective tenants appear here as soon as they apply - booking a viewing is optional and separate.</p>
             </div>
           ) : (
-            <div className="grid gap-3 stagger">
-              {filtered.map((app) => (
-                <AppCard key={app.id} app={app} onClick={() => selectApp(app)} />
+            <div className="grid gap-3">
+              {filtered.map((app, index) => (
+                <AppCard key={app.id} app={app} index={index} onClick={() => selectApp(app)} />
               ))}
             </div>
           )}
@@ -292,8 +293,8 @@ function StaysPanel({ ownerId }: { ownerId?: string }) {
           </div>
         ) : (
           <div className="grid gap-3">
-            {filtered.map((s) => (
-              <StayCard key={s.id} stay={s} onClick={() => setSelected(s)} />
+            {filtered.map((s, index) => (
+              <StayCard key={s.id} stay={s} index={index} onClick={() => setSelected(s)} />
             ))}
           </div>
         )}
@@ -308,13 +309,20 @@ function StaysPanel({ ownerId }: { ownerId?: string }) {
   );
 }
 
-function StayCard({ stay: s, onClick }: { stay: ShortStayBooking; onClick: () => void }) {
+function StayCard({ stay: s, index, onClick }: { stay: ShortStayBooking; index: number; onClick: () => void }) {
   const st = STAY_STATUS_STYLES[s.status] ?? STAY_STATUS_STYLES.PendingPayment;
   const inDate = new Date(s.checkInDate).toLocaleDateString("en-KE", { day: "numeric", month: "short" });
   const outDate = new Date(s.checkOutDate).toLocaleDateString("en-KE", { day: "numeric", month: "short" });
 
   return (
-    <div onClick={onClick} className="card cursor-pointer hover:shadow-md transition-shadow">
+    <motion.div
+      onClick={onClick}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.55, delay: Math.min(index, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+      className="card cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition"
+    >
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-brand-teal">
           <IcoKey size={20} />
@@ -338,7 +346,7 @@ function StayCard({ stay: s, onClick }: { stay: ShortStayBooking; onClick: () =>
         </div>
         <IcoChevRight size={16} className="text-brand-300 shrink-0 mt-1" />
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -428,14 +436,21 @@ function StatTile({ icon: Icon, label, value, tint }: {
   );
 }
 
-function AppCard({ app, onClick }: { app: TenantApplication; onClick: () => void }) {
+function AppCard({ app, index, onClick }: { app: TenantApplication; index: number; onClick: () => void }) {
   const cfg = STATUS_CONFIG[app.status] ?? STATUS_CONFIG.DocumentsPending;
   const Icon = cfg.icon;
   const date = new Date(app.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" });
   const pct = Math.min(100, Math.round((cfg.step / TOTAL_STEPS) * 100));
 
   return (
-    <div onClick={onClick} className="animate-slide-up relative card-hover cursor-pointer overflow-hidden">
+    <motion.div
+      onClick={onClick}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.55, delay: Math.min(index, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+      className="relative card-hover cursor-pointer overflow-hidden"
+    >
       <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${cfg.bar}`} />
       <div className="p-5 pl-6">
         <div className="flex items-start gap-4">
@@ -478,7 +493,7 @@ function AppCard({ app, onClick }: { app: TenantApplication; onClick: () => void
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

@@ -1,0 +1,1474 @@
+{
+  "info": {
+    "name": "StayHere Mobile - Production",
+    "_postman_id": "64d34577-2d89-4a1a-8abe-aa03b0bfbbfb",
+    "description": "API calls a StayHere mobile client makes, in the exact order a user walks through the StayHereClientApp web flow: sign up/log in, browse, favorite/ask Sage/enquire, then book a viewing, a short stay, or apply for a long-term lease, pay via M-Pesa, and manage your profile/bookings afterwards.\n\nNo separate mobile app project exists in this repo yet - this collection is the API contract/spec for building one, kept in sync with StayHereClientApp's actual usage.\n\nSwitch the 'StayHere - Local Dev' / 'StayHere - Production' environment to point every request at the right backend - do not hardcode hosts into requests.\n\nSet the 'token' variable (from step 03) before calling anything past Authentication.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🔐 1. Authentication",
+      "item": [
+        {
+          "name": "01 Register (Sign-up + Onboard in one step)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Email\": \"jane.doe@example.com\",\n  \"FullName\": \"Jane Doe\",\n  \"Role\": \"Tenant\",\n  \"PhoneNumber\": \"{{customerPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Preferred path for a brand-new mobile signup - combines Signup + Onboard into one call. Returns userId/profileId; if it 400s partway through, retry with POST auth/onboard using the returned userId instead of calling this again."
+          },
+          "response": []
+        },
+        {
+          "name": "02 Login - Request OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Email\": \"jane.doe@example.com\",\n  \"PhoneNumber\": null,\n  \"EntraToken\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Supply Email OR PhoneNumber (not both) to trigger an OTP. Supplying EntraToken instead performs a full SSO login and skips OTP entirely."
+          },
+          "response": []
+        },
+        {
+          "name": "03 Login - Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verifyotp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verifyotp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Email\": \"jane.doe@example.com\",\n  \"PhoneNumber\": null,\n  \"otp\": \"{{otpCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Returns {token, user} on success - store token in the 'token' environment variable for every subsequent request."
+          },
+          "response": []
+        },
+        {
+          "name": "04 Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profiles/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "profiles",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📚 2. Reference / Filter Data",
+      "item": [
+        {
+          "name": "05 Get Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "06 Get Subcategories By Country (filter dropdown)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staticdata/subcategories/country/Kenya",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "staticdata",
+                "subcategories",
+                "country",
+                "Kenya"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏠 3. Browse Listings",
+      "item": [
+        {
+          "name": "07 Get Featured Listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/listings/featured?limit=6",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "listings",
+                "featured"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "6"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "08 Get Available Listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/listings/available?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "listings",
+                "available"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "09 Search Listings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/listings/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "listings",
+                "search"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"City\": \"Nairobi\",\n  \"PropertyType\": \"Apartment\",\n  \"ListingType\": \"Rent\",\n  \"MinPrice\": 20000,\n  \"MaxPrice\": 80000,\n  \"MinBedrooms\": 1,\n  \"Page\": 1,\n  \"PageSize\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10 Get Listing Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/listings/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "listings",
+                "{{listingId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "11 Increment View Count",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/listings/{{listingId}}/view",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "listings",
+                "{{listingId}}",
+                "view"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "❤️ 4. Favorites",
+      "item": [
+        {
+          "name": "12 Save Listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/saved-listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "saved-listings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "13 Get Saved Listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/saved-listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "saved-listings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "14 Unsave Listing",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/saved-listings/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "saved-listings",
+                "{{listingId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🤖 5. Sage AI Assistant",
+      "item": [
+        {
+          "name": "15 Chat with Sage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "chat"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Query\": \"I need a 2 bedroom apartment in Nairobi under 40000 KES\",\n  \"ConversationId\": \"{{conversationId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "16 Respond & Recommend Listings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/respondandrecommend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "respondandrecommend"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Query\": \"Show me affordable listings in Westlands with parking\",\n  \"ConversationId\": \"{{conversationId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "17 Get My Conversations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/aiagent/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aiagent",
+                "conversations"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "💬 6. Enquiries (in-app messaging with owner)",
+      "item": [
+        {
+          "name": "18 Create/Open Enquiry Thread",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Idempotent - calling again for the same listing returns the existing thread (200) instead of creating a duplicate."
+          },
+          "response": []
+        },
+        {
+          "name": "19 Get My Enquiries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries/mine?maxResults=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries",
+                "mine"
+              ],
+              "query": [
+                {
+                  "key": "maxResults",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "20 Get Enquiry Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries/{{enquiryId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries",
+                "{{enquiryId}}",
+                "messages"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "21 Send Enquiry Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries/{{enquiryId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries",
+                "{{enquiryId}}",
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Hi, is this unit still available for viewing this weekend?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "22 Mark Enquiry Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/enquiries/{{enquiryId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "enquiries",
+                "{{enquiryId}}",
+                "read"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📅 7. Book a Viewing (optional, before applying)",
+      "item": [
+        {
+          "name": "23 Book a Viewing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ListingId\": \"{{listingId}}\",\n  \"CustomerId\": \"{{customerId}}\",\n  \"ViewingDate\": \"2026-11-05T00:00:00Z\",\n  \"ViewingTime\": \"14:00\",\n  \"ViewingType\": \"Physical\",\n  \"Notes\": \"Interested in the master bedroom size.\",\n  \"ContactPhone\": \"{{customerPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "24 Get My Viewing Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/bookings/customer/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "bookings",
+                "customer",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "25 Cancel Viewing Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/bookings/{{viewingBookingId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "bookings",
+                "{{viewingBookingId}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"OwnerNotes\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏖️ 8. Short-Stay Booking Flow (nightly stays)",
+      "item": [
+        {
+          "name": "26 Get Listing Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/listings/{{listingId}}/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "listings",
+                "{{listingId}}",
+                "availability"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "27 Create Short-Stay Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/short-stay-bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "short-stay-bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"checkInDate\": \"2026-11-20\",\n  \"checkOutDate\": \"2026-11-22\",\n  \"guestName\": \"Jane Doe\",\n  \"guestPhone\": \"{{customerPhone}}\",\n  \"guestEmail\": \"{{customerEmail}}\",\n  \"numberOfGuests\": 2,\n  \"specialRequests\": \"Late check-in around 9pm.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "listingId must be a ShortStay-type listing. The booking fee (half of one night's price) is computed server-side. Returns 409 if the dates overlap an existing booking."
+          },
+          "response": []
+        },
+        {
+          "name": "28 Initiate M-Pesa STK Push (Booking Fee)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mpesa/stk/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "mpesa",
+                "stk",
+                "initiate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shortStayBookingId\": \"{{shortStayBookingId}}\",\n  \"phoneNumber\": \"{{customerPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "29 Query STK Status (poll every ~4s until Confirmed)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mpesa/stk/query/{{checkoutRequestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "mpesa",
+                "stk",
+                "query",
+                "{{checkoutRequestId}}"
+              ]
+            },
+            "description": "Self-healing: if Safaricom's callback never arrives, calling this directly resolves the payment from Safaricom's own record and promotes the booking to Confirmed."
+          },
+          "response": []
+        },
+        {
+          "name": "30 Get Short-Stay Booking By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/short-stay-bookings/{{shortStayBookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "short-stay-bookings",
+                "{{shortStayBookingId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "31 Get Presigned Upload URL (ID docs)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/upload/presigned-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "upload",
+                "presigned-url"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Folder\": \"short-stay-bookings/documents\",\n  \"FileName\": \"id-front.jpg\",\n  \"ContentType\": \"image/jpeg\",\n  \"ExpiryMinutes\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "32 PUT File to R2 (Direct Upload)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/PASTE_uploadUrl_FROM_STEP_31_RESPONSE_HERE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "PASTE_uploadUrl_FROM_STEP_31_RESPONSE_HERE"
+              ]
+            },
+            "description": "Raw PUT of the file bytes to the uploadUrl returned by step 31, with a matching Content-Type header. Not a StayHere API call."
+          },
+          "response": []
+        },
+        {
+          "name": "33 Submit ID Verification Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/short-stay-bookings/{{shortStayBookingId}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "short-stay-bookings",
+                "{{shortStayBookingId}}",
+                "documents"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentType\": \"IdFront\",\n  \"fileUrl\": \"https://pub-stayhere.r2.dev/short-stay-bookings/documents/id-front.jpg\",\n  \"fileName\": \"id-front.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "documentType must be IdFront | IdBack | Selfie. Only allowed once the booking is Confirmed (paid)."
+          },
+          "response": []
+        },
+        {
+          "name": "34 Get My Short-Stay Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/short-stay-bookings/customer/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "short-stay-bookings",
+                "customer",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏘️ 9. Long-Term Rental Flow (lease application)",
+      "item": [
+        {
+          "name": "35 Submit Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ListingId\": \"{{listingId}}\",\n  \"CustomerId\": \"{{customerId}}\",\n  \"ViewingBookingId\": \"{{viewingBookingId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Idempotent - returns the existing non-cancelled/rejected application (200) instead of creating a duplicate for the same listing+customer."
+          },
+          "response": []
+        },
+        {
+          "name": "36 Get Presigned Upload URL (lease docs)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/upload/presigned-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "upload",
+                "presigned-url"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Folder\": \"applications/documents\",\n  \"FileName\": \"national-id.pdf\",\n  \"ContentType\": \"application/pdf\",\n  \"ExpiryMinutes\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "37 PUT File to R2 (Direct Upload)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/PASTE_uploadUrl_FROM_STEP_36_RESPONSE_HERE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "PASTE_uploadUrl_FROM_STEP_36_RESPONSE_HERE"
+              ]
+            },
+            "description": "Raw PUT of the file bytes to the uploadUrl returned by step 36. Not a StayHere API call."
+          },
+          "response": []
+        },
+        {
+          "name": "38 Submit Document to Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications/{{applicationId}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications",
+                "{{applicationId}}",
+                "documents"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"DocumentType\": \"NationalID\",\n  \"FileUrl\": \"https://pub-stayhere.r2.dev/applications/documents/national-id.pdf\",\n  \"FileName\": \"national-id.pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "39 Submit Application For Review",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications/{{applicationId}}/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications",
+                "{{applicationId}}",
+                "submit"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "40 Get Listing Terms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/listings/{{listingId}}/terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "listings",
+                "{{listingId}}",
+                "terms"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "41 Accept Terms",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications/{{applicationId}}/accept-terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications",
+                "{{applicationId}}",
+                "accept-terms"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"SignatureUrl\": \"https://pub-stayhere.r2.dev/profiles/documents/signature.png\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "42 Initiate M-Pesa STK Push (Security Deposit)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mpesa/stk/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "mpesa",
+                "stk",
+                "initiate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicationId\": \"{{applicationId}}\",\n  \"phoneNumber\": \"{{customerPhone}}\",\n  \"paymentType\": \"SecurityDeposit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "FIXED: the old 'property/applications/{id}/payment/initiate' route was removed when M-Pesa moved to its own PaymentsService function app - always use this payments/mpesa/stk/initiate route instead."
+          },
+          "response": []
+        },
+        {
+          "name": "43 Query STK Status (poll every ~4s until Confirmed)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mpesa/stk/query/{{checkoutRequestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "mpesa",
+                "stk",
+                "query",
+                "{{checkoutRequestId}}"
+              ]
+            },
+            "description": "FIXED: replaces the old non-existent 'property/applications/{id}/payment/status' route. Self-heals the payment/application from Safaricom's own record if the callback never arrived."
+          },
+          "response": []
+        },
+        {
+          "name": "44 Get Onboarding Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications/{{applicationId}}/onboarding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications",
+                "{{applicationId}}",
+                "onboarding"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "45 Get My Applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications/customer/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications",
+                "customer",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "46 Cancel Application",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/property/applications/{{applicationId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "property",
+                "applications",
+                "{{applicationId}}",
+                "cancel"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👤 10. Customer Profile",
+      "item": [
+        {
+          "name": "47 Get Customer Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "48 Update Customer Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"FirstName\": \"Jane\",\n  \"LastName\": \"Doe\",\n  \"PreferredLanguage\": \"en\",\n  \"PreferredCurrency\": \"KES\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "49 Add Customer Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "documents"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"EntityType\": \"Customer\",\n  \"EntityId\": \"{{customerId}}\",\n  \"DocumentType\": \"NationalID\",\n  \"FileUrl\": \"https://pub-stayhere.r2.dev/profiles/documents/id.pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "50 Get Customer Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "documents"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://apim-dev-5c27bcf3.azure-api.net",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "267b4f20-5157-417d-8054-7cb4c8bef401",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "267b4f20-5157-417d-8054-7cb4c8bef401",
+      "type": "string"
+    },
+    {
+      "key": "listingId",
+      "value": "92b778aa-e6bb-4f9a-930f-9e3e546a3142",
+      "type": "string"
+    },
+    {
+      "key": "viewingBookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shortStayBookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "checkoutRequestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "enquiryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerPhone",
+      "value": "254733000000",
+      "type": "string"
+    },
+    {
+      "key": "customerEmail",
+      "value": "renter@example.com",
+      "type": "string"
+    },
+    {
+      "key": "otpCode",
+      "value": "123456",
+      "type": "string"
+    }
+  ]
+}

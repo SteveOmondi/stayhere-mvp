@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { customersApi, ownersApi, propertiesApi, listingsApi, ApiError } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { usePortal } from "../context/PortalContext";
@@ -177,7 +178,7 @@ export function DashboardPage() {
         <img
           src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1800&q=80"
           alt="Property hero"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="ken-burns-img absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 hero-overlay" />
         <div className="absolute inset-0 opacity-20"
@@ -223,33 +224,41 @@ export function DashboardPage() {
 
       {/* ── KPI Stat Cards ────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map(c => {
+        {statCards.map((c, index) => {
           const Icon = c.Icon;
           return (
-            <Link key={c.label} to={c.to} className="portal-card-hover p-5 block group">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                  style={{ background: `${c.color}18` }}>
-                  <Icon size={18} style={{ color: c.color }} />
-                </div>
-                {stats.loading
-                  ? <div className="skeleton h-5 w-12 rounded-full" />
-                  : <IcoTrendUp size={14} className="text-emerald-500 mt-1" />
-                }
-              </div>
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-2xl font-display font-bold text-brand-900">
-                    {stats.loading ? <span className="skeleton h-7 w-10 inline-block" /> : c.value}
+            <motion.div
+              key={c.label}
+              initial={{ opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 0.55, delay: Math.min(index * 0.07, 0.5), ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Link to={c.to} className="portal-card-hover p-5 block group">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
+                    style={{ background: `${c.color}18` }}>
+                    <Icon size={18} style={{ color: c.color }} />
                   </div>
-                  <div className="text-xs text-brand-500 mt-0.5">{c.label}</div>
+                  {stats.loading
+                    ? <div className="skeleton h-5 w-12 rounded-full" />
+                    : <IcoTrendUp size={14} className="text-emerald-500 mt-1" />
+                  }
                 </div>
-                <SparkLine data={c.spark} color={c.color} />
-              </div>
-              <div className="mt-3 flex items-center gap-1 text-xs text-brand-500 group-hover:text-brand-gold transition-colors">
-                View all <IcoChevronRight size={12} />
-              </div>
-            </Link>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <div className="text-2xl font-display font-bold text-brand-900">
+                      {stats.loading ? <span className="skeleton h-7 w-10 inline-block" /> : c.value}
+                    </div>
+                    <div className="text-xs text-brand-500 mt-0.5">{c.label}</div>
+                  </div>
+                  <SparkLine data={c.spark} color={c.color} />
+                </div>
+                <div className="mt-3 flex items-center gap-1 text-xs text-brand-500 group-hover:text-brand-gold transition-colors">
+                  View all <IcoChevronRight size={12} />
+                </div>
+              </Link>
+            </motion.div>
           );
         })}
       </div>
@@ -258,7 +267,12 @@ export function DashboardPage() {
       <div className="grid lg:grid-cols-3 gap-5">
 
         {/* Recent Listings from API */}
-        <div className="portal-card p-5 lg:col-span-2">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.55, delay: 0, ease: [0.16, 1, 0.3, 1] }}
+          className="portal-card p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-brand-900">Recent Listings</h3>
@@ -330,10 +344,15 @@ export function DashboardPage() {
           <Link to="/listings" className="mt-4 btn-secondary w-full justify-center text-xs py-2">
             Browse All Listings
           </Link>
-        </div>
+        </motion.div>
 
         {/* Quick Actions */}
-        <div className="portal-card p-5">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.55, delay: 0.07, ease: [0.16, 1, 0.3, 1] }}
+          className="portal-card p-5">
           <h3 className="font-semibold text-brand-900 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-2">
             {QUICK_ACTIONS.map(a => {
@@ -353,14 +372,19 @@ export function DashboardPage() {
               );
             })}
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* ── Owners + System Status ─────────────────────────── */}
       <div className="grid lg:grid-cols-2 gap-5">
 
         {/* Recent owners as activity */}
-        <div className="portal-card p-5">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.55, delay: 0, ease: [0.16, 1, 0.3, 1] }}
+          className="portal-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-brand-900">Recent Property Owners</h3>
             <Link to="/owners" className="text-xs text-brand-gold font-semibold hover:underline">View all</Link>
@@ -386,25 +410,37 @@ export function DashboardPage() {
           ) : (
             <div className="space-y-2.5">
               {recentOwners.map((o, i) => (
-                <Link key={o.id} to={`/owners/${o.id}`}
-                  className="flex items-center gap-3 py-2 border-b border-black/[0.05] last:border-0 hover:text-brand-gold transition-colors group">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 text-brand-950"
-                    style={{ background: "linear-gradient(135deg, #e8d48b, #c9a227)", opacity: 0.8 + i * 0.04 }}>
-                    {o.fullName.charAt(0) || "?"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-brand-900 group-hover:text-brand-gold transition-colors truncate">{o.fullName}</div>
-                    <div className="text-[10px] text-brand-400 truncate">{o.email}</div>
-                  </div>
-                  <IcoChevronRight size={13} className="text-brand-300 shrink-0" />
-                </Link>
+                <motion.div
+                  key={o.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <Link to={`/owners/${o.id}`}
+                    className="flex items-center gap-3 py-2 border-b border-black/[0.05] last:border-0 hover:text-brand-gold transition-colors group">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 text-brand-950"
+                      style={{ background: "linear-gradient(135deg, #e8d48b, #c9a227)", opacity: 0.8 + i * 0.04 }}>
+                      {o.fullName.charAt(0) || "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-brand-900 group-hover:text-brand-gold transition-colors truncate">{o.fullName}</div>
+                      <div className="text-[10px] text-brand-400 truncate">{o.email}</div>
+                    </div>
+                    <IcoChevronRight size={13} className="text-brand-300 shrink-0" />
+                  </Link>
+                </motion.div>
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* System status + API health */}
-        <div className="portal-card p-5">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.55, delay: 0.07, ease: [0.16, 1, 0.3, 1] }}
+          className="portal-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-brand-900">API System Status</h3>
             <span className="badge badge-success text-[10px]">Azure APIM</span>
@@ -442,7 +478,7 @@ export function DashboardPage() {
               Configure Endpoints →
             </Link>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* ── Recent Customers ─────────────────────────────────── */}
@@ -506,11 +542,16 @@ function RecentCustomers() {
                   <div className="text-brand-400 text-sm">No customers yet</div>
                 </td>
               </tr>
-            ) : rows.map((r) => {
+            ) : rows.map((r, i) => {
               const name = [r.firstName, r.lastName].filter(Boolean).join(" ") || "—";
               const status = String(r.accountStatus ?? "");
               return (
-                <tr key={String(r.id)}>
+                <motion.tr
+                  key={String(r.id)}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <td>
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
@@ -533,7 +574,7 @@ function RecentCustomers() {
                       <IcoEye size={12} /> View
                     </Link>
                   </td>
-                </tr>
+                </motion.tr>
               );
             })}
           </tbody>

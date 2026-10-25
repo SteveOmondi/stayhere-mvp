@@ -32,10 +32,9 @@ export function DocumentPreviewModal({ url, title, onClose }: Props) {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-8" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-brand-100 px-5 py-3.5">
+    <div className="modal-bg" role="dialog" aria-modal="true" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-box flex max-h-full w-full max-w-3xl flex-col overflow-hidden">
+        <div className="flex items-center justify-between border-b border-black/[0.07] px-5 py-3.5">
           <div className="min-w-0 truncate text-sm font-semibold text-brand-900">{title ?? "Document Preview"}</div>
           <div className="flex shrink-0 items-center gap-3">
             <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-brand-teal hover:underline">

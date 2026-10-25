@@ -1,23 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { listingsApi, asListingArray, applicationApi, type Listing, aiApi } from "../lib/api";
 import {
-  formatKes, fallbackImage, listingImages, listingLocation, listingPrice,
+  formatKes, listingImages, listingLocation, listingPrice,
   listingTitle, isRent, resolveLocation,
 } from "../lib/format";
 import { useApp } from "../context/AppContext";
 import { loginUrlWithRedirect } from "../lib/authRedirect";
 import { StarRating, InteractiveStars } from "../components/StarRating";
 import { ListingCard } from "../components/ListingCard";
-import { GrainLayer } from "../components/ui";
+import { GrainLayer, DetailSection } from "../components/ui";
+import { ImageGallery } from "../components/ImageGallery";
 import { FloorPlanSection } from "../components/floorplan/FloorPlanSection";
 import {
   IcoBath, IcoBed, IcoBuilding, IcoCar, IcoCalendar, IcoCheck,
   IcoEye, IcoGym, IcoHeartFilled, IcoHeart, IcoKey,
   IcoLocation, IcoPhone, IcoPool, IcoRuler, IcoSecurity, IcoShare,
-  IcoSparkle, IcoStar, IcoWallet, IcoWifi, IcoArrowRight, IcoX,
-  IcoChevLeft, IcoChevRight,
+  IcoSparkle, IcoStar, IcoWallet, IcoWifi, IcoArrowRight,
 } from "../components/icons";
 
 /* ── Amenity icon map ────────────────────────────────────────────── */
@@ -70,178 +70,6 @@ function StatPill({ icon, value, label }: { icon: React.ReactNode; value: string
         <div className="text-sm font-semibold text-white font-sans leading-tight">{String(value)}</div>
       </div>
     </div>
-  );
-}
-
-/* ── Hero image strip with lightbox ──────────────────────────────── */
-function HeroGallery({
-  images, primary, alt, onCountChange,
-}: {
-  images: string[]; primary?: string; alt: string; onCountChange?: (total: number) => void;
-}) {
-  const all = (() => {
-    const list: string[] = [];
-    if (primary) list.push(primary);
-    for (const i of images) if (i && !list.includes(i)) list.push(i);
-    return list.length ? list : images;
-  })();
-
-  const [active, setActive] = useState(0);
-  const [lightbox, setLightbox] = useState(false);
-  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
-
-  function imgSrc(url: string): string {
-    return imgErrors[url] ? fallbackImage(url) : url;
-  }
-  function onImgError(url: string) {
-    setImgErrors((prev) => ({ ...prev, [url]: true }));
-  }
-
-  const next = useCallback(() => setActive((a) => (a + 1) % all.length), [all.length]);
-  const prev = useCallback(() => setActive((a) => (a - 1 + all.length) % all.length), [all.length]);
-
-  useEffect(() => { onCountChange?.(all.length); }, [all.length]);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const fn = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") next();
-      else if (e.key === "ArrowLeft") prev();
-      else if (e.key === "Escape") setLightbox(false);
-    };
-    window.addEventListener("keydown", fn);
-    return () => window.removeEventListener("keydown", fn);
-  }, [lightbox, next, prev]);
-
-  if (!all.length) return null;
-
-  return (
-    <>
-      {/* Main hero frame */}
-      <div className="relative h-[58vh] min-h-[420px] w-full overflow-hidden">
-        <AnimatePresence mode="sync">
-          <motion.img
-            key={active}
-            src={imgSrc(all[active])}
-            alt={alt}
-            initial={{ opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.65, ease: "easeInOut" }}
-            className="absolute inset-0 h-full w-full object-cover cursor-zoom-in"
-            onError={() => onImgError(all[active])}
-            onClick={() => setLightbox(true)}
-          />
-        </AnimatePresence>
-
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/60 via-transparent to-transparent" />
-        <GrainLayer opacity={0.03} />
-
-        {/* Photo counter chip */}
-        <button
-          onClick={() => setLightbox(true)}
-          className="absolute top-4 right-4 flex items-center gap-2 rounded-full glass-strong px-3.5 py-1.5 text-xs font-sans font-semibold text-white hover:bg-white/20 transition"
-        >
-          <IcoEye size={13} /> {active + 1} / {all.length} Photos
-        </button>
-
-        {/* Prev/next */}
-        {all.length > 1 && (
-          <>
-            <button
-              onClick={prev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full glass-strong text-white hover:bg-white/20 transition"
-            >
-              <IcoChevLeft size={18} />
-            </button>
-            <button
-              onClick={next}
-              className="absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full glass-strong text-white hover:bg-white/20 transition"
-            >
-              <IcoChevRight size={18} />
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Thumbnail strip */}
-      {all.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 sm:px-6 lg:px-0 pt-3 pb-1">
-          {all.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setActive(i)}
-              className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all duration-200 ${
-                i === active
-                  ? "border-brand-gold shadow-glow-gold"
-                  : "border-transparent opacity-55 hover:opacity-100 hover:border-white/20"
-              }`}
-            >
-              <img src={imgSrc(img)} alt={`${alt} ${i + 1}`} onError={() => onImgError(img)} className="h-full w-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Lightbox */}
-      <AnimatePresence>
-        {lightbox && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 p-4"
-            onClick={() => setLightbox(false)}
-          >
-            <button
-              className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full glass-strong text-white hover:bg-white/20 transition"
-              onClick={() => setLightbox(false)}
-            >
-              <IcoX size={20} />
-            </button>
-            <button
-              className="absolute left-5 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full glass-strong text-white"
-              onClick={(e) => { e.stopPropagation(); prev(); }}
-            >
-              <IcoChevLeft size={24} />
-            </button>
-            <motion.img
-              key={active}
-              src={imgSrc(all[active])}
-              alt={alt}
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="max-h-[85vh] max-w-[85vw] rounded-2xl object-contain"
-              onError={() => onImgError(all[active])}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <button
-              className="absolute right-5 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full glass-strong text-white"
-              onClick={(e) => { e.stopPropagation(); next(); }}
-            >
-              <IcoChevRight size={24} />
-            </button>
-            {/* Thumbnail strip in lightbox */}
-            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto no-scrollbar max-w-md">
-              {all.map((img, i) => (
-                <button
-                  key={i}
-                  onClick={(e) => { e.stopPropagation(); setActive(i); }}
-                  className={`h-12 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition ${
-                    i === active ? "border-brand-gold" : "border-transparent opacity-50 hover:opacity-100"
-                  }`}
-                >
-                  <img src={img} alt="" className="h-full w-full object-cover" />
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
   );
 }
 
@@ -507,7 +335,6 @@ export function ListingDetailPage() {
   const [rated,      setRated]      = useState(false);
   const [activeTab,  setActiveTab]  = useState<Tab>("Overview");
   const [stickyBar,  setStickyBar]  = useState(false);
-  const [photoCount, setPhotoCount] = useState(0);
   const [isActiveTenant, setIsActiveTenant] = useState(false);
 
   const customerId = customerProfile?.id ?? customerProfile?.customerId ?? authUser?.id;
@@ -599,6 +426,7 @@ export function ListingDetailPage() {
   const imgs  = listingImages(listing);
   const loc   = listingLocation(listing);
   const title = listingTitle(listing);
+  const photoCount = imgs.length;
 
   const keyDetails = [
     { icon: <IcoBed size={17} className="text-brand-gold" />,       label: "Bedrooms",  value: listing.bedrooms    ?? "N/A" },
@@ -612,65 +440,61 @@ export function ListingDetailPage() {
   return (
     <div className="min-h-screen pb-24">
 
-      {/* ── 1. Full-bleed hero ── */}
-      <div ref={heroRef} className="relative">
-        <HeroGallery
-          images={imgs}
-          primary={listing.primaryImageUrl ?? undefined}
-          alt={title}
-          onCountChange={setPhotoCount}
-        />
-
-        {/* Hero overlay content (bottom-left over the hero image) */}
-        <div className="absolute bottom-20 left-0 right-0 z-10 pointer-events-none px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            >
-              {/* Badges */}
-              <div className="flex flex-wrap gap-2 mb-3">
-                {listing.propertyType && (
-                  <span className="rounded-full border border-brand-gold/40 bg-brand-dark/70 backdrop-blur-sm px-3 py-1 text-[11px] font-sans font-semibold text-brand-gold">
-                    {listing.propertyType}
-                  </span>
-                )}
-                {listing.listingType && (
-                  <span className="rounded-full border border-brand-teal/40 bg-brand-dark/70 backdrop-blur-sm px-3 py-1 text-[11px] font-sans font-semibold text-brand-teallight">
-                    {listing.listingType}
-                  </span>
-                )}
-              </div>
-
-              {/* Title */}
-              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight drop-shadow-lg max-w-2xl">
-                {title}
-              </h1>
-
-              {/* Meta row */}
-              <div className="mt-2 flex flex-wrap items-center gap-3 text-[13px] text-white/70 font-sans">
-                <span className="flex items-center gap-1.5">
-                  <IcoLocation size={13} className="text-brand-teal" /> {loc}
-                </span>
-                {listing.views != null && (
-                  <span className="flex items-center gap-1.5">
-                    <IcoEye size={13} className="text-white/40" /> {listing.views} views
-                  </span>
-                )}
-                {(listing.rating ?? 0) > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <IcoStar size={13} className="text-brand-gold" />
-                    {Number(listing.rating).toFixed(1)}
-                  </span>
-                )}
-                {listing.listingCode && (
-                  <span className="text-white/30 font-sans">#{listing.listingCode}</span>
-                )}
-              </div>
-            </motion.div>
+      {/* ── 1. Title + Airbnb-style photo gallery ── */}
+      <div ref={heroRef} className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-5"
+        >
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {listing.propertyType && (
+              <span className="rounded-full border border-brand-gold/40 bg-brand-gold/5 px-3 py-1 text-[11px] font-sans font-semibold text-brand-gold">
+                {listing.propertyType}
+              </span>
+            )}
+            {listing.listingType && (
+              <span className="rounded-full border border-brand-teal/40 bg-brand-teal/5 px-3 py-1 text-[11px] font-sans font-semibold text-brand-teallight">
+                {listing.listingType}
+              </span>
+            )}
           </div>
-        </div>
+
+          {/* Title */}
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight max-w-2xl">
+            {title}
+          </h1>
+
+          {/* Meta row */}
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-[13px] text-brand-muted font-sans">
+            <span className="flex items-center gap-1.5">
+              <IcoLocation size={13} className="text-brand-teal" /> {loc}
+            </span>
+            {listing.views != null && (
+              <span className="flex items-center gap-1.5">
+                <IcoEye size={13} className="text-white/40" /> {listing.views} views
+              </span>
+            )}
+            {(listing.rating ?? 0) > 0 && (
+              <span className="flex items-center gap-1.5">
+                <IcoStar size={13} className="text-brand-gold" />
+                {Number(listing.rating).toFixed(1)}
+              </span>
+            )}
+            {listing.listingCode && (
+              <span className="text-white/30 font-sans">#{listing.listingCode}</span>
+            )}
+          </div>
+        </motion.div>
+
+        <ImageGallery
+          variant="hero-grid"
+          images={imgs}
+          primaryImage={listing.primaryImageUrl ?? undefined}
+          alt={title}
+        />
       </div>
 
       {/* ── 2. Sticky tab nav + floating price ── */}
@@ -848,25 +672,23 @@ export function ListingDetailPage() {
             {listing.amenities && listing.amenities.length > 0 && (
               <section ref={sectionRefs.Amenities}>
                 <FadeUp>
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="h-5 w-0.5 rounded-full bg-brand-gold" />
-                    <h2 className="font-display text-2xl font-bold text-white">Amenities & Features</h2>
-                  </div>
+                  <DetailSection title="Amenities & Features">
+                    <div className="flex flex-wrap gap-2.5">
+                      {listing.amenities.map((a, i) => (
+                        <FadeUp key={a} delay={i * 0.04}>
+                          <motion.div
+                            whileHover={{ scale: 1.04, y: -2 }}
+                            whileTap={{ scale: 0.97 }}
+                            className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white font-sans hover:border-brand-teal/30 hover:bg-brand-teal/[0.06] transition-all duration-200 cursor-default"
+                          >
+                            <span className="text-brand-teallight">{getAmenityIcon(a)}</span>
+                            {a}
+                          </motion.div>
+                        </FadeUp>
+                      ))}
+                    </div>
+                  </DetailSection>
                 </FadeUp>
-                <div className="flex flex-wrap gap-2.5">
-                  {listing.amenities.map((a, i) => (
-                    <FadeUp key={a} delay={i * 0.04}>
-                      <motion.div
-                        whileHover={{ scale: 1.04, y: -2 }}
-                        whileTap={{ scale: 0.97 }}
-                        className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white font-sans hover:border-brand-teal/30 hover:bg-brand-teal/[0.06] transition-all duration-200 cursor-default"
-                      >
-                        <span className="text-brand-teallight">{getAmenityIcon(a)}</span>
-                        {a}
-                      </motion.div>
-                    </FadeUp>
-                  ))}
-                </div>
               </section>
             )}
 
@@ -910,32 +732,30 @@ export function ListingDetailPage() {
 
             {/* ── How it works ── */}
             <FadeUp>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="h-5 w-0.5 rounded-full bg-brand-gold" />
-                <h2 className="font-display text-2xl font-bold text-white">How to Rent / Buy</h2>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  { icon: <IcoEye size={20} className="text-brand-gold" />,    num: "01", title: "Browse & Save",    desc: "Explore listings, save favourites." },
-                  { icon: <IcoCalendar size={20} className="text-brand-teallight" />, num: "02", title: "Book a Viewing", desc: "Schedule a physical or virtual tour." },
-                  { icon: <IcoKey size={20} className="text-brand-gold" />,     num: "03", title: "Sign Lease",       desc: "Digital contract from anywhere." },
-                  { icon: <IcoWallet size={20} className="text-brand-teallight" />,   num: "04", title: "Pay & Move In",  desc: "M-Pesa or card. Get your keys." },
-                ].map((s, i) => (
-                  <FadeUp key={s.num} delay={i * 0.08}>
-                    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 text-center hover:border-brand-gold/20 transition-all duration-300">
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-b from-brand-gold/[0.04] to-transparent transition-opacity duration-300" />
-                      <div className="relative">
-                        <div className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl bg-white/5 border border-white/[0.07] mb-3">
-                          {s.icon}
+              <DetailSection title="How to Rent / Buy">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { icon: <IcoEye size={20} className="text-brand-gold" />,    num: "01", title: "Browse & Save",    desc: "Explore listings, save favourites." },
+                    { icon: <IcoCalendar size={20} className="text-brand-teallight" />, num: "02", title: "Book a Viewing", desc: "Schedule a physical or virtual tour." },
+                    { icon: <IcoKey size={20} className="text-brand-gold" />,     num: "03", title: "Sign Lease",       desc: "Digital contract from anywhere." },
+                    { icon: <IcoWallet size={20} className="text-brand-teallight" />,   num: "04", title: "Pay & Move In",  desc: "M-Pesa or card. Get your keys." },
+                  ].map((s, i) => (
+                    <FadeUp key={s.num} delay={i * 0.08}>
+                      <div className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 text-center hover:border-brand-gold/20 transition-all duration-300">
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-b from-brand-gold/[0.04] to-transparent transition-opacity duration-300" />
+                        <div className="relative">
+                          <div className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl bg-white/5 border border-white/[0.07] mb-3">
+                            {s.icon}
+                          </div>
+                          <div className="absolute -top-1 -right-1 text-[9px] font-sans font-bold text-brand-muted/50">{s.num}</div>
+                          <div className="text-[12px] font-sans font-semibold text-white mb-1">{s.title}</div>
+                          <div className="text-[11px] text-brand-muted font-sans leading-snug">{s.desc}</div>
                         </div>
-                        <div className="absolute -top-1 -right-1 text-[9px] font-sans font-bold text-brand-muted/50">{s.num}</div>
-                        <div className="text-[12px] font-sans font-semibold text-white mb-1">{s.title}</div>
-                        <div className="text-[11px] text-brand-muted font-sans leading-snug">{s.desc}</div>
                       </div>
-                    </div>
-                  </FadeUp>
-                ))}
-              </div>
+                    </FadeUp>
+                  ))}
+                </div>
+              </DetailSection>
             </FadeUp>
 
             {/* ── Reviews & rating ── */}

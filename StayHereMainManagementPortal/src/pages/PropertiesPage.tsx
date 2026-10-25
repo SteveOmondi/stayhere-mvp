@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ApiError, propertiesApi } from "../lib/api";
 import { effectiveOwnerId } from "../lib/effectiveOwner";
 import { asPaginated } from "../lib/paginated";
@@ -134,8 +135,13 @@ export function PropertiesPage() {
                     </div>
                   </td>
                 </tr>
-              ) : rows.map(r => (
-                <tr key={String(r.id)}>
+              ) : rows.map((r, i) => (
+                <motion.tr
+                  key={String(r.id)}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <td>
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 bg-slate-100">
@@ -182,7 +188,7 @@ export function PropertiesPage() {
                       </Link>
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>

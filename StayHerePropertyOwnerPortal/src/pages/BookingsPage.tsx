@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { bookingApi, type ViewingBooking } from "../lib/api";
 import { useOwner } from "../context/OwnerContext";
 import {
@@ -12,9 +13,34 @@ const STATUS_STYLES: Record<string, { dot: string; text: string; badge: string }
   Completed: { dot: "bg-green-500",  text: "text-green-700",  badge: "bg-green-50 text-green-700 border-green-200" },
   Cancelled: { dot: "bg-red-400",    text: "text-red-600",    badge: "bg-red-50 text-red-600 border-red-200" },
   NoShow:    { dot: "bg-gray-400",   text: "text-gray-500",   badge: "bg-gray-50 text-gray-500 border-gray-200" },
+  Missed:    { dot: "bg-orange-400", text: "text-orange-700", badge: "bg-orange-50 text-orange-700 border-orange-200" },
+  Expired:   { dot: "bg-gray-400",   text: "text-gray-500",   badge: "bg-gray-50 text-gray-500 border-gray-200" },
 };
 
-const TABS = ["All", "Pending", "Confirmed", "Completed", "Cancelled"] as const;
+const TERMINAL_STATUSES = new Set(["Cancelled", "Completed", "NoShow"]);
+
+/** The backend only moves a booking to Cancelled/Completed/NoShow when the
+ * owner acts on it — a Pending or Confirmed viewing whose slot has simply
+ * passed stays "Pending"/"Confirmed" in the DB forever otherwise. Since this
+ * is UI-only (no DB change), "past" and the right status label are both
+ * derived here from preferredDate+preferredTime vs. now. Mirrors the same
+ * logic in StayHereClientApp's MyBookingsPage.tsx for consistency. */
+function isSlotPastDue(booking: ViewingBooking): boolean {
+  const d = new Date(booking.preferredDate);
+  if (Number.isNaN(d.getTime())) return false;
+  const match = /^(\d{1,2}):(\d{2})/.exec(booking.preferredTime ?? "");
+  if (match) d.setHours(Number(match[1]), Number(match[2]), 0, 0);
+  else d.setHours(23, 59, 59, 999);
+  return d.getTime() < Date.now();
+}
+
+function effectiveStatus(booking: ViewingBooking): string {
+  if (TERMINAL_STATUSES.has(booking.status)) return booking.status;
+  if (isSlotPastDue(booking)) return booking.status === "Confirmed" ? "Missed" : "Expired";
+  return booking.status;
+}
+
+const TABS = ["All", "Pending", "Confirmed", "Missed", "Expired", "Completed", "Cancelled"] as const;
 
 export function BookingsPage() {
   const { userId } = useOwner();
@@ -36,7 +62,7 @@ export function BookingsPage() {
 
   useEffect(() => { load(); }, [ownerId]);
 
-  const filtered = tab === "All" ? bookings : bookings.filter((b) => b.status === tab);
+  const filtered = tab === "All" ? bookings : bookings.filter((b) => effectiveStatus(b) === tab);
 
   async function handleConfirm(b: ViewingBooking) {
     setActionLoading(true);
@@ -67,7 +93,7 @@ export function BookingsPage() {
     } finally { setActionLoading(false); }
   }
 
-  const countFor = (s: string) => s === "All" ? bookings.length : bookings.filter(b => b.status === s).length;
+  const countFor = (s: string) => s === "All" ? bookings.length : bookings.filter(b => effectiveStatus(b) === s).length;
 
   return (
     <div className="space-y-6">
@@ -108,8 +134,8 @@ export function BookingsPage() {
         </div>
       ) : (
         <div className="grid gap-3">
-          {filtered.map((b) => (
-            <BookingCard key={b.id} booking={b} onClick={() => setSelected(b)} />
+          {filtered.map((b, index) => (
+            <BookingCard key={b.id} booking={b} index={index} onClick={() => setSelected(b)} />
           ))}
         </div>
       )}
@@ -134,12 +160,20 @@ export function BookingsPage() {
   );
 }
 
-function BookingCard({ booking: b, onClick }: { booking: ViewingBooking; onClick: () => void }) {
-  const st = STATUS_STYLES[b.status] ?? STATUS_STYLES.Pending;
+function BookingCard({ booking: b, index, onClick }: { booking: ViewingBooking; index: number; onClick: () => void }) {
+  const status = effectiveStatus(b);
+  const st = STATUS_STYLES[status] ?? STATUS_STYLES.Pending;
   const dateStr = new Date(b.preferredDate).toLocaleDateString("en-KE", { weekday: "short", day: "numeric", month: "short" });
 
   return (
-    <div onClick={onClick} className="card cursor-pointer hover:shadow-md transition-shadow">
+    <motion.div
+      onClick={onClick}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.55, delay: Math.min(index, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+      className="card cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover transition"
+    >
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-brand-teal">
           <IcoCalendar size={20} />
@@ -160,14 +194,14 @@ function BookingCard({ booking: b, onClick }: { booking: ViewingBooking; onClick
               )}
             </div>
             <span className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border ${st.badge}`}>
-              {b.status}
+              {status}
             </span>
           </div>
           {b.notes && <p className="mt-2 text-xs text-brand-500 italic line-clamp-2">"{b.notes}"</p>}
         </div>
         <IcoChevRight size={16} className="text-brand-300 shrink-0 mt-1" />
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -181,6 +215,8 @@ function BookingDetail({
   loading: boolean; onConfirm: () => void; onComplete: () => void; onCancel: () => void;
 }) {
   const dateStr = new Date(booking.preferredDate).toLocaleDateString("en-KE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const status = effectiveStatus(booking);
+  const pastDue = isSlotPastDue(booking) && !TERMINAL_STATUSES.has(booking.status);
 
   return (
     <div className="space-y-5">
@@ -188,7 +224,7 @@ function BookingDetail({
       <InfoRow label="Date" value={`${dateStr} at ${booking.preferredTime}`} />
       <InfoRow label="Type" value={booking.viewingType} />
       <InfoRow label="Status" value={
-        <span className={`font-semibold ${(STATUS_STYLES[booking.status] ?? STATUS_STYLES.Pending).text}`}>{booking.status}</span>
+        <span className={`font-semibold ${(STATUS_STYLES[status] ?? STATUS_STYLES.Pending).text}`}>{status}</span>
       } />
       {booking.customerName && <InfoRow label="Customer" value={booking.customerName} />}
       {booking.customerEmail && <InfoRow label="Email" value={booking.customerEmail} />}
@@ -199,7 +235,20 @@ function BookingDetail({
         <InfoRow label="Meeting Link" value={<a href={booking.meetingLink} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline">{booking.meetingLink}</a>} />
       )}
 
-      {booking.status === "Pending" && (
+      {pastDue && (
+        <div className="pt-3 border-t border-brand-100 space-y-3">
+          <p className="text-sm text-brand-500">
+            {status === "Missed"
+              ? "This confirmed viewing's time slot has passed without being marked completed."
+              : "This request was never confirmed before its time slot passed."}
+          </p>
+          <button onClick={onCancel} disabled={loading} className="btn-danger w-full justify-center">
+            {loading ? <IcoLoader size={14} /> : <><IcoX size={14} /> Close out as Cancelled</>}
+          </button>
+        </div>
+      )}
+
+      {!pastDue && booking.status === "Pending" && (
         <div className="pt-3 border-t border-brand-100 space-y-3">
           <h4 className="text-sm font-semibold text-brand-800">Confirm Viewing</h4>
           {booking.viewingType === "Virtual" && (
@@ -225,7 +274,7 @@ function BookingDetail({
         </div>
       )}
 
-      {booking.status === "Confirmed" && (
+      {!pastDue && booking.status === "Confirmed" && (
         <div className="pt-3 border-t border-brand-100">
           <button onClick={onComplete} disabled={loading} className="btn-primary w-full justify-center">
             {loading ? <IcoLoader size={14} /> : <><IcoCheck size={14} /> Mark as Completed</>}

@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ApiError, listingsApi } from "../lib/api";
 import { effectiveOwnerId } from "../lib/effectiveOwner";
 import { asPaginated } from "../lib/paginated";
@@ -159,8 +160,13 @@ export function ListingsPage() {
                   </td>
                 </tr>
               ) : (
-                ownerRows.map((r) => (
-                  <tr key={`o-${String(r.id)}`}>
+                ownerRows.map((r, i) => (
+                  <motion.tr
+                    key={`o-${String(r.id)}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                  >
                     <td className="px-2 py-2 font-mono text-xs">{String(r.listingCode)}</td>
                     <td className="px-2 py-2">{String(r.title)}</td>
                     <td className="px-2 py-2">{String(r.city ?? "")}</td>
@@ -183,7 +189,7 @@ export function ListingsPage() {
                         Caretaker
                       </button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))
               )}
             </tbody>
@@ -234,8 +240,13 @@ export function ListingsPage() {
                 </td>
               </tr>
             ) : (
-              rows.map((r) => (
-              <tr key={String(r.id)}>
+              rows.map((r, i) => (
+              <motion.tr
+                key={String(r.id)}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+              >
                 <td className="px-2 py-2 font-mono text-xs">{String(r.listingCode)}</td>
                 <td className="px-2 py-2">{String(r.title)}</td>
                 <td className="px-2 py-2">{String(r.city ?? "")}</td>
@@ -262,7 +273,7 @@ export function ListingsPage() {
                     Caretaker
                   </button>
                 </td>
-              </tr>
+              </motion.tr>
               ))
             )}
           </tbody>

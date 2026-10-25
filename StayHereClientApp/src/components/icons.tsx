@@ -157,6 +157,15 @@ export const IcoSparkle = (p: IconProps) => (
 export const IcoShare = (p: IconProps) => (
   <Svg {...p}><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="6" r="2.5" /><circle cx="18" cy="18" r="2.5" /><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6" /></Svg>
 );
+export const IcoFile = (p: IconProps) => (
+  <Svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></Svg>
+);
+export const IcoDownload = (p: IconProps) => (
+  <Svg {...p}><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></Svg>
+);
+export const IcoTrendUp = (p: IconProps) => (
+  <Svg {...p}><path d="m3 17 6-6 4 4 7-8" /><path d="M14 7h6v6" /></Svg>
+);
 export const IcoEye = (p: IconProps) => (
   <Svg {...p}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></Svg>
 );

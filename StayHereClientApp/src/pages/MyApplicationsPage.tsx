@@ -4,13 +4,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { applicationApi, listingsApi, shortStayApi, type TenantApplication, type Listing, type ShortStayBooking } from "../lib/api";
 import { useApp } from "../context/AppContext";
 import { loginUrlWithRedirect } from "../lib/authRedirect";
-import { listingLocation, formatKes, primaryImage } from "../lib/format";
-import { GradientBlobs, SectionHeading, SkeletonGrid } from "../components/ui";
+import { listingLocation, formatKes, primaryImage, resolveFirstName } from "../lib/format";
+import { AnimatedCounter, CursorSpotlight, GrainLayer, SkeletonGrid } from "../components/ui";
 import { DocumentPreviewModal } from "../components/DocumentPreviewModal";
 import {
   IcoArrowRight, IcoCalendar, IcoCheck, IcoChevRight, IcoKey, IcoLoader, IcoX,
   IcoUser, IcoShare, IcoEye, IcoWallet, IcoSparkle,
 } from "../components/icons";
+
+/* Same cinematic stock image HomePage/MyPropertiesPage/MyBookingsPage open
+ * with, so this page matches the rest of the account section when none of
+ * this customer's own listing photos are available yet. */
+const FALLBACK_HERO = "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1920&q=85";
 
 const STAY_STATUS_STYLES: Record<string, string> = {
   PendingPayment: "bg-amber-500/15 text-amber-300",
@@ -32,46 +37,95 @@ function formatStayDate(dateStr: string): string {
   return d.toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function StayCard({ booking }: { booking: ShortStayBooking }) {
+/** Boarding-pass ticket layout — same date-stub + perforated-seam pattern as
+ * MyBookingsPage's viewing tickets, keyed to check-in day here instead of a
+ * viewing slot, so the whole account section shares one visual language for
+ * "something with a date attached to it" rather than a plain text summary. */
+function StayCard({ booking, index }: { booking: ShortStayBooking; index: number }) {
   const needsPayment = booking.status === "PendingPayment";
   const needsVerification = booking.status === "Confirmed" && !booking.documentsSubmittedAt;
+  const isTerminal = STAY_TERMINAL_STATUSES.has(booking.status);
   const resumeUrl = `/book-stay?listingId=${booking.listingId}&bookingId=${booking.id}`;
+  const image = typeof booking.listingImageUrl === "string" ? booking.listingImageUrl : undefined;
+  const d = new Date(booking.checkInDate);
+  const valid = !Number.isNaN(d.getTime());
+  const weekday = valid ? d.toLocaleDateString("en-KE", { weekday: "short" }).toUpperCase() : "—";
+  const day = valid ? d.getDate() : "—";
+  const month = valid ? d.toLocaleDateString("en-KE", { month: "short" }).toUpperCase() : "";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      className="overflow-hidden rounded-2xl glass-strong border border-white/[0.06] p-4"
+      transition={{ duration: 0.5, delay: Math.min(index, 8) * 0.06, ease: [0.16, 1, 0.3, 1] }}
+      className={`relative flex overflow-hidden rounded-3xl card-dark transition-all duration-300 ${
+        isTerminal ? "opacity-70 hover:opacity-100" : "hover:shadow-glow-teal"
+      }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <Link to={`/listing/${booking.listingId}`} className="truncate font-display text-base font-semibold text-white hover:text-brand-gold transition">
-          {booking.listingTitle ?? "StayHere listing"}
-        </Link>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${STAY_STATUS_STYLES[booking.status] ?? "bg-white/10 text-white/60"}`}>
-          {STAY_STATUS_LABELS[booking.status] ?? booking.status}
-        </span>
+      {/* Date stub */}
+      <div
+        className={`relative flex w-24 shrink-0 flex-col items-center justify-center gap-0.5 border-r border-dashed py-6 sm:w-28 ${
+          isTerminal ? "border-white/10 bg-white/[0.03]" : "border-white/15 bg-gradient-to-b from-brand-teal/15 to-brand-gold/10"
+        }`}
+      >
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-brand-muted">{weekday}</span>
+        <span className="font-display text-3xl font-bold text-white sm:text-4xl">{day}</span>
+        <span className={`text-xs font-bold uppercase tracking-wider ${isTerminal ? "text-white/40" : "text-brand-teallight"}`}>{month}</span>
+        <span className="mt-2 text-[10px] text-white/50">Check-in</span>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/70">
-        <span className="flex items-center gap-1"><IcoCalendar size={13} /> {formatStayDate(booking.checkInDate)} → {formatStayDate(booking.checkOutDate)}</span>
-        <span className="rounded-full bg-white/5 px-2 py-0.5 text-[11px]">{booking.numberOfGuests} guest{booking.numberOfGuests !== 1 ? "s" : ""}</span>
-      </div>
-      <div className="mt-1 text-xs text-brand-gold">Booking fee: {formatKes(booking.bookingFeeAmount)}</div>
+      <span className="pointer-events-none absolute left-24 top-0 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-dark sm:left-28" />
+      <span className="pointer-events-none absolute left-24 bottom-0 h-5 w-5 -translate-x-1/2 translate-y-1/2 rounded-full bg-brand-dark sm:left-28" />
 
-      {needsPayment && (
-        <Link to={resumeUrl} className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand-gold hover:underline">
-          <IcoWallet size={13} /> Complete Payment <IcoArrowRight size={12} />
-        </Link>
-      )}
-      {needsVerification && (
-        <Link to={resumeUrl} className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand-teallight hover:underline">
-          <IcoKey size={13} /> Verify Your ID <IcoArrowRight size={12} />
-        </Link>
-      )}
-      {booking.status === "Confirmed" && booking.documentsSubmittedAt && (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-400">
-          <IcoCheck size={13} /> All set for check-in
+      {/* Body */}
+      <div className="min-w-0 flex-1 p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            {image && (
+              <Link to={`/listing/${booking.listingId}`} className="shrink-0">
+                <img src={image} alt="" className={`h-14 w-14 rounded-xl object-cover ${isTerminal ? "grayscale" : ""}`} />
+              </Link>
+            )}
+            <div className="min-w-0">
+              <Link to={`/listing/${booking.listingId}`} className="block truncate font-display text-base font-semibold text-white hover:text-brand-gold transition sm:text-lg">
+                {booking.listingTitle ?? "StayHere listing"}
+              </Link>
+              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-brand-muted">
+                <IcoCalendar size={12} className="shrink-0 text-brand-teal" />
+                {formatStayDate(booking.checkInDate)} → {formatStayDate(booking.checkOutDate)}
+              </div>
+            </div>
+          </div>
+          <span className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${STAY_STATUS_STYLES[booking.status] ?? "bg-white/10 text-white/60"}`}>
+            {STAY_STATUS_LABELS[booking.status] ?? booking.status}
+          </span>
         </div>
-      )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          <span className="font-display text-sm font-bold text-gradient-gold">
+            {formatKes(booking.bookingFeeAmount)}
+            <span className="ml-1 text-[11px] font-sans font-normal text-brand-muted">booking fee</span>
+          </span>
+          <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[11px] text-white/60">
+            {booking.numberOfGuests} guest{booking.numberOfGuests !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        {needsPayment && (
+          <Link to={resumeUrl} className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand-gold hover:underline">
+            <IcoWallet size={13} /> Complete Payment <IcoArrowRight size={12} />
+          </Link>
+        )}
+        {needsVerification && (
+          <Link to={resumeUrl} className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand-teallight hover:underline">
+            <IcoKey size={13} /> Verify Your ID <IcoArrowRight size={12} />
+          </Link>
+        )}
+        {booking.status === "Confirmed" && booking.documentsSubmittedAt && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-400">
+            <IcoCheck size={13} /> All set for check-in
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
@@ -139,7 +193,9 @@ function ShortStayBookingsPanel({ customerId }: { customerId?: string }) {
         </div>
       ) : (
         <div className="space-y-4">
-          {visible.map((b) => <StayCard key={b.id} booking={b} />)}
+          <AnimatePresence>
+            {visible.map((b, i) => <StayCard key={b.id} booking={b} index={i} />)}
+          </AnimatePresence>
         </div>
       )}
     </>
@@ -245,22 +301,85 @@ export function MyApplicationsPage() {
     homes: applications.filter((a) => a.status === "Active").length,
   };
 
-  return (
-    <div className="min-h-screen pb-24 gradient-hero relative overflow-hidden">
-      <GradientBlobs />
-      <div className="mx-auto max-w-4xl px-4 py-12">
-        <SectionHeading
-          title="My Applications"
-          subtitle="Track all your rental applications and short-stay bookings"
-        />
+  const firstName = resolveFirstName(customerProfile?.fullName || authUser?.name, authUser?.email);
+  const heroImage = applications.map((a) => listingsById[a.listingId]?.primaryImageUrl).find(Boolean) || FALLBACK_HERO;
+  const accentClasses: Record<string, { bg: string; text: string; ring: string }> = {
+    gold: { bg: "bg-brand-gold/15", text: "text-brand-gold", ring: "group-hover:shadow-glow-gold" },
+    teal: { bg: "bg-brand-teal/15", text: "text-brand-teallight", ring: "group-hover:shadow-glow-teal" },
+    violet: { bg: "bg-violet-400/15", text: "text-violet-300", ring: "" },
+    rose: { bg: "bg-rose-400/15", text: "text-rose-300", ring: "" },
+  };
+  const floatingStats = [
+    { icon: <IcoUser size={18} />, value: stats.total, label: "Total Applications", color: "gold" as const },
+    { icon: <IcoLoader size={18} />, value: stats.active, label: "In Progress", color: "teal" as const },
+    { icon: <IcoCheck size={18} />, value: stats.approved, label: "Approved", color: "violet" as const },
+    { icon: <IcoSparkle size={18} />, value: stats.homes, label: "Active Homes", color: "rose" as const },
+  ];
 
-        <div className="mt-6 flex gap-2 rounded-xl bg-white/[0.03] border border-white/10 p-1 w-fit">
+  return (
+    <div className="pb-24">
+      {/* ── Cinematic hero ─────────────────────────────────────────── */}
+      <section className="relative h-[300px] sm:h-[360px] overflow-hidden clip-parent grain-overlay">
+        <img src={heroImage} alt="" className="ken-burns-img absolute inset-0 h-full w-full object-cover" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 65% 60% at 90% 15%, rgba(201,162,39,0.35) 0%, transparent 55%), " +
+              "radial-gradient(ellipse 55% 50% at 8% 85%, rgba(13,148,136,0.35) 0%, transparent 55%)",
+          }}
+        />
+        <div className="absolute inset-0 cinematic-overlay" />
+        <CursorSpotlight />
+        <GrainLayer opacity={0.05} />
+
+        <div className="relative z-10 mx-auto flex h-full max-w-4xl flex-col justify-center px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
+            <span className="section-tag mb-4 inline-flex">My Applications</span>
+            <h1 className="hero-solid-text font-display text-4xl font-bold text-white sm:text-5xl">
+              {firstName ? <>Track Your Journey, <span className="text-gradient-gold">{firstName}</span></> : "Track Your Journey"}
+            </h1>
+            <p className="mt-3 max-w-md text-brand-muted">Every application and short-stay booking, start to finish.</p>
+          </motion.div>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        {/* ── Floating stat strip ────────────────────────────────────── */}
+        {!loading && applications.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-20 -mt-12 grid grid-cols-2 gap-3 rounded-3xl glass-strong p-4 shadow-elevated sm:grid-cols-4 sm:p-5"
+          >
+            {floatingStats.map((s) => {
+              const a = accentClasses[s.color];
+              return (
+                <div key={s.label} className={`group flex items-center gap-3 rounded-2xl p-2.5 transition-all duration-300 ${a.ring}`}>
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${a.bg} ${a.text}`}>
+                    {s.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-display text-lg font-bold leading-none text-white">
+                      <AnimatedCounter value={s.value} />
+                    </div>
+                    <div className="mt-1 text-[11px] leading-tight text-brand-muted truncate">{s.label}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+
+        {/* ── Tabs ───────────────────────────────────────────────────── */}
+        <div className="mt-10 mb-2 flex gap-1 rounded-2xl bg-white/5 p-1 max-w-xs">
           {(["applications", "stays"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setSection(s)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize transition ${
-                section === s ? "bg-brand-gold text-brand-dark" : "text-brand-muted hover:text-white"
+              className={`flex-1 rounded-xl py-2 text-sm font-medium capitalize transition ${
+                section === s ? "bg-brand-gold text-brand-dark shadow" : "text-brand-muted hover:text-white"
               }`}
             >
               {s === "applications" ? "Applications" : "My Stays"}
@@ -274,31 +393,6 @@ export function MyApplicationsPage() {
           </div>
         ) : (
         <>
-        {!loading && applications.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-            className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4"
-          >
-            {[
-              { label: "Total",    value: stats.total,    icon: <IcoUser size={16} />,    accent: "text-white",         bg: "bg-white/[0.04]" },
-              { label: "In Progress", value: stats.active, icon: <IcoLoader size={16} />, accent: "text-brand-gold",    bg: "bg-brand-gold/[0.08]" },
-              { label: "Approved",  value: stats.approved, icon: <IcoCheck size={16} />,  accent: "text-emerald-400",   bg: "bg-emerald-400/[0.08]" },
-              { label: "Active Homes", value: stats.homes, icon: <IcoSparkle size={16} />, accent: "text-teal-400",     bg: "bg-teal-400/[0.08]" },
-            ].map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                className={`glass rounded-2xl p-4 border border-white/[0.06] ${s.bg}`}
-              >
-                <div className={`flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-medium text-brand-muted`}>
-                  {s.icon} {s.label}
-                </div>
-                <div className={`mt-2 font-display text-2xl font-bold ${s.accent}`}>{s.value}</div>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-
         {loading ? (
           <div className="space-y-4 mt-8">
             {[0, 1, 2].map((i) => (

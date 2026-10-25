@@ -48,6 +48,7 @@ export default {
         "slide-in-left": "slideInLeft 0.3s cubic-bezier(0.16,1,0.3,1)",
         "scale-in": "scaleIn 0.2s ease-out",
         "pulse-dot": "pulseDot 2s ease-in-out infinite",
+        "ken-burns": "kenBurns 20s ease-out infinite alternate",
       },
       keyframes: {
         fadeIn: {
@@ -69,6 +70,10 @@ export default {
         pulseDot: {
           "0%, 100%": { boxShadow: "0 0 0 0 rgba(16,185,129,0.4)" },
           "50%": { boxShadow: "0 0 0 6px rgba(16,185,129,0)" },
+        },
+        kenBurns: {
+          "0%": { transform: "scale(1) translateX(0%) translateY(0%)" },
+          "100%": { transform: "scale(1.08) translateX(-1.5%) translateY(-1%)" },
         },
       },
     },

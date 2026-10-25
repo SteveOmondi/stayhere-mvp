@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ApiError, customersApi } from "../lib/api";
 import { usePortal } from "../context/PortalContext";
 import { IcoCustomers, IcoChevronRight, IcoSearch, IcoMail, IcoPhone, IcoShield } from "../components/icons";
@@ -156,8 +157,13 @@ export function CustomersPage() {
                     </div>
                   </td>
                 </tr>
-              ) : filtered.map(r => (
-                <tr key={r.id}>
+              ) : filtered.map((r, i) => (
+                <motion.tr
+                  key={r.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <td>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
@@ -199,7 +205,7 @@ export function CustomersPage() {
                       View <IcoChevronRight size={12} />
                     </Link>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>

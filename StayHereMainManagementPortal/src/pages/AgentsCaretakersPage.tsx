@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ApiError, ownersApi } from "../lib/api";
 import { effectiveOwnerId } from "../lib/effectiveOwner";
 import { usePortal } from "../context/PortalContext";
@@ -152,8 +153,13 @@ export function AgentsCaretakersPage() {
                     )}
                   </td>
                 </tr>
-              ) : filtered.map(r => (
-                <tr key={`${r.kind}-${r.id}`}>
+              ) : filtered.map((r, i) => (
+                <motion.tr
+                  key={`${r.kind}-${r.id}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <td>
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 text-white`}
@@ -186,7 +192,7 @@ export function AgentsCaretakersPage() {
                     </Link>
                   </td>
                   <td className="font-mono text-[10px] text-brand-400">{r.id.slice(0, 14)}…</td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>

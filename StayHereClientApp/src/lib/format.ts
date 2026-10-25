@@ -11,6 +11,18 @@ export type LocationFields = {
   longitude?: number;
 };
 
+/** First name to greet a user with. Prefers a real profile/auth name; when an
+ * account has none on file (common for test/seed accounts), derives a
+ * presentable name from the email's local-part rather than showing a generic
+ * role label like "Tenant" or "User". */
+export function resolveFirstName(fullName?: string | null, email?: string | null): string | null {
+  const full = fullName?.trim();
+  if (full) return full.split(" ")[0];
+  const localPart = email?.split("@")[0]?.split(/[._-]/)[0];
+  if (localPart) return localPart.charAt(0).toUpperCase() + localPart.slice(1).toLowerCase();
+  return null;
+}
+
 export function resolveLocation(l: Listing): LocationFields {
   const nested = (l.location && typeof l.location === "object") ? l.location as LocationFields : {};
   return {

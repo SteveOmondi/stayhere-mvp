@@ -8,10 +8,11 @@ import {
 import { listingLocation as getListingLocation } from "../lib/format";
 import { useApp } from "../context/AppContext";
 import { ListingCard } from "../components/ListingCard";
+import { ListingsMap } from "../components/ListingsMap";
 import { SkeletonGrid } from "../components/ui";
 import {
   IcoFilter, IcoGrid, IcoList, IcoLoader, IcoSearch, IcoX,
-  IcoBed, IcoLocation,
+  IcoBed, IcoLocation, IcoMap,
 } from "../components/icons";
 
 const PROPERTY_TYPES = ["Apartment", "House", "Villa", "Studio", "Townhouse", "Penthouse", "Office", "Commercial"];
@@ -342,9 +343,16 @@ export function ExplorePage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
+
+  // Map view: hover is synced both ways between the card list and the map markers; a marker
+  // click scrolls the matching card into view and briefly highlights it.
+  const [hoveredListingId, setHoveredListingId] = useState<string | null>(null);
+  const [highlightedListingId, setHighlightedListingId] = useState<string | null>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Category / subcategory data
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -455,6 +463,13 @@ export function ExplorePage() {
     setSearchParams(query ? { q: query } : {});
   }
 
+  function handleSelectListingFromMap(id: string) {
+    cardRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    setHighlightedListingId(id);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlightedListingId(null), 1800);
+  }
+
   // Active filter chips (for the strip above results)
   const activeCategoryName = categories.find(
     (c) => c.id === (filters.categoryId as string | undefined)
@@ -507,6 +522,12 @@ export function ExplorePage() {
               className={`rounded-lg p-1.5 transition ${viewMode === "list" ? "bg-brand-gold/20 text-brand-gold" : "text-brand-muted hover:text-white"}`}
             >
               <IcoList size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode("map")}
+              className={`rounded-lg p-1.5 transition ${viewMode === "map" ? "bg-brand-gold/20 text-brand-gold" : "text-brand-muted hover:text-white"}`}
+            >
+              <IcoMap size={16} />
             </button>
           </div>
         </div>
@@ -608,6 +629,36 @@ export function ExplorePage() {
             {listings.map((l, i) => (
               <ListingCard key={l.id} listing={l} index={i} showSaveButton />
             ))}
+          </div>
+        ) : viewMode === "map" ? (
+          <div className="flex h-[75vh] gap-6">
+            <div className="w-2/5 min-w-0 space-y-4 overflow-y-auto pr-1">
+              {listings.map((l, i) => (
+                <div
+                  key={l.id}
+                  ref={(el) => { cardRefs.current[l.id] = el; }}
+                  onMouseEnter={() => setHoveredListingId(l.id)}
+                  onMouseLeave={() => setHoveredListingId((cur) => (cur === l.id ? null : cur))}
+                  className={`rounded-2xl transition-shadow duration-300 ${
+                    highlightedListingId === l.id
+                      ? "ring-2 ring-brand-gold shadow-glow-gold"
+                      : hoveredListingId === l.id
+                      ? "ring-2 ring-brand-gold/50"
+                      : ""
+                  }`}
+                >
+                  <ListingCard listing={l} index={i} showSaveButton />
+                </div>
+              ))}
+            </div>
+            <div className="w-3/5 min-w-0">
+              <ListingsMap
+                listings={listings}
+                hoveredListingId={hoveredListingId}
+                onHoverListing={setHoveredListingId}
+                onSelectListing={handleSelectListingFromMap}
+              />
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

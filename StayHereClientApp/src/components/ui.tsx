@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { animate, motion, useInView } from "framer-motion";
+import { animate, AnimatePresence, motion, useInView } from "framer-motion";
 import { useApp } from "../context/AppContext";
-import { IcoCheck, IcoX } from "./icons";
+import { IcoCheck, IcoChevDown, IcoX } from "./icons";
 
 /* ── Logo ────────────────────────────────────────────────────────── */
 export function Logo({ withTagline = false }: { withTagline?: boolean }) {
@@ -264,6 +264,48 @@ export function Reveal({
     >
       {children}
     </motion.div>
+  );
+}
+
+/* ── Collapsible detail section (progressive disclosure) ──────────── */
+export function DetailSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="glass-card overflow-hidden rounded-2xl">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+        aria-expanded={open}
+      >
+        <span className="font-display text-base font-semibold text-white">{title}</span>
+        <IcoChevDown
+          size={16}
+          className={`shrink-0 text-brand-muted transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-5">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 

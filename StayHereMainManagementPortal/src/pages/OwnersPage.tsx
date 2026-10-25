@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ApiError, ownersApi } from "../lib/api";
 import { asPaginated } from "../lib/paginated";
 import { usePortal } from "../context/PortalContext";
@@ -156,8 +157,13 @@ export function OwnersPage() {
                     No property owners yet. Create one to begin.
                   </td>
                 </tr>
-              ) : rows.map(r => (
-                <tr key={r.id}>
+              ) : rows.map((r, i) => (
+                <motion.tr
+                  key={r.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <td>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 text-brand-950"
@@ -197,7 +203,7 @@ export function OwnersPage() {
                       Manage <IcoChevronRight size={12} />
                     </Link>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
