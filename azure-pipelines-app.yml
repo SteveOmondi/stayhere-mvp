@@ -448,8 +448,8 @@ stages:
 
 - stage: Deploy_AuthService
   displayName: 'Deploy Auth'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AuthService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_AuthService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -495,8 +495,8 @@ stages:
 
 - stage: Deploy_PropertyService
   displayName: 'Deploy Property'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_PropertyService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -528,8 +528,8 @@ stages:
 
 - stage: Deploy_CustomerService
   displayName: 'Deploy Customer'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_CustomerService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_CustomerService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -561,8 +561,8 @@ stages:
 
 - stage: Deploy_PropertyOwnerService
   displayName: 'Deploy PropertyOwner'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyOwnerService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_PropertyOwnerService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -594,8 +594,8 @@ stages:
 
 - stage: Deploy_StaticDataService
   displayName: 'Deploy StaticData'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StaticDataService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_StaticDataService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -627,8 +627,8 @@ stages:
 
 - stage: Deploy_AiAgentService
   displayName: 'Deploy AiAgent'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_AiAgentService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -660,8 +660,8 @@ stages:
 
 - stage: Deploy_PaymentsService
   displayName: 'Deploy Payments'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PaymentsService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_PaymentsService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -693,8 +693,8 @@ stages:
 
 - stage: Deploy_LoggingService
   displayName: 'Deploy Logging'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_LoggingService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_LoggingService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -726,8 +726,8 @@ stages:
 
 - stage: Deploy_McpServer
   displayName: 'Deploy McpServer'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_McpServer'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_McpServer'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -760,8 +760,8 @@ stages:
 
 - stage: Deploy_AdminPortal
   displayName: 'Deploy Admin Portal'
-  dependsOn: Build
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHereMainManagementPortal'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Build, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_StayHereMainManagementPortal'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -801,8 +801,8 @@ stages:
 
 - stage: Deploy_OwnerPortal
   displayName: 'Deploy Owner Portal'
-  dependsOn: Build
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHerePropertyOwnerPortal'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Build, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_StayHerePropertyOwnerPortal'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
