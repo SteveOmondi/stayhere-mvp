@@ -47,6 +47,11 @@ variable "logging_function_host" {
 variable "entra_client_id" { type = string }
 variable "entra_tenant_id" { type = string }
 
+variable "jwt_secret" {
+  type      = string
+  sensitive = true
+}
+
 variable "onfon_client_id" {
   type = string
 }

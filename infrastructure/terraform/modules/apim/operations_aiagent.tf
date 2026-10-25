@@ -157,3 +157,146 @@ resource "azurerm_api_management_api_operation" "op_aiagent_agenthealth" {
   depends_on          = [azurerm_api_management_api_policy.aiagent]
 }
 
+
+# --- Operations added for new functions (pipeline sync) ---
+
+resource "azurerm_api_management_api_operation" "op_aiagent_agentlistconversations" {
+  operation_id        = "AgentListConversations"
+  api_name            = azurerm_api_management_api.aiagent.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "AgentListConversations"
+  method              = "GET"
+  url_template        = "/conversations"
+  depends_on          = [azurerm_api_management_api_policy.aiagent]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_aiagent_agentlistconversations" {
+  api_name            = azurerm_api_management_api_operation.op_aiagent_agentlistconversations.api_name
+  api_management_name = azurerm_api_management_api_operation.op_aiagent_agentlistconversations.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_aiagent_agentlistconversations.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_aiagent_agentlistconversations.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_aiagent_agentgetconversation" {
+  operation_id        = "AgentGetConversation"
+  api_name            = azurerm_api_management_api.aiagent.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "AgentGetConversation"
+  method              = "GET"
+  url_template        = "/conversations/{id}"
+  depends_on          = [azurerm_api_management_api_policy.aiagent]
+
+  template_parameter {
+    name     = "id"
+    required = true
+    type     = "string"
+  }
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_aiagent_agentgetconversation" {
+  api_name            = azurerm_api_management_api_operation.op_aiagent_agentgetconversation.api_name
+  api_management_name = azurerm_api_management_api_operation.op_aiagent_agentgetconversation.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_aiagent_agentgetconversation.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_aiagent_agentgetconversation.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}
+
+resource "azurerm_api_management_api_operation" "op_aiagent_analyzefloorplan" {
+  operation_id        = "AnalyzeFloorPlan"
+  api_name            = azurerm_api_management_api.aiagent.name
+  api_management_name = azurerm_api_management.main.name
+  resource_group_name = var.rg_name
+  display_name        = "AnalyzeFloorPlan"
+  method              = "POST"
+  url_template        = "/floor-plan/analyze"
+  depends_on          = [azurerm_api_management_api_policy.aiagent]
+}
+
+resource "azurerm_api_management_api_operation_policy" "pol_aiagent_analyzefloorplan" {
+  api_name            = azurerm_api_management_api_operation.op_aiagent_analyzefloorplan.api_name
+  api_management_name = azurerm_api_management_api_operation.op_aiagent_analyzefloorplan.api_management_name
+  resource_group_name = azurerm_api_management_api_operation.op_aiagent_analyzefloorplan.resource_group_name
+  operation_id        = azurerm_api_management_api_operation.op_aiagent_analyzefloorplan.operation_id
+  xml_content         = <<XML
+<policies>
+    <inbound>
+        <base />
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <issuer-signing-keys>
+                <key>{{jwt-secret}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>stayhere-mvp</audience>
+            </audiences>
+            <issuers>
+                <issuer>stayhere-auth-service</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
+XML
+}

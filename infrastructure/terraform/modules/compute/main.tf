@@ -44,7 +44,13 @@ resource "azurerm_linux_function_app" "auth" {
     "OnFonSms__SenderId"             = var.onfon_sender_id
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
-    "APP_MODE"                       = "test" # Set to 'live' for production to hide OTPs
+    "APP_MODE"                       = var.app_mode # 'live' in production to hide OTPs
+    "JWT_SECRET"                     = var.jwt_secret
+    "SEED_ADMIN_ENABLED"             = tostring(var.seed_admin_enabled)
+    "SEED_ADMIN_EMAIL"               = var.seed_admin_email
+    "SEED_ADMIN_PHONE"               = var.seed_admin_phone
+    "SEED_ADMIN_FULL_NAME"           = var.seed_admin_full_name
+    "SEED_ADMIN_USER_ID"             = var.seed_admin_user_id
   }
 
   identity {
@@ -53,6 +59,15 @@ resource "azurerm_linux_function_app" "auth" {
 
   tags = {
     Service = "AuthService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -91,6 +106,7 @@ resource "azurerm_linux_function_app" "property" {
     "DB_PASSWORD"                    = var.psql_admin_password
     "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
+    "REDIS_CONNECTION"               = var.redis_connection_string # key AddStayHereRedisCache actually reads
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
@@ -104,10 +120,20 @@ resource "azurerm_linux_function_app" "property" {
     "R2__SecretAccessKey"            = var.r2_secret_access_key
     "R2__BucketName"                 = var.r2_bucket_name
     "R2__PublicBaseUrl"              = var.r2_public_base_url
+    "JWT_SECRET"                     = var.jwt_secret
   }
 
   identity {
     type = "SystemAssigned"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -140,6 +166,7 @@ resource "azurerm_linux_function_app" "customer" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "JWT_SECRET"                     = var.jwt_secret
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
@@ -150,6 +177,15 @@ resource "azurerm_linux_function_app" "customer" {
 
   tags = {
     Service = "CustomerService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -179,6 +215,7 @@ resource "azurerm_linux_function_app" "logging" {
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
     "LogStorageConnectionString"     = azurerm_storage_account.main.primary_connection_string
     "LogContainerName"               = "logs"
+    "JWT_SECRET"                     = var.jwt_secret
   }
 
   identity {
@@ -187,6 +224,15 @@ resource "azurerm_linux_function_app" "logging" {
 
   tags = {
     Service = "LoggingService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -219,6 +265,7 @@ resource "azurerm_linux_function_app" "propertyowner" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "JWT_SECRET"                     = var.jwt_secret
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
@@ -229,6 +276,15 @@ resource "azurerm_linux_function_app" "propertyowner" {
 
   tags = {
     Service = "PropertyOwnerService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -263,6 +319,7 @@ resource "azurerm_linux_function_app" "staticdata" {
     "SKIP_AUTH"                      = var.skip_auth
     "ENTRA_CLIENT_ID"                = var.entra_client_id != "" ? var.entra_client_id : "REPLACE_ME"
     "ENTRA_TENANT_ID"                = var.entra_tenant_id != "" ? var.entra_tenant_id : "REPLACE_ME"
+    "JWT_SECRET"                     = var.jwt_secret
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
@@ -273,6 +330,15 @@ resource "azurerm_linux_function_app" "staticdata" {
 
   tags = {
     Service = "StaticDataService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -293,35 +359,50 @@ resource "azurerm_linux_function_app" "aiagent" {
   }
 
   app_settings = {
-    "FUNCTIONS_WORKER_RUNTIME"                 = "dotnet-isolated"
-    "AzureWebJobsStorage"                      = azurerm_storage_account.main.primary_connection_string
-    "DB_HOST"                                  = var.psql_host
-    "DB_PORT"                                  = "5432"
-    "DB_NAME"                                  = var.psql_database_name
-    "DB_USER"                                  = var.psql_admin_login
-    "DB_PASSWORD"                              = var.psql_admin_password
-    "MONGODB_CONNECTION_STRING"                = var.mongodb_connection_string
-    "REDIS_CONNECTION_STRING"                  = var.redis_connection_string
-    "SCM_DO_BUILD_DURING_DEPLOYMENT"           = "false"
-    "FUNCTIONS_EXTENSION_VERSION"              = "~4"
-    "SKIP_AUTH"                                = var.skip_auth
-    "Groq__ApiKey"                             = var.groq_api_key
-    "Groq__Model"                              = var.groq_model
-    "Groq__MaxRetries"                         = "4"
-    "Groq__RecommendNarrationMode"             = "Llm"
-    "Groq__RecommendNarrationMaxTokens"        = "280"
-    "Groq__RecommendLlmTimeoutSeconds"         = "40"
-    "Google__ApiKey"                           = var.google_api_key
-    "Google__EmbeddingModel"                   = var.google_embedding_model
-    "Google__EmbeddingCacheMinutes"            = "60"
-    "ListingPortalBaseUrl"                     = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
-    "AzureWebJobs.Http.RoutePrefix"            = ""
-    "WEBSITE_RUN_FROM_PACKAGE"                 = "1"
+    "FUNCTIONS_WORKER_RUNTIME"          = "dotnet-isolated"
+    "AzureWebJobsStorage"               = azurerm_storage_account.main.primary_connection_string
+    "DB_HOST"                           = var.psql_host
+    "DB_PORT"                           = "5432"
+    "DB_NAME"                           = var.psql_database_name
+    "DB_USER"                           = var.psql_admin_login
+    "DB_PASSWORD"                       = var.psql_admin_password
+    "MONGODB_CONNECTION_STRING"         = var.mongodb_connection_string
+    "REDIS_CONNECTION_STRING"           = var.redis_connection_string
+    "REDIS_CONNECTION"                  = var.redis_connection_string # key AddStayHereRedisCache actually reads
+    "SCM_DO_BUILD_DURING_DEPLOYMENT"    = "false"
+    "FUNCTIONS_EXTENSION_VERSION"       = "~4"
+    "SKIP_AUTH"                         = var.skip_auth
+    "Groq__ApiKey"                      = var.groq_api_key
+    "Groq__Model"                       = var.groq_model
+    "Groq__MaxRetries"                  = "4"
+    "Groq__RecommendNarrationMode"      = "Llm"
+    "Groq__RecommendNarrationMaxTokens" = "280"
+    "Groq__RecommendLlmTimeoutSeconds"  = "40"
+    "Groq__ToolCallingMaxIterations"    = "4"
+    "Google__ApiKey"                    = var.google_api_key
+    "Google__EmbeddingModel"            = var.google_embedding_model
+    "Google__EmbeddingCacheMinutes"     = "60"
+    "ListingPortalBaseUrl"              = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
+    "JWT_SECRET"                        = var.jwt_secret
+    # Floor plan analysis (Claude -> Gemini -> Qwen fallback chain)
+    "FloorPlan__ProviderOrder"       = var.floor_plan_provider_order
+    "Anthropic__ApiKey"              = var.anthropic_api_key
+    "Anthropic__FloorPlanModel"      = var.anthropic_floor_plan_model
+    "Google__FloorPlanModel"         = var.google_floor_plan_model
+    "Groq__FloorPlanModel"           = var.groq_floor_plan_model
+    "Google__FloorPlanFallbackModel" = var.google_floor_plan_fallback_model
+    "Anthropic__FloorPlanMaxRetries" = "2"
+    "Google__FloorPlanMaxRetries"    = "2"
+    "Groq__FloorPlanMaxRetries"      = "2"
+    # Google Places (nearby amenities) - falls back to Google__ApiKey when empty
+    "Google__MapsApiKey"            = var.google_maps_api_key != "" ? var.google_maps_api_key : var.google_api_key
+    "AzureWebJobs.Http.RoutePrefix" = ""
+    "WEBSITE_RUN_FROM_PACKAGE"      = "1"
     # Opt Sage into its own MCP server as an external tool source - empty/absent by default
     # (Mcp:ExternalServers), so this is what actually turns the McpServer deployment into something
     # Sage uses rather than a resource sitting idle.
-    "Mcp__ExternalServers__0__Name"            = "stayhere"
-    "Mcp__ExternalServers__0__Url"             = "https://${azurerm_function_app_flex_consumption.mcp.default_hostname}/mcp"
+    "Mcp__ExternalServers__0__Name" = "stayhere"
+    "Mcp__ExternalServers__0__Url"  = "https://${azurerm_function_app_flex_consumption.mcp.default_hostname}/mcp"
   }
 
   identity {
@@ -330,6 +411,15 @@ resource "azurerm_linux_function_app" "aiagent" {
 
   tags = {
     Service = "AiAgentService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -362,6 +452,7 @@ resource "azurerm_linux_function_app" "payments" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
+    "JWT_SECRET"                     = var.jwt_secret
     "AzureWebJobs.Http.RoutePrefix"  = ""
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
     "Mpesa__ConsumerKey"             = "@Microsoft.KeyVault(SecretUri=${local.kv_uri}secrets/mpesa-consumer-key)"
@@ -380,6 +471,15 @@ resource "azurerm_linux_function_app" "payments" {
 
   tags = {
     Service = "PaymentsService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -424,6 +524,9 @@ resource "azurerm_function_app_flex_consumption" "mcp" {
   storage_authentication_type = "StorageAccountConnectionString"
   storage_access_key          = azurerm_storage_account.main.primary_access_key
 
+  # Keep dotnet-isolated even though McpServer is a custom handler (host.json: mcp-custom-handler):
+  # the host launches `dotnet StayHere.McpServer.dll`, and only the .NET stack image ships `dotnet`.
+  # The "custom" runtime has no .NET and returns 502 (matches Azure-Samples/mcp-sdk-functions-hosting-dotnet).
   runtime_name           = "dotnet-isolated"
   runtime_version        = "9.0"
   maximum_instance_count = 40
@@ -432,15 +535,19 @@ resource "azurerm_function_app_flex_consumption" "mcp" {
   site_config {}
 
   app_settings = {
-    "DB_HOST"                       = var.psql_host
-    "DB_PORT"                       = "5432"
-    "DB_NAME"                       = var.psql_database_name
-    "DB_USER"                       = var.psql_admin_login
-    "DB_PASSWORD"                   = var.psql_admin_password
-    "REDIS_CONNECTION_STRING"       = var.redis_connection_string
-    "Google__ApiKey"                = var.google_api_key
-    "Google__EmbeddingModel"        = var.google_embedding_model
-    "Google__EmbeddingCacheMinutes" = "60"
+    "DB_HOST"                          = var.psql_host
+    "DB_PORT"                          = "5432"
+    "DB_NAME"                          = var.psql_database_name
+    "DB_USER"                          = var.psql_admin_login
+    "DB_PASSWORD"                      = var.psql_admin_password
+    "REDIS_CONNECTION_STRING"          = var.redis_connection_string
+    "REDIS_CONNECTION"                 = var.redis_connection_string # key AddStayHereRedisCache actually reads
+    "Google__ApiKey"                   = var.google_api_key
+    "Google__EmbeddingModel"           = var.google_embedding_model
+    "Google__EmbeddingCacheMinutes"    = "60"
+    "Google__MapsApiKey"               = var.google_maps_api_key != "" ? var.google_maps_api_key : var.google_api_key
+    "Google__PlacesSearchRadiusMeters" = "3000"
+    "Google__PlacesMaxResults"         = "8"
   }
 
   identity {
@@ -582,6 +689,78 @@ variable "r2_bucket_name" {
 variable "r2_public_base_url" {
   type    = string
   default = ""
+}
+
+variable "jwt_secret" {
+  type      = string
+  sensitive = true
+}
+
+variable "app_mode" {
+  type    = string
+  default = "test"
+}
+
+variable "seed_admin_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "seed_admin_email" {
+  type    = string
+  default = ""
+}
+
+variable "seed_admin_phone" {
+  type    = string
+  default = ""
+}
+
+variable "seed_admin_full_name" {
+  type    = string
+  default = "Admin"
+}
+
+variable "seed_admin_user_id" {
+  type    = string
+  default = ""
+}
+
+variable "anthropic_api_key" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "anthropic_floor_plan_model" {
+  type    = string
+  default = "claude-sonnet-5-5"
+}
+
+variable "google_floor_plan_model" {
+  type    = string
+  default = "gemini-flash-latest"
+}
+
+variable "google_floor_plan_fallback_model" {
+  type    = string
+  default = "gemini-3.6-flash"
+}
+
+variable "groq_floor_plan_model" {
+  type    = string
+  default = "qwen/qwen3.8-27b"
+}
+
+variable "floor_plan_provider_order" {
+  type    = string
+  default = "Claude,Gemini,Qwen"
+}
+
+variable "google_maps_api_key" {
+  type      = string
+  sensitive = true
+  default   = ""
 }
 
 

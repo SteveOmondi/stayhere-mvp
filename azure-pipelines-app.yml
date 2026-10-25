@@ -294,22 +294,59 @@ stages:
       inputs:
         versionSpec: '20.x'
 
-    - script: |
+    # Portal .env files are generated from VITE_* variables in StayHere-Variables.
+    # Only non-empty values are written; unset ones fall back to defaults in code.
+    # To add a new frontend variable: add it to the group and map it under env: below.
+    - bash: |
+        set -euo pipefail
+        : > .env
+        for NAME in $(env | grep -oE '^VITE_[A-Z0-9_]+' | sort -u); do
+          VALUE="${!NAME}"
+          if [ -n "$VALUE" ] && [[ "$VALUE" != \$\(*\) ]]; then
+            echo "$NAME=$VALUE" >> .env
+            echo "  + $NAME"
+          fi
+        done
         npm ci
         npm run build
       workingDirectory: '$(System.DefaultWorkingDirectory)/StayHereMainManagementPortal'
       displayName: 'Build StayHereMainManagementPortal'
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAdminPortal'], 'true'), eq(variables['globalChange'], 'true')))
+      env:
+        VITE_AUTH_API: $(VITE_AUTH_API)
+        VITE_PROPERTY_OWNER_API: $(VITE_PROPERTY_OWNER_API)
+        VITE_PROPERTY_API: $(VITE_PROPERTY_API)
+        VITE_CUSTOMER_API: $(VITE_CUSTOMER_API)
+        VITE_STATIC_API: $(VITE_STATIC_API)
+        VITE_AI_API: $(VITE_AI_API)
+        VITE_PAYMENTS_API: $(VITE_PAYMENTS_API)
 
-    - script: |
-        echo "VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY" > .env
+    - bash: |
+        set -euo pipefail
+        : > .env
+        for NAME in $(env | grep -oE '^VITE_[A-Z0-9_]+' | sort -u); do
+          VALUE="${!NAME}"
+          if [ -n "$VALUE" ] && [[ "$VALUE" != \$\(*\) ]]; then
+            echo "$NAME=$VALUE" >> .env
+            echo "  + $NAME"
+          fi
+        done
         npm ci
         npm run build
       workingDirectory: '$(System.DefaultWorkingDirectory)/StayHerePropertyOwnerPortal'
       displayName: 'Build StayHerePropertyOwnerPortal'
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isOwnerPortal'], 'true'), eq(variables['globalChange'], 'true')))
       env:
+        VITE_AUTH_API: $(VITE_AUTH_API)
+        VITE_PROPERTY_OWNER_API: $(VITE_PROPERTY_OWNER_API)
+        VITE_PROPERTY_API: $(VITE_PROPERTY_API)
+        VITE_CUSTOMER_API: $(VITE_CUSTOMER_API)
+        VITE_STATIC_API: $(VITE_STATIC_API)
+        VITE_AI_API: $(VITE_AI_API)
+        VITE_PAYMENTS_API: $(VITE_PAYMENTS_API)
         VITE_GOOGLE_MAPS_API_KEY: $(VITE_GOOGLE_MAPS_API_KEY)
+        # Pinned, not from the group: config.ts defaults to localhost Function Apps when unset.
+        VITE_USE_LOCAL_API: 'false'
 
     - publish: $(System.DefaultWorkingDirectory)/StayHereMainManagementPortal/dist
       artifact: AdminPortal_Pkg
@@ -411,8 +448,8 @@ stages:
 
 - stage: Deploy_AuthService
   displayName: 'Deploy Auth'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AuthService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_AuthService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -458,8 +495,8 @@ stages:
 
 - stage: Deploy_PropertyService
   displayName: 'Deploy Property'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_PropertyService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -491,8 +528,8 @@ stages:
 
 - stage: Deploy_CustomerService
   displayName: 'Deploy Customer'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_CustomerService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_CustomerService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -524,8 +561,8 @@ stages:
 
 - stage: Deploy_PropertyOwnerService
   displayName: 'Deploy PropertyOwner'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PropertyOwnerService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_PropertyOwnerService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -557,8 +594,8 @@ stages:
 
 - stage: Deploy_StaticDataService
   displayName: 'Deploy StaticData'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StaticDataService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_StaticDataService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -590,8 +627,8 @@ stages:
 
 - stage: Deploy_AiAgentService
   displayName: 'Deploy AiAgent'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_AiAgentService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_AiAgentService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -623,8 +660,8 @@ stages:
 
 - stage: Deploy_PaymentsService
   displayName: 'Deploy Payments'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_PaymentsService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_PaymentsService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -656,8 +693,8 @@ stages:
 
 - stage: Deploy_LoggingService
   displayName: 'Deploy Logging'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_LoggingService'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_LoggingService'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -689,8 +726,8 @@ stages:
 
 - stage: Deploy_McpServer
   displayName: 'Deploy McpServer'
-  dependsOn: Migrate_Database
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_McpServer'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Migrate_Database, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_McpServer'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -717,13 +754,14 @@ stages:
       inputs:
         azureSubscription: $(azureSubscription)
         appType: 'functionAppLinux'
+        isFlexConsumption: true # McpServer runs on an FC1 plan, unlike the Y1 Function Apps
         appName: $(DynamicAppName)
         package: '$(Pipeline.Workspace)/McpServer_Pkg/McpServer'
 
 - stage: Deploy_AdminPortal
   displayName: 'Deploy Admin Portal'
-  dependsOn: Build
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHereMainManagementPortal'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Build, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_StayHereMainManagementPortal'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:
@@ -763,8 +801,8 @@ stages:
 
 - stage: Deploy_OwnerPortal
   displayName: 'Deploy Owner Portal'
-  dependsOn: Build
-  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHerePropertyOwnerPortal'], 'true'), eq(stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'], 'true')))
+  dependsOn: [Build, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_StayHerePropertyOwnerPortal'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
   jobs:
   - job: Deploy
     pool:

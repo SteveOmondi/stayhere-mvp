@@ -33,6 +33,76 @@ stages:
         backendAzureRmKey: 'terraform.tfstate'
 
 
+    # ------------------------------------------------------------------
+    # Build pipeline.auto.tfvars.json from the StayHere-Variables group.
+    # Convention: every env var prefixed TFV_ maps to the lowercase
+    # Terraform variable of the same name (TFV_GROQ_API_KEY -> groq_api_key).
+    # To add a new variable: add it to the variable group, add ONE line
+    # below, and declare it in infrastructure/terraform/variables.tf.
+    # Empty or undefined group vars are skipped so Terraform defaults apply.
+    # ------------------------------------------------------------------
+    - bash: |
+        set -euo pipefail
+        OUT="$(System.DefaultWorkingDirectory)/infrastructure/terraform/pipeline.auto.tfvars.json"
+        JSON='{}'
+        while IFS='=' read -r NAME _; do
+          VALUE="${!NAME}"
+          TF_NAME=$(echo "${NAME#TFV_}" | tr '[:upper:]' '[:lower:]')
+          # Azure DevOps leaves undefined macros as the literal '$(NAME)'
+          if [ -z "$VALUE" ] || [[ "$VALUE" == \$\(*\) ]]; then
+            echo "  - $TF_NAME: not set in variable group (using Terraform default)"
+            continue
+          fi
+          JSON=$(jq --arg k "$TF_NAME" --arg v "$VALUE" '. + {($k): $v}' <<< "$JSON")
+          echo "  + $TF_NAME"
+        done < <(env | grep -E '^TFV_[A-Z0-9_]+=' | sort)
+        echo "$JSON" > "$OUT"
+        echo "Wrote $(jq 'length' "$OUT") variables to pipeline.auto.tfvars.json"
+      displayName: 'Generate Terraform Variables from Variable Group'
+      env:
+        # --- MongoDB Atlas ---
+        TFV_MONGODB_ATLAS_PUBLIC_KEY: $(MONGODB_ATLAS_PUBLIC_KEY)
+        TFV_MONGODB_ATLAS_PRIVATE_KEY: $(MONGODB_ATLAS_PRIVATE_KEY)
+        TFV_MONGODB_ATLAS_ORG_ID: $(MONGODB_ATLAS_ORG_ID)
+        # --- Auth / platform ---
+        TFV_SKIP_AUTH: $(SKIP_AUTH)
+        TFV_JWT_SECRET: $(JWT_SECRET)
+        TFV_APP_MODE: $(APP_MODE)
+        TFV_SEED_ADMIN_ENABLED: $(SEED_ADMIN_ENABLED)
+        TFV_SEED_ADMIN_USER_ID: $(SEED_ADMIN_USER_ID)
+        TFV_SEED_ADMIN_EMAIL: $(SEED_ADMIN_EMAIL)
+        TFV_SEED_ADMIN_PHONE: $(SEED_ADMIN_PHONE)
+        TFV_SEED_ADMIN_FULL_NAME: $(SEED_ADMIN_FULL_NAME)
+        # --- AI: chat, embeddings, floor plan, places ---
+        TFV_GROQ_API_KEY: $(GROQ_API_KEY)
+        TFV_GROQ_MODEL: $(GROQ_MODEL)
+        TFV_GROQ_FLOOR_PLAN_MODEL: $(GROQ_FLOOR_PLAN_MODEL)
+        TFV_GOOGLE_API_KEY: $(GOOGLE_API_KEY)
+        TFV_GOOGLE_EMBEDDING_MODEL: $(GOOGLE_EMBEDDING_MODEL)
+        TFV_GOOGLE_FLOOR_PLAN_MODEL: $(GOOGLE_FLOOR_PLAN_MODEL)
+        TFV_GOOGLE_FLOOR_PLAN_FALLBACK_MODEL: $(GOOGLE_FLOOR_PLAN_FALLBACK_MODEL)
+        TFV_GOOGLE_MAPS_API_KEY: $(GOOGLE_MAPS_API_KEY)
+        TFV_ANTHROPIC_API_KEY: $(ANTHROPIC_API_KEY)
+        TFV_ANTHROPIC_FLOOR_PLAN_MODEL: $(ANTHROPIC_FLOOR_PLAN_MODEL)
+        TFV_FLOOR_PLAN_PROVIDER_ORDER: $(FLOOR_PLAN_PROVIDER_ORDER)
+        # --- OnFon SMS ---
+        TFV_ONFON_CLIENT_ID: $(ONFON_CLIENT_ID)
+        TFV_ONFON_API_KEY: $(ONFON_API_KEY)
+        TFV_ONFON_BASE_URL: $(ONFON_BASE_URL)
+        TFV_ONFON_SENDER_ID: $(ONFON_SENDER_ID)
+        # --- M-Pesa ---
+        TFV_MPESA_CONSUMER_KEY: $(MPESA_CONSUMER_KEY)
+        TFV_MPESA_CONSUMER_SECRET: $(MPESA_CONSUMER_SECRET)
+        TFV_MPESA_PASSKEY: $(MPESA_PASSKEY)
+        TFV_MPESA_SHORTCODE: $(MPESA_SHORTCODE)
+        TFV_MPESA_ENVIRONMENT: $(MPESA_ENVIRONMENT)
+        # --- Cloudflare R2 ---
+        TFV_R2_ACCOUNT_ID: $(R2_ACCOUNT_ID)
+        TFV_R2_ACCESS_KEY_ID: $(R2_ACCESS_KEY_ID)
+        TFV_R2_SECRET_ACCESS_KEY: $(R2_SECRET_ACCESS_KEY)
+        TFV_R2_BUCKET_NAME: $(R2_BUCKET_NAME)
+        TFV_R2_PUBLIC_BASE_URL: $(R2_PUBLIC_BASE_URL)
+
     - task: TerraformTask@5
       name: terraformPlan
       displayName: 'Terraform Plan'
@@ -40,31 +110,13 @@ stages:
         provider: 'azurerm'
         command: 'plan'
         workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/terraform'
-        commandOptions: >-
-          -out tfplan
-          -var="mongodb_atlas_public_key=$(MONGODB_ATLAS_PUBLIC_KEY)"
-          -var="mongodb_atlas_private_key=$(MONGODB_ATLAS_PRIVATE_KEY)"
-          -var="mongodb_atlas_org_id=$(MONGODB_ATLAS_ORG_ID)"
-          -var="skip_auth=$(SKIP_AUTH)"
-          -var="groq_api_key=$(GROQ_API_KEY)"
-          -var="google_api_key=$(GOOGLE_API_KEY)"
-          -var="groq_model=$(GROQ_MODEL)"
-          -var="google_embedding_model=$(GOOGLE_EMBEDDING_MODEL)"
-          -var="onfon_client_id=$(ONFON_CLIENT_ID)"
-          -var="onfon_api_key=$(ONFON_API_KEY)"
-          -var="onfon_base_url=$(ONFON_BASE_URL)"
-          -var="onfon_sender_id=$(ONFON_SENDER_ID)"
-          -var="mpesa_consumer_key=$(MPESA_CONSUMER_KEY)"
-          -var="mpesa_consumer_secret=$(MPESA_CONSUMER_SECRET)"
-          -var="mpesa_passkey=$(MPESA_PASSKEY)"
-          -var="mpesa_shortcode=$(MPESA_SHORTCODE)"
-          -var="mpesa_environment=$(MPESA_ENVIRONMENT)"
-          -var="r2_account_id=$(R2_ACCOUNT_ID)"
-          -var="r2_access_key_id=$(R2_ACCESS_KEY_ID)"
-          -var="r2_secret_access_key=$(R2_SECRET_ACCESS_KEY)"
-          -var="r2_bucket_name=$(R2_BUCKET_NAME)"
-          -var="r2_public_base_url=$(R2_PUBLIC_BASE_URL)"
+        # Variables are loaded automatically from pipeline.auto.tfvars.json
+        commandOptions: '-out tfplan'
         environmentServiceNameAzureRM: 'Azure-StayHere-Conn'
+
+    - bash: rm -f "$(System.DefaultWorkingDirectory)/infrastructure/terraform/pipeline.auto.tfvars.json"
+      displayName: 'Remove Generated tfvars (contains secrets)'
+      condition: always()
 
     - task: PublishPipelineArtifact@1
       displayName: 'Publish Terraform Plan'
