@@ -60,6 +60,15 @@ resource "azurerm_linux_function_app" "auth" {
   tags = {
     Service = "AuthService"
   }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
+  }
 }
 
 # Key Vault URI is constructed manually to break the circular dependency with the security module
@@ -117,6 +126,15 @@ resource "azurerm_linux_function_app" "property" {
   identity {
     type = "SystemAssigned"
   }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
+  }
 }
 
 resource "azurerm_linux_function_app" "customer" {
@@ -160,6 +178,15 @@ resource "azurerm_linux_function_app" "customer" {
   tags = {
     Service = "CustomerService"
   }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
+  }
 }
 
 resource "azurerm_linux_function_app" "logging" {
@@ -197,6 +224,15 @@ resource "azurerm_linux_function_app" "logging" {
 
   tags = {
     Service = "LoggingService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -240,6 +276,15 @@ resource "azurerm_linux_function_app" "propertyowner" {
 
   tags = {
     Service = "PropertyOwnerService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -285,6 +330,15 @@ resource "azurerm_linux_function_app" "staticdata" {
 
   tags = {
     Service = "StaticDataService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
@@ -358,6 +412,15 @@ resource "azurerm_linux_function_app" "aiagent" {
   tags = {
     Service = "AiAgentService"
   }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
+  }
 }
 
 resource "azurerm_linux_function_app" "payments" {
@@ -408,6 +471,15 @@ resource "azurerm_linux_function_app" "payments" {
 
   tags = {
     Service = "PaymentsService"
+  }
+
+  # AzureFunctionApp@2 points WEBSITE_RUN_FROM_PACKAGE at the uploaded package blob on Linux
+  # Consumption; resetting it to "1" here unloads the deployed code (503 Site Unavailable).
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
+    ]
   }
 }
 
