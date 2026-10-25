@@ -754,6 +754,7 @@ stages:
       inputs:
         azureSubscription: $(azureSubscription)
         appType: 'functionAppLinux'
+        isFlexConsumption: true # McpServer runs on an FC1 plan, unlike the Y1 Function Apps
         appName: $(DynamicAppName)
         package: '$(Pipeline.Workspace)/McpServer_Pkg/McpServer'
 
