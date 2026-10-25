@@ -452,10 +452,11 @@ resource "azurerm_function_app_flex_consumption" "mcp" {
   storage_authentication_type = "StorageAccountConnectionString"
   storage_access_key          = azurerm_storage_account.main.primary_access_key
 
-  # McpServer is a self-hosted MCP custom handler (host.json: mcp-custom-handler), not a
-  # dotnet-isolated worker - the host launches `dotnet StayHere.McpServer.dll` itself.
-  runtime_name           = "custom"
-  runtime_version        = "1.0"
+  # Keep dotnet-isolated even though McpServer is a custom handler (host.json: mcp-custom-handler):
+  # the host launches `dotnet StayHere.McpServer.dll`, and only the .NET stack image ships `dotnet`.
+  # The "custom" runtime has no .NET and returns 502 (matches Azure-Samples/mcp-sdk-functions-hosting-dotnet).
+  runtime_name           = "dotnet-isolated"
+  runtime_version        = "9.0"
   maximum_instance_count = 40
   instance_memory_in_mb  = 2048
 
