@@ -97,6 +97,7 @@ resource "azurerm_linux_function_app" "property" {
     "DB_PASSWORD"                    = var.psql_admin_password
     "MONGODB_CONNECTION_STRING"      = var.mongodb_connection_string
     "REDIS_CONNECTION_STRING"        = var.redis_connection_string
+    "REDIS_CONNECTION"               = var.redis_connection_string # key AddStayHereRedisCache actually reads
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
     "SKIP_AUTH"                      = var.skip_auth
@@ -304,44 +305,50 @@ resource "azurerm_linux_function_app" "aiagent" {
   }
 
   app_settings = {
-    "FUNCTIONS_WORKER_RUNTIME"                 = "dotnet-isolated"
-    "AzureWebJobsStorage"                      = azurerm_storage_account.main.primary_connection_string
-    "DB_HOST"                                  = var.psql_host
-    "DB_PORT"                                  = "5432"
-    "DB_NAME"                                  = var.psql_database_name
-    "DB_USER"                                  = var.psql_admin_login
-    "DB_PASSWORD"                              = var.psql_admin_password
-    "MONGODB_CONNECTION_STRING"                = var.mongodb_connection_string
-    "REDIS_CONNECTION_STRING"                  = var.redis_connection_string
-    "SCM_DO_BUILD_DURING_DEPLOYMENT"           = "false"
-    "FUNCTIONS_EXTENSION_VERSION"              = "~4"
-    "SKIP_AUTH"                                = var.skip_auth
-    "Groq__ApiKey"                             = var.groq_api_key
-    "Groq__Model"                              = var.groq_model
-    "Groq__MaxRetries"                         = "4"
-    "Groq__RecommendNarrationMode"             = "Llm"
-    "Groq__RecommendNarrationMaxTokens"        = "280"
-    "Groq__RecommendLlmTimeoutSeconds"         = "40"
-    "Google__ApiKey"                           = var.google_api_key
-    "Google__EmbeddingModel"                   = var.google_embedding_model
-    "Google__EmbeddingCacheMinutes"            = "60"
-    "ListingPortalBaseUrl"                     = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
-    "JWT_SECRET"                               = var.jwt_secret
+    "FUNCTIONS_WORKER_RUNTIME"          = "dotnet-isolated"
+    "AzureWebJobsStorage"               = azurerm_storage_account.main.primary_connection_string
+    "DB_HOST"                           = var.psql_host
+    "DB_PORT"                           = "5432"
+    "DB_NAME"                           = var.psql_database_name
+    "DB_USER"                           = var.psql_admin_login
+    "DB_PASSWORD"                       = var.psql_admin_password
+    "MONGODB_CONNECTION_STRING"         = var.mongodb_connection_string
+    "REDIS_CONNECTION_STRING"           = var.redis_connection_string
+    "REDIS_CONNECTION"                  = var.redis_connection_string # key AddStayHereRedisCache actually reads
+    "SCM_DO_BUILD_DURING_DEPLOYMENT"    = "false"
+    "FUNCTIONS_EXTENSION_VERSION"       = "~4"
+    "SKIP_AUTH"                         = var.skip_auth
+    "Groq__ApiKey"                      = var.groq_api_key
+    "Groq__Model"                       = var.groq_model
+    "Groq__MaxRetries"                  = "4"
+    "Groq__RecommendNarrationMode"      = "Llm"
+    "Groq__RecommendNarrationMaxTokens" = "280"
+    "Groq__RecommendLlmTimeoutSeconds"  = "40"
+    "Groq__ToolCallingMaxIterations"    = "4"
+    "Google__ApiKey"                    = var.google_api_key
+    "Google__EmbeddingModel"            = var.google_embedding_model
+    "Google__EmbeddingCacheMinutes"     = "60"
+    "ListingPortalBaseUrl"              = "https://apim-${var.environment}-${var.suffix}.azure-api.net/property"
+    "JWT_SECRET"                        = var.jwt_secret
     # Floor plan analysis (Claude -> Gemini -> Qwen fallback chain)
-    "FloorPlan__ProviderOrder"                 = var.floor_plan_provider_order
-    "Anthropic__ApiKey"                        = var.anthropic_api_key
-    "Anthropic__FloorPlanModel"                = var.anthropic_floor_plan_model
-    "Google__FloorPlanModel"                   = var.google_floor_plan_model
-    "Groq__FloorPlanModel"                     = var.groq_floor_plan_model
+    "FloorPlan__ProviderOrder"       = var.floor_plan_provider_order
+    "Anthropic__ApiKey"              = var.anthropic_api_key
+    "Anthropic__FloorPlanModel"      = var.anthropic_floor_plan_model
+    "Google__FloorPlanModel"         = var.google_floor_plan_model
+    "Groq__FloorPlanModel"           = var.groq_floor_plan_model
+    "Google__FloorPlanFallbackModel" = var.google_floor_plan_fallback_model
+    "Anthropic__FloorPlanMaxRetries" = "2"
+    "Google__FloorPlanMaxRetries"    = "2"
+    "Groq__FloorPlanMaxRetries"      = "2"
     # Google Places (nearby amenities) - falls back to Google__ApiKey when empty
-    "Google__MapsApiKey"                       = var.google_maps_api_key != "" ? var.google_maps_api_key : var.google_api_key
-    "AzureWebJobs.Http.RoutePrefix"            = ""
-    "WEBSITE_RUN_FROM_PACKAGE"                 = "1"
+    "Google__MapsApiKey"            = var.google_maps_api_key != "" ? var.google_maps_api_key : var.google_api_key
+    "AzureWebJobs.Http.RoutePrefix" = ""
+    "WEBSITE_RUN_FROM_PACKAGE"      = "1"
     # Opt Sage into its own MCP server as an external tool source - empty/absent by default
     # (Mcp:ExternalServers), so this is what actually turns the McpServer deployment into something
     # Sage uses rather than a resource sitting idle.
-    "Mcp__ExternalServers__0__Name"            = "stayhere"
-    "Mcp__ExternalServers__0__Url"             = "https://${azurerm_function_app_flex_consumption.mcp.default_hostname}/mcp"
+    "Mcp__ExternalServers__0__Name" = "stayhere"
+    "Mcp__ExternalServers__0__Url"  = "https://${azurerm_function_app_flex_consumption.mcp.default_hostname}/mcp"
   }
 
   identity {
@@ -445,23 +452,29 @@ resource "azurerm_function_app_flex_consumption" "mcp" {
   storage_authentication_type = "StorageAccountConnectionString"
   storage_access_key          = azurerm_storage_account.main.primary_access_key
 
-  runtime_name           = "dotnet-isolated"
-  runtime_version        = "9.0"
+  # McpServer is a self-hosted MCP custom handler (host.json: mcp-custom-handler), not a
+  # dotnet-isolated worker - the host launches `dotnet StayHere.McpServer.dll` itself.
+  runtime_name           = "custom"
+  runtime_version        = "1.0"
   maximum_instance_count = 40
   instance_memory_in_mb  = 2048
 
   site_config {}
 
   app_settings = {
-    "DB_HOST"                       = var.psql_host
-    "DB_PORT"                       = "5432"
-    "DB_NAME"                       = var.psql_database_name
-    "DB_USER"                       = var.psql_admin_login
-    "DB_PASSWORD"                   = var.psql_admin_password
-    "REDIS_CONNECTION_STRING"       = var.redis_connection_string
-    "Google__ApiKey"                = var.google_api_key
-    "Google__EmbeddingModel"        = var.google_embedding_model
-    "Google__EmbeddingCacheMinutes" = "60"
+    "DB_HOST"                          = var.psql_host
+    "DB_PORT"                          = "5432"
+    "DB_NAME"                          = var.psql_database_name
+    "DB_USER"                          = var.psql_admin_login
+    "DB_PASSWORD"                      = var.psql_admin_password
+    "REDIS_CONNECTION_STRING"          = var.redis_connection_string
+    "REDIS_CONNECTION"                 = var.redis_connection_string # key AddStayHereRedisCache actually reads
+    "Google__ApiKey"                   = var.google_api_key
+    "Google__EmbeddingModel"           = var.google_embedding_model
+    "Google__EmbeddingCacheMinutes"    = "60"
+    "Google__MapsApiKey"               = var.google_maps_api_key != "" ? var.google_maps_api_key : var.google_api_key
+    "Google__PlacesSearchRadiusMeters" = "3000"
+    "Google__PlacesMaxResults"         = "8"
   }
 
   identity {
@@ -654,6 +667,11 @@ variable "anthropic_floor_plan_model" {
 variable "google_floor_plan_model" {
   type    = string
   default = "gemini-flash-latest"
+}
+
+variable "google_floor_plan_fallback_model" {
+  type    = string
+  default = "gemini-3.6-flash"
 }
 
 variable "groq_floor_plan_model" {

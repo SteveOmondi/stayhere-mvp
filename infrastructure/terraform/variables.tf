@@ -218,6 +218,11 @@ variable "google_floor_plan_model" {
   default = "gemini-flash-latest"
 }
 
+variable "google_floor_plan_fallback_model" {
+  type    = string
+  default = "gemini-3.6-flash"
+}
+
 variable "groq_floor_plan_model" {
   type    = string
   default = "qwen/qwen3.8-27b"
