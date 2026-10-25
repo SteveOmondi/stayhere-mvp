@@ -65,11 +65,17 @@ var host = new HostBuilder()
         // surface as a raw 500 - see GroqChatService/ChatServiceFallbackService doc comments).
         services.AddHttpClient<GroqChatService>(client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(120);
+            // A single chat turn can make several sequential calls through this client (see
+            // AiAgentService's tool-calling loop) - a 120s timeout meant one hung call alone could
+            // eat 2 minutes before even reaching the retry logic. 20s is well above Groq's typical
+            // response time (seconds) and fails fast into the Claude fallback instead.
+            client.Timeout = TimeSpan.FromSeconds(20);
         });
         services.AddHttpClient<ClaudeChatService>(client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(120);
+            // Same reasoning as GroqChatService above - this is the fallback path, so hanging here
+            // too would mean a chat turn times out twice over before the user sees anything.
+            client.Timeout = TimeSpan.FromSeconds(20);
         });
         services.AddScoped<IChatService, ChatServiceFallbackService>();
         // All three concrete providers are registered as typed HttpClients (not directly bound to

@@ -179,14 +179,26 @@ public class GooglePlacesService : IPlacesService
         List<NearbyPlace> sorted, double originLat, double originLng, string apiKey, CancellationToken cancellationToken)
     {
         const int maxAugmented = 5;
-        for (var i = 0; i < Math.Min(maxAugmented, sorted.Count); i++)
+        var count = Math.Min(maxAugmented, sorted.Count);
+
+        // Fired concurrently rather than one-at-a-time - these are independent reads against the
+        // Directions API, so there's no reason a get_nearby_places tool call (itself one of several
+        // sequential calls inside a chat turn, see AiAgentService's tool-calling loop) should pay
+        // for 5 round-trips in series when they can all be in flight at once.
+        var routeTasks = new Task<(double DistanceMeters, int DurationMinutes)?>[count];
+        for (var i = 0; i < count; i++)
         {
             var place = sorted[i];
-            if (place.Latitude is null || place.Longitude is null) continue;
+            routeTasks[i] = place.Latitude is null || place.Longitude is null
+                ? Task.FromResult<(double, int)?>(null)
+                : TryGetWalkingRouteAsync(originLat, originLng, place.Latitude.Value, place.Longitude.Value, apiKey, cancellationToken);
+        }
 
-            var route = await TryGetWalkingRouteAsync(originLat, originLng, place.Latitude.Value, place.Longitude.Value, apiKey, cancellationToken);
-            if (route is { } r)
-                sorted[i] = place with { WalkingDistanceMeters = r.DistanceMeters, WalkingDurationMinutes = r.DurationMinutes };
+        var routes = await Task.WhenAll(routeTasks);
+        for (var i = 0; i < count; i++)
+        {
+            if (routes[i] is { } r)
+                sorted[i] = sorted[i] with { WalkingDistanceMeters = r.DistanceMeters, WalkingDurationMinutes = r.DurationMinutes };
         }
 
         return sorted;

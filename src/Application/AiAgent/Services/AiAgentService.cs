@@ -92,11 +92,14 @@ public class AiAgentService : IAiAgentService
             NewMessage(conversationId, "user", request.Query)
         };
 
-        // Authenticated journey questions ("what's my status") can legitimately chain several tool
-        // calls (resolve applications -> payments -> next step) - give signed-in callers more room
-        // than anonymous browsing, which rarely needs more than one or two.
-        var configuredMax = int.TryParse(_configuration["Groq:ToolCallingMaxIterations"], out var mi) ? Math.Clamp(mi, 1, 8) : 4;
-        var maxIterations = toolContext.IsAuthenticated ? Math.Max(configuredMax, 6) : configuredMax;
+        // Authenticated journey questions ("what's my status") can legitimately chain a couple of
+        // tool calls (resolve applications -> payments -> next step) - give signed-in callers a
+        // little more room than anonymous browsing, which rarely needs more than one or two. Each
+        // iteration is a full LLM round-trip (seconds, not milliseconds), so these caps are kept
+        // deliberately tight - a chat turn that needs more than ~6-7 round-trips is already well
+        // past the point where a user is still happily waiting (see Sage latency investigation).
+        var configuredMax = int.TryParse(_configuration["Groq:ToolCallingMaxIterations"], out var mi) ? Math.Clamp(mi, 1, 6) : 3;
+        var maxIterations = toolContext.IsAuthenticated ? Math.Max(configuredMax, 4) : configuredMax;
 
         // Security/proximity questions need get_nearby_places grounding, but "auto" tool choice has
         // been observed in production to skip it and answer from listing amenities alone - even on
@@ -109,7 +112,7 @@ public class AiAgentService : IAiAgentService
         var hasListingContext = messages.Any(m => m.Role == "tool" && m.Name is AgentToolCatalog.SearchListings
             or AgentToolCatalog.GetListingDetails or AgentToolCatalog.CompareListings or AgentToolCatalog.GetRecommendations
             && ToolResultHasListings(m.Content));
-        if (wantsNearbyPlaces) maxIterations += 2;
+        if (wantsNearbyPlaces) maxIterations += 1;
 
         // "Most secure"/"cheapest"/"closest" etc. questions over several listings have the same
         // failure mode as the nearby-places one above, confirmed in production: search_listings

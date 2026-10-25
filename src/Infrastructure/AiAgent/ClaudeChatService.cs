@@ -208,7 +208,13 @@ public class ClaudeChatService : IChatService
         }
 
         const string url = "https://api.anthropic.com/v1/messages";
-        var maxAttempts = int.TryParse(_configuration["Anthropic:ChatMaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 3;
+        // This is already the FALLBACK provider (Groq failed first) - by the time we're here the
+        // user has already waited through Groq's own retry budget, so this one is kept especially
+        // tight: at most one retry, short flat backoff, and any Retry-After header is capped rather
+        // than honored in full (Groq's has been observed at 20-50+s in production; Anthropic's could
+        // be similarly large, which would otherwise make the "fallback" slower than just failing).
+        var maxAttempts = int.TryParse(_configuration["Anthropic:ChatMaxRetries"], out var m) ? Math.Clamp(m, 1, 3) : 2;
+        var maxRetryDelay = TimeSpan.FromSeconds(3);
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -223,14 +229,14 @@ public class ClaudeChatService : IChatService
             }
             catch (HttpRequestException) when (attempt < maxAttempts)
             {
-                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
                 continue;
             }
 
             // 429 = rate limited, 529 = Anthropic's "overloaded_error", 503 = generic transient.
             if (response.StatusCode == HttpStatusCode.TooManyRequests || (int)response.StatusCode == 529 || response.StatusCode == HttpStatusCode.ServiceUnavailable)
             {
-                var delay = ParseRetryAfter(response) ?? TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                var delay = ParseRetryAfter(response) is { } retryAfter && retryAfter < maxRetryDelay ? retryAfter : maxRetryDelay;
                 _logger.LogWarning("Claude chat call returned {Status}. Attempt {Attempt}/{Max}. Waiting {Delay}s", (int)response.StatusCode, attempt, maxAttempts, delay.TotalSeconds);
                 if (attempt == maxAttempts) response.EnsureSuccessStatusCode();
                 await Task.Delay(delay, cancellationToken);

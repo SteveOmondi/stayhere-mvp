@@ -58,7 +58,10 @@ public class GroqChatService : IChatService
             stream = false
         };
 
-        var maxAttempts = int.TryParse(_configuration["Groq:MaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 4;
+        // Kept short for the same reason as GenerateWithToolsAsync below - this runs inline in a
+        // user-facing turn (e.g. recommendation narration), so a long retry ladder is user-visible
+        // wait time, not a background cost.
+        var maxAttempts = int.TryParse(_configuration["Groq:MaxRetries"], out var m) ? Math.Clamp(m, 1, 3) : 2;
         var minInterval = TimeSpan.FromMilliseconds(
             int.TryParse(_configuration["Groq:MinRequestIntervalMs"], out var mi) ? mi : 1500);
 
@@ -120,7 +123,7 @@ public class GroqChatService : IChatService
             catch (HttpRequestException ex) when (attempt < maxAttempts && ex is not GroqRateLimitedException)
             {
                 _logger.LogWarning(ex, "Groq chat attempt {Attempt} failed; retrying", attempt);
-                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
         }
 
@@ -175,7 +178,11 @@ public class GroqChatService : IChatService
                 : new JsonObject { ["type"] = "function", ["function"] = new JsonObject { ["name"] = forcedToolName } };
         }
 
-        var maxAttempts = int.TryParse(_configuration["Groq:MaxRetries"], out var m) ? Math.Clamp(m, 1, 8) : 4;
+        // This path runs up to several times per chat turn (see AiAgentService's tool-calling loop) -
+        // a long retry ladder here multiplies directly into user-facing wait time. Kept deliberately
+        // short: at most one retry, with a flat short delay instead of exponential backoff, so a
+        // genuinely struggling Groq fails over to Claude in seconds rather than tens of seconds.
+        var maxAttempts = int.TryParse(_configuration["Groq:MaxRetries"], out var m) ? Math.Clamp(m, 1, 3) : 2;
         var minInterval = TimeSpan.FromMilliseconds(
             int.TryParse(_configuration["Groq:MinRequestIntervalMs"], out var mi) ? mi : 1500);
 
@@ -246,7 +253,7 @@ public class GroqChatService : IChatService
             catch (HttpRequestException ex) when (attempt < maxAttempts && ex is not GroqRateLimitedException)
             {
                 _logger.LogWarning(ex, "Groq tool-call chat attempt {Attempt} failed; retrying", attempt);
-                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
         }
 
