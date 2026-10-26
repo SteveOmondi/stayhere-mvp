@@ -312,6 +312,7 @@ resource "azurerm_api_management_policy" "global" {
             <allowed-origins>
                 <origin>${trimsuffix(var.admin_portal_url, "/")}</origin>
                 <origin>${trimsuffix(var.owner_portal_url, "/")}</origin>
+                <origin>${trimsuffix(var.client_app_url, "/")}</origin>
                 <origin>http://localhost:5100</origin>
                 <origin>http://localhost:5101</origin>
                 <origin>http://localhost:5173</origin>

@@ -71,3 +71,9 @@ variable "owner_portal_url" {
   description = "Static website URL for the property owner portal"
   default     = ""
 }
+
+variable "client_app_url" {
+  type        = string
+  description = "Static website URL for the client app"
+  default     = ""
+}

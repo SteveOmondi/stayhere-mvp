@@ -31,3 +31,8 @@ output "owner_portal_url" {
   value       = module.frontend.owner_portal_url
   description = "The static website URL of the Property Owner Portal"
 }
+
+output "client_app_url" {
+  value       = module.frontend.client_app_url
+  description = "The static website URL of the Client App"
+}
