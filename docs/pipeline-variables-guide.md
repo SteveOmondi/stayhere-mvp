@@ -47,23 +47,25 @@ Mark everything in the **Secret** column as secret (padlock icon).
 `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_PASSKEY`, `MPESA_SHORTCODE`, `MPESA_ENVIRONMENT`,
 `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_BASE_URL`.
 
-### Frontend portals (new, all optional)
+### Frontend web apps (admin portal, owner portal, ClientApp)
 
-Each one defaults to the current APIM gateway (`https://apim-dev-5c27bcf3.azure-api.net/...`). Set them when the gateway changes or a new environment is added.
+Each one falls back to the APIM gateway (`https://apim-dev-5c27bcf3.azure-api.net/...`) when a variable is unset. The six `VITE_*_API` variables below are defined in `StayHere-Variables` with the APIM dev values shown, so builds are explicit instead of relying on fallbacks.
 
-| Group variable | Admin portal | Owner portal | Example |
-|---|---|---|---|
-| `VITE_AUTH_API` | ✅ | ✅ | `https://<apim>.azure-api.net/auth` |
-| `VITE_PROPERTY_OWNER_API` | ✅ | ✅ | `https://<apim>.azure-api.net/propertyowner` |
-| `VITE_PROPERTY_API` | ✅ | ✅ | `https://<apim>.azure-api.net/property` |
-| `VITE_CUSTOMER_API` | ✅ | ✅ | `https://<apim>.azure-api.net/customers` |
-| `VITE_STATIC_API` | ✅ | ✅ | `https://<apim>.azure-api.net/staticdata` |
-| `VITE_AI_API` | ✅ | ✅ | `https://<apim>.azure-api.net/aiagent` |
-| `VITE_PAYMENTS_API` | ✅ | ✅ | `https://<apim>.azure-api.net/payments` |
-| `VITE_GOOGLE_MAPS_API_KEY` (existing) | | ✅ | browser-restricted Maps key |
+| Group variable | Admin portal | Owner portal | ClientApp | Value in `StayHere-Variables` |
+|---|---|---|---|---|
+| `VITE_AUTH_API` | yes | yes | yes | `https://apim-dev-5c27bcf3.azure-api.net/auth` |
+| `VITE_PROPERTY_API` | yes | yes | yes | `https://apim-dev-5c27bcf3.azure-api.net/property` |
+| `VITE_CUSTOMER_API` | yes | yes | yes | `https://apim-dev-5c27bcf3.azure-api.net/customers` |
+| `VITE_STATIC_API` | yes | yes | yes | `https://apim-dev-5c27bcf3.azure-api.net/staticdata` |
+| `VITE_AI_API` | yes | yes | yes | `https://apim-dev-5c27bcf3.azure-api.net/aiagent` |
+| `VITE_PAYMENTS_API` | yes | yes | yes | `https://apim-dev-5c27bcf3.azure-api.net/payments` |
+| `VITE_PROPERTY_OWNER_API` | yes | yes | no (not read) | intentionally **unset**: the UI falls back to `${APIM}/propertyowner` |
+| `VITE_GOOGLE_MAPS_API_KEY` (existing) | | yes | yes | browser-restricted Maps key |
 
 `VITE_*` values are compiled into public JavaScript, so never put a secret in one.
-`VITE_USE_LOCAL_API` is pinned to `false` in the pipeline and should **not** be added to the group.
+`VITE_USE_LOCAL_API` is pinned to `false` in the pipeline (the owner portal's source default is `true`) and should **not** be added to the group.
+
+**Unset variables:** Azure DevOps leaves an unset group variable as the literal text `$(VITE_X)` in the environment, and Vite lets `process.env` override `.env`, which would bake the literal into the bundle. The build steps therefore skip any value that is empty or a literal `$(...)` macro; for the URL variables they also `unset` it, so the `config.ts` default applies and the log shows `- NAME (unset, using default)`. `VITE_GOOGLE_MAPS_API_KEY` is only skipped, not unset.
 
 ---
 
