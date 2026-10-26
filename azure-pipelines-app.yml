@@ -330,6 +330,11 @@ stages:
           if [ -n "$VALUE" ] && [[ "$VALUE" != \$\(*\) ]]; then
             echo "$NAME=$VALUE" >> .env
             echo "  + $NAME"
+          elif [[ "$VALUE" == \$\(*\) && "$NAME" != "VITE_GOOGLE_MAPS_API_KEY" ]]; then
+            # Unset group variable: Azure leaves the literal macro in the env, and Vite
+            # lets process.env override .env, so clear it and let config.ts defaults apply.
+            unset "$NAME"
+            echo "  - $NAME (unset, using default)"
           fi
         done
         npm ci
@@ -354,6 +359,11 @@ stages:
           if [ -n "$VALUE" ] && [[ "$VALUE" != \$\(*\) ]]; then
             echo "$NAME=$VALUE" >> .env
             echo "  + $NAME"
+          elif [[ "$VALUE" == \$\(*\) && "$NAME" != "VITE_GOOGLE_MAPS_API_KEY" ]]; then
+            # Unset group variable: Azure leaves the literal macro in the env, and Vite
+            # lets process.env override .env, so clear it and let config.ts defaults apply.
+            unset "$NAME"
+            echo "  - $NAME (unset, using default)"
           fi
         done
         npm ci
@@ -381,6 +391,11 @@ stages:
           if [ -n "$VALUE" ] && [[ "$VALUE" != \$\(*\) ]]; then
             echo "$NAME=$VALUE" >> .env
             echo "  + $NAME"
+          elif [[ "$VALUE" == \$\(*\) && "$NAME" != "VITE_GOOGLE_MAPS_API_KEY" ]]; then
+            # Unset group variable: Azure leaves the literal macro in the env, and Vite
+            # lets process.env override .env, so clear it and let config.ts defaults apply.
+            unset "$NAME"
+            echo "  - $NAME (unset, using default)"
           fi
         done
         npm ci
