@@ -184,4 +184,5 @@ module "apim" {
 
   admin_portal_url = module.frontend.admin_portal_url
   owner_portal_url = module.frontend.owner_portal_url
+  client_app_url   = module.frontend.client_app_url
 }
