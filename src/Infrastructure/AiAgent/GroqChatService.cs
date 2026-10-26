@@ -101,6 +101,17 @@ public class GroqChatService : IChatService
                     throw new GroqRateLimitedException($"Groq chat rate limited (429): {errorBody}");
                 }
 
+                if (response.StatusCode == HttpStatusCode.RequestEntityTooLarge)
+                {
+                    // See GenerateWithToolsAsync's identical comment - retrying an oversized
+                    // request just resends the same payload and fails the same way again.
+                    var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogWarning(
+                        "Groq chat payload too large (413) - failing over immediately instead of retrying the same oversized request. Response: {Body}",
+                        errorBody);
+                    throw new GroqRateLimitedException($"Groq chat payload too large (413): {errorBody}");
+                }
+
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -211,6 +222,20 @@ public class GroqChatService : IChatService
                         "Groq tool-call chat rate limited (429) - failing over immediately instead of waiting out Retry-After. Response: {Body}",
                         errorBody);
                     throw new GroqRateLimitedException($"Groq tool-call chat rate limited (429): {errorBody}");
+                }
+
+                if (response.StatusCode == HttpStatusCode.RequestEntityTooLarge)
+                {
+                    // Confirmed in production: a long tool-calling conversation (system prompt +
+                    // history + tool definitions + accumulated tool results) can exceed this
+                    // model's tokens-per-minute request-size cap. Retrying sends the EXACT same
+                    // payload again - it can never succeed on attempt 2 or 3, so burning the retry
+                    // ladder on it only adds latency before the inevitable failover to Claude.
+                    var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogWarning(
+                        "Groq tool-call chat payload too large (413) - failing over immediately instead of retrying the same oversized request. Response: {Body}",
+                        errorBody);
+                    throw new GroqRateLimitedException($"Groq tool-call chat payload too large (413): {errorBody}");
                 }
 
                 if (!response.IsSuccessStatusCode)

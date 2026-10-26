@@ -84,7 +84,7 @@ public class AiAgentService : IAiAgentService
         var history = await _conversations.GetHistoryAsync(conversationId, cancellationToken);
 
         var messages = new List<ChatMessage> { new() { Role = "system", Content = BuildAgentSystemPrompt(context, toolContext.IsAuthenticated) } };
-        messages.AddRange(history.TakeLast(16).Select(ToChatMessage));
+        messages.AddRange(TrimHistoryWithoutSplittingToolGroups(history, 16).Select(ToChatMessage));
         messages.Add(new ChatMessage { Role = "user", Content = request.Query });
 
         var newMessages = new List<AiConversationMessage>
@@ -469,6 +469,29 @@ public class AiAgentService : IAiAgentService
         ToolName = toolName,
         Timestamp = DateTime.UtcNow
     };
+
+    /// <summary>
+    /// A blind TakeLast(N) over a flat [user, assistant(tool_calls), tool, tool, assistant(text), ...]
+    /// history can start the trimmed window exactly on a "tool" message whose pairing "assistant"
+    /// tool_calls message got cut off the front - producing an orphaned tool_result with no
+    /// preceding tool_use. Groq tolerates this silently, but Claude's Messages API rejects it
+    /// outright with a 400 ("Each tool_result block must have a corresponding tool_use block in
+    /// the previous message") - confirmed in production: this is what silently broke the Claude
+    /// fallback and produced the generic "having trouble responding" message, since the fallback
+    /// itself failed to even form a valid request. Walking the start index back past any leading
+    /// "tool" messages keeps the window's first message always a user/assistant turn boundary.
+    /// </summary>
+    private static List<AiConversationMessage> TrimHistoryWithoutSplittingToolGroups(
+        IReadOnlyList<AiConversationMessage> history, int count)
+    {
+        if (history.Count <= count) return history.ToList();
+
+        var startIndex = history.Count - count;
+        while (startIndex > 0 && history[startIndex].Role == "tool")
+            startIndex--;
+
+        return history.Skip(startIndex).ToList();
+    }
 
     private static ChatMessage ToChatMessage(AiConversationMessage m)
     {
