@@ -6,6 +6,7 @@ trigger:
     - src/**
     - StayHereMainManagementPortal/**
     - StayHerePropertyOwnerPortal/**
+    - StayHereClientApp/**
     - StayHere.sln
     - azure-pipelines-app.yml
 
@@ -144,7 +145,7 @@ stages:
         echo "##vso[task.setvariable variable=change_McpServer;isOutput=true]$HAS_CHANGE"
 
         # Frontend portal checks
-        PORTALS=("StayHereMainManagementPortal" "StayHerePropertyOwnerPortal")
+        PORTALS=("StayHereMainManagementPortal" "StayHerePropertyOwnerPortal" "StayHereClientApp")
         for PORTAL in "${PORTALS[@]}"; do
           HAS_CHANGE=false
           if [ "$GLOBAL_CHANGE" = true ] || echo "$CHANGED_FILES" | grep -E "^$PORTAL/"; then
@@ -178,6 +179,7 @@ stages:
       isMcp: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_McpServer'] ]
       isAdminPortal: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHereMainManagementPortal'] ]
       isOwnerPortal: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHerePropertyOwnerPortal'] ]
+      isClientApp: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.change_StayHereClientApp'] ]
       globalChange: $[ stageDependencies.CheckChanges.Detect.outputs['DetectionStep.globalChange'] ]
     steps:
     - task: UseDotNet@2
@@ -371,6 +373,30 @@ stages:
         # Pinned, not from the group: config.ts defaults to localhost Function Apps when unset.
         VITE_USE_LOCAL_API: 'false'
 
+    - bash: |
+        set -euo pipefail
+        : > .env
+        for NAME in $(env | grep -oE '^VITE_[A-Z0-9_]+' | sort -u); do
+          VALUE="${!NAME}"
+          if [ -n "$VALUE" ] && [[ "$VALUE" != \$\(*\) ]]; then
+            echo "$NAME=$VALUE" >> .env
+            echo "  + $NAME"
+          fi
+        done
+        npm ci
+        npm run build
+      workingDirectory: '$(System.DefaultWorkingDirectory)/StayHereClientApp'
+      displayName: 'Build StayHereClientApp'
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isClientApp'], 'true'), eq(variables['globalChange'], 'true')))
+      env:
+        VITE_AUTH_API: $(VITE_AUTH_API)
+        VITE_PROPERTY_API: $(VITE_PROPERTY_API)
+        VITE_CUSTOMER_API: $(VITE_CUSTOMER_API)
+        VITE_STATIC_API: $(VITE_STATIC_API)
+        VITE_AI_API: $(VITE_AI_API)
+        VITE_PAYMENTS_API: $(VITE_PAYMENTS_API)
+        VITE_GOOGLE_MAPS_API_KEY: $(VITE_GOOGLE_MAPS_API_KEY)
+
     - publish: $(System.DefaultWorkingDirectory)/StayHereMainManagementPortal/dist
       artifact: AdminPortal_Pkg
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isAdminPortal'], 'true'), eq(variables['globalChange'], 'true')))
@@ -378,6 +404,10 @@ stages:
     - publish: $(System.DefaultWorkingDirectory)/StayHerePropertyOwnerPortal/dist
       artifact: OwnerPortal_Pkg
       condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isOwnerPortal'], 'true'), eq(variables['globalChange'], 'true')))
+
+    - publish: $(System.DefaultWorkingDirectory)/StayHereClientApp/dist
+      artifact: ClientApp_Pkg
+      condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(variables['isClientApp'], 'true'), eq(variables['globalChange'], 'true')))
 
 
 - stage: Migrate_Database
@@ -861,6 +891,48 @@ stages:
             --account-name $STORAGE_NAME \
             --destination '$web' \
             --source '$(Pipeline.Workspace)/OwnerPortal_Pkg' \
+            --overwrite true \
+            --content-cache-control "no-cache" \
+            --auth-mode key
+
+- stage: Deploy_ClientApp
+  displayName: 'Deploy Client App'
+  dependsOn: [Build, CheckChanges]
+  condition: and(succeeded(), or(eq(variables['Build.Reason'], 'Manual'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.change_StayHereClientApp'], 'true'), eq(dependencies.CheckChanges.outputs['Detect.DetectionStep.globalChange'], 'true')))
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - download: current
+      artifact: ClientApp_Pkg
+    - task: AzureCLI@2
+      displayName: 'Discover and Deploy Client App'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Discovering Resource Group..."
+          RG_NAME=$(az group list --query "[?tags.Project=='stayhere' && tags.Environment=='dev'].name" -o tsv | head -n 1)
+          if [ -z "$RG_NAME" ]; then
+            RG_NAME=$(az group list --query "[?contains(name, 'rg-stayhere-dev')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$RG_NAME" ]; then echo "Resource Group not found"; exit 1; fi
+          echo "Using Resource Group: $RG_NAME"
+
+          echo "Discovering Client App Storage Account..."
+          STORAGE_NAME=$(az storage account list --resource-group $RG_NAME --query "[?tags.Portal=='client'].name" -o tsv | head -n 1)
+          if [ -z "$STORAGE_NAME" ]; then
+            STORAGE_NAME=$(az storage account list --resource-group $RG_NAME --query "[?contains(name, 'client')].name" -o tsv | head -n 1)
+          fi
+          if [ -z "$STORAGE_NAME" ]; then echo "Client App storage account not found"; exit 1; fi
+          echo "Deploying Client App to $STORAGE_NAME..."
+
+          az storage blob upload-batch \
+            --account-name $STORAGE_NAME \
+            --destination '$web' \
+            --source '$(Pipeline.Workspace)/ClientApp_Pkg' \
             --overwrite true \
             --content-cache-control "no-cache" \
             --auth-mode key
